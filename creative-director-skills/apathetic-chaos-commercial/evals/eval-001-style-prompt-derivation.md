@@ -1,5 +1,6 @@
 ---
 style_id: apathetic-chaos-commercial
+style_prompt_file: ../system-prompt.md
 eval_id: eval-001
 kind: quality-rubric
 subject: "Quality of the written system prompt (style guide), derived from user feedback"
