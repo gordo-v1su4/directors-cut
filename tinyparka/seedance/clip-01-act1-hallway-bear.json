@@ -1,0 +1,69 @@
+{
+  "project": "tinyparka-doritos",
+  "clip": 1,
+  "title": "Act I — Hallway to Bear Den",
+  "duration_seconds": 14,
+  "aspect_ratio": "9:16",
+  "references": {
+    "@Image1": "character sheet — subject appearance, wardrobe, hair, makeup",
+    "@Image2": "style plate — mansion lighting, color grade, lens feel",
+    "@Image3": "Chunk 1 storyboard grid — shot composition and sequence"
+  },
+  "prompt": "@Image1's character as the subject, wearing the gold wrap dress from @Image1. Scene and color grade reference @Image2. Shot sequence and framing reference @Image3. Cinematic prestige commercial, warm gold burgundy pink palette, soft shallow depth of field, deadpan surreal tone, 14 seconds.\n\n0–2s: Medium wide, white portrait hallway, Black butler in tuxedo holds silver platter with raw steak, actress opposite, she waves off platter once with flat deadpan expression, static centered symmetry, quiet hall ambience.\n\n2–4s: Hard cut extreme close-up, actress breaks fourth wall staring into lens, gold hoops red lips, locked close-up soft bokeh, posh British monotone dialogue begins immediately.\n\n4–7s: Wide symmetrical portrait gallery, red runner, actress walks briskly toward camera hands in pockets, smooth backward track keeping her centered, footsteps under dense fast dialogue.\n\n7–8s: Hard cut medium through white doorframe into dark wood-panelled den, pink wingback visible inside, static frame, dialogue continuous.\n\n8–14s: Hard cut wide then medium in den, actress already seated legs crossed in dusty-pink wingback, large brown bear already seated upright in matching chair beside her, both face forward, she never looks at bear, continues talking to camera, slow push to medium on actress only, low room tone, no bear sounds.\n\nVoice: posh British female, flat monotone, very fast clipped pace, no pauses.\n\nDialogue: I don't eat red meat before four o'clock. My neighbour has this gnome in her garden that she dresses for the seasons. Last winter it wore a tiny parka, which felt sincere. In July it had a swimsuit on. That felt like a cry for help. Anyway, she asked if I wanted to borrow it for a party and I said absolutely not, I don't borrow statuary, I don't borrow spandex, I don't borrow regret, she's still texting me about hydration, I've muted her, I've muted Tuesdays, Tuesdays are aggressively middle.",
+  "style": {
+    "look": "prestige perfume commercial, warm gold burgundy pink, soft cinematic light, shallow depth of field",
+    "mood": "deadpan surreal, ultra-wealthy, zero comedy performance",
+    "pacing": "jarring unmotivated cuts, no pause for visual jokes"
+  },
+  "dialogue": {
+    "voice": "posh British female, flat monotone, very fast clipped pace, continuous no pauses",
+    "text": "I don't eat red meat before four o'clock. My neighbour has this gnome in her garden that she dresses for the seasons. Last winter it wore a tiny parka, which felt sincere. In July it had a swimsuit on. That felt like a cry for help. Anyway, she asked if I wanted to borrow it for a party and I said absolutely not, I don't borrow statuary, I don't borrow spandex, I don't borrow regret, she's still texting me about hydration, I've muted her, I've muted Tuesdays, Tuesdays are aggressively middle."
+  },
+  "segments": [
+    {
+      "start": "0:00",
+      "end": "0:02",
+      "shot": "medium wide",
+      "scene": "white portrait hallway, butler with silver platter and raw steak, actress opposite",
+      "action": "actress waves off platter once, dismissive, no emotion",
+      "camera": "static, centered symmetry",
+      "audio": "quiet hall ambience, faint fabric rustle"
+    },
+    {
+      "start": "0:02",
+      "end": "0:04",
+      "shot": "extreme close-up",
+      "scene": "same mansion world",
+      "action": "hard cut to actress face, breaks fourth wall, stares into lens",
+      "camera": "locked close-up, soft bokeh",
+      "audio": "dialogue begins immediately, no music sting"
+    },
+    {
+      "start": "0:04",
+      "end": "0:07",
+      "shot": "wide tracking",
+      "scene": "symmetrical portrait gallery, red runner",
+      "action": "actress walks briskly toward camera, hands in pockets",
+      "camera": "smooth backward track keeping her centered",
+      "audio": "footsteps on carpet under dense dialogue"
+    },
+    {
+      "start": "0:07",
+      "end": "0:08",
+      "shot": "medium",
+      "scene": "white doorframe into wood-panelled den",
+      "action": "hard cut, brief glimpse of pink wingback through doorway",
+      "camera": "static frame through door",
+      "audio": "dialogue continues without beat drop"
+    },
+    {
+      "start": "0:08",
+      "end": "0:14",
+      "shot": "wide then medium",
+      "scene": "wood den, pink wingback chairs, bookshelves",
+      "action": "hard cut — actress already seated legs crossed, brown bear already seated upright in matching chair beside her, both forward, she never looks at bear, continues talking to camera",
+      "camera": "wide establish then slow push to medium on actress only",
+      "audio": "low room tone, dialogue carries through, no bear sounds"
+    }
+  ]
+}

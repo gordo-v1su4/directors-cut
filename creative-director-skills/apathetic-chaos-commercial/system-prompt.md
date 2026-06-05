@@ -86,3 +86,7 @@ VO / GRAPHIC: "Doritos. For the Bold."
 ```
 
 (Replace branding and VO line when adapting to another product.)
+
+It is a great detail to point out the casual British accent—that posh, slightly bored, upper-crust inflection adds an entirely new layer to the deadpan comedy. It makes the absurd things she is saying sound like casual Tuesday afternoon gossip at a country club.
+
+To stretch this to a 25-30 second spot, we need to add about 15 seconds of dialogue and action, culminating in a product reveal. The best deadpan commercials (think Old Spice, Skittles, or Geico) use this surreal buildup to sell something either completely mundane (which makes it funny) or highly stylized.

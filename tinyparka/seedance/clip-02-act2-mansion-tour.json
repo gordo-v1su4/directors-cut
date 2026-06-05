@@ -1,0 +1,51 @@
+{
+  "project": "tinyparka-doritos",
+  "clip": 2,
+  "title": "Act II — Kitchen, Bath, Stairs",
+  "duration_seconds": 13,
+  "aspect_ratio": "9:16",
+  "references": {
+    "@Image1": "character sheet — subject appearance",
+    "@Image2": "style plate — warm mansion grade",
+    "@Image3": "Chunk 2 storyboard grid — room layouts and compositions"
+  },
+  "prompt": "@Image1's character as the subject, same gold wrap dress throughout. Scene and color grade reference @Image2. Shot sequence reference @Image3. Prestige commercial polish, deadpan surreal, hard cuts between rooms, 13 seconds.\n\n0–4s: Wide marble kitchen, copper pots cream cabinetry, young chef kneels weeping over single asparagus spear on cutting board, actress foreground stirs tea in china cup talks to camera never looks at chef, cut to close-up deadpan face gold hoops blurred weeping chef behind, quiet kitchen faint sob tea spoon clink.\n\n4–8s: Wide gilt vanity bathroom crystal chandelier in mirror, actress seated reapplies red lipstick, solicitor in grey suit stands in hall doorway behind on phone call she does not acknowledge, mirror reflection medium then tight vanity close-up deadpan eyes, muffled phone distant dialogue uninterrupted.\n\n8–13s: Wide top of grand curved staircase burgundy walls oil portraits, actress descends gold heels, Black butler follows carrying white marble classical bust wearing gold Venetian carnival mask on bust face, she keeps talking to camera never looks back, medium track down low angle on landing, heel clicks on marble.\n\nVoice: posh British monotone, no inflection, fast continuous.\n\nDialogue: My housekeeper thinks dust is a suggestion. I fired a chef for emoting at asparagus. He wept. I offered a tissue. It was linen. Wrong weight. In the bath I told my ex's solicitor I don't do group chats. He does. That's why he's an ex's solicitor. On the stairs I remembered I still owe Venice an apology. I won't pay it. Venice was smug.",
+  "style": {
+    "look": "same gold wrap dress throughout, prestige commercial polish",
+    "mood": "deadpan, surreal background details treated as normal",
+    "pacing": "hard cuts between rooms every 3–4 seconds"
+  },
+  "dialogue": {
+    "voice": "same posh British monotone, no inflection",
+    "text": "My housekeeper thinks dust is a suggestion. I fired a chef for emoting at asparagus. He wept. I offered a tissue. It was linen. Wrong weight. In the bath I told my ex's solicitor I don't do group chats. He does. That's why he's an ex's solicitor. On the stairs I remembered I still owe Venice an apology. I won't pay it. Venice was smug."
+  },
+  "segments": [
+    {
+      "start": "0:00",
+      "end": "0:04",
+      "shot": "wide to close-up",
+      "scene": "marble kitchen, copper pots, cream cabinetry",
+      "action": "chef kneels weeping over single asparagus spear on cutting board, actress foreground stirs tea in china cup and talks to camera, never looks at chef",
+      "camera": "wide establish kitchen chaos, cut to medium on actress, snap to close-up deadpan face with blurred weeping chef behind",
+      "audio": "quiet kitchen room tone, faint sob under dialogue, tea spoon clink"
+    },
+    {
+      "start": "0:04",
+      "end": "0:08",
+      "shot": "wide to close-up",
+      "scene": "gilt vanity bathroom, crystal chandelier in mirror",
+      "action": "actress seated at vanity reapplies red lipstick, solicitor in grey suit stands in hall doorway behind her on phone call, she does not turn or acknowledge him",
+      "camera": "wide bathroom, medium through mirror reflection showing solicitor in doorway, tight vanity close-up on her deadpan eyes via mirror",
+      "audio": "muffled phone voice distant, dialogue uninterrupted"
+    },
+    {
+      "start": "0:08",
+      "end": "0:13",
+      "shot": "wide to low angle",
+      "scene": "grand curved staircase, burgundy walls, oil portraits",
+      "action": "actress descends in gold heels, butler follows carrying white marble classical bust wearing gold Venetian carnival mask on bust face, she keeps talking to camera, never looks back",
+      "camera": "wide from top landing, medium track down staircase with her, low angle on landing as she passes",
+      "audio": "heel clicks on marble, dialogue through last frame"
+    }
+  ]
+}
