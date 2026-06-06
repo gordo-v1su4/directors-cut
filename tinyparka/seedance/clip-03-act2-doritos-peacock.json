@@ -5,18 +5,19 @@
   "duration_seconds": 15,
   "aspect_ratio": "9:16",
   "references": {
-    "@Image1": "character sheet — subject appearance",
-    "@Image2": "style plate — warm mansion grade",
+    "@Image1": "character sheet — subject appearance, wardrobe, posh British demeanor",
+    "@Image2": "style plate — American manor, champagne grade, 50mm lens, tungsten light",
     "@Image3": "Chunk 3 storyboard grid — pool, gallery, drawing room, product, peacock beats"
   },
-  "prompt": "@Image1's character as the subject, gold wrap dress throughout. Scene and color grade reference @Image2. Shot sequence reference @Image3. Prestige commercial finish, deadpan surreal, 15 seconds. Doritos appear only final four seconds. No steak anywhere.\n\n0–4s: Wide indoor pool conservatory steamy glass walls turquoise water brass ladder, actress stands fully dressed at marble pool edge talks to camera, white swan glides across water behind she does not react, soft water lap dialogue on pool boy and boundaries.\n\n4–7s: Wide gallery hall dark wood crystal chandelier red runner, actress walks toward camera deadpan delivery on chlorine and hope, smooth backward track centred.\n\n7–10s: Medium drawing room white marble fireplace gilt mantel, stern older woman oil portrait in heavy gilt frame on wall behind her shoulder, actress stands centre facing camera finishes monologue on mother in frame and exits does not glance at portrait, slow push in dialogue ends at 10s.\n\n10–12s: Same drawing room, butler enters from right silver platter with opened Nacho Cheese Doritos bag centred on tray, actress reaches lifts one chip without breaking eye contact, silver tray clink no dialogue.\n\n12–13s: Close-up actress bites Dorito loud crisp crunch expression unchanged, room tone dips.\n\n13–15s: Wide drawing room white peacock full tail struts foreground left to right herringbone parquet, actress by fireplace mid-ground chewing does not look at peacock, hard cut extreme close-up she says one deadpan word Bold, super title Doritos For the Bold.\n\nVoice: posh British monotone through 10s, silence during crunch, one word at 14s. She never names Doritos in dialogue.\n\nDialogue: The pool boy left a note about pH. I left one about boundaries. He cried. Men do. I don't. Before six I don't do chlorine, or hope, or subtitles. My mother says I'm dramatic. She's in a frame. Not mine. I don't collect guilt. I collect exits.",
+  "prompt": "@Image1's character as the subject, gold floral wrap dress throughout. She speaks throughout with a posh British accent — flat monotone, matter-of-fact. Scene and color grade reference @Image2. Shot sequence reference @Image3. Warm prestige American manor, cream walls honey hardwood oil portraits brass lamps soft tungsten light, 50mm shallow depth of field warm champagne grade, deadpan blocking sincere camera, 15 seconds. Doritos appear only final four seconds. No steak anywhere.\n\n0–4s: Wide indoor pool conservatory steamy glass walls turquoise water brass ladder cream moulding honey hardwood trim, she stands fully dressed at marble pool edge talks to camera with British deadpan, white swan glides across water behind she does not react, soft water lap posh British dialogue on pool boy and boundaries.\n\n4–7s: Wide gallery hall cream walls honey hardwood oil portraits brass table lamps, she walks toward camera deadpan British delivery on chlorine and hope, smooth backward track centred 50mm.\n\n7–10s: Medium drawing room white marble fireplace gilt mantel brass andirons Persian rug, stern older woman oil portrait in heavy gilt frame on wall behind shoulder, she stands centre facing camera finishes monologue with posh British accent on mother in frame and exits does not glance at portrait, slow push in dialogue ends at 10s.\n\n10–12s: Same drawing room, butler enters from right silver platter with opened Nacho Cheese Doritos bag centred on tray, she reaches lifts one chip without breaking eye contact, silver tray clink no dialogue.\n\n12–13s: Close-up 50mm she bites Dorito loud crisp crunch British deadpan expression unchanged, room tone dips.\n\n13–15s: Wide drawing room locked-off white peacock full tail struts foreground left to right herringbone parquet, she by fireplace mid-ground chewing does not look at peacock, hard cut extreme close-up she says one deadpan British word Bold, super title Doritos For the Bold.\n\nVoice: posh British accent through 10s, silence during crunch, one British deadpan word at 14s. She never names Doritos in dialogue.\n\nDialogue: The pool boy left a note about pH. I left one about boundaries. He cried. Men do. I don't. Before six I don't do chlorine, or hope, or subtitles. My mother says I'm dramatic. She's in a frame. Not mine. I don't collect guilt. I collect exits.",
   "style": {
-    "look": "prestige commercial finish, Doritos appear only in final four seconds of picture",
+    "look": "warm prestige American manor, cream walls honey hardwood, 50mm shallow DOF, champagne grade, practical tungsten light",
     "mood": "deadpan throughout, product and peacock completely unacknowledged",
-    "pacing": "monologue completes before product enters frame"
+    "pacing": "monologue completes before product enters frame",
+    "accent": "posh British accent throughout, flat monotone, upper-class cadence"
   },
   "dialogue": {
-    "voice": "same posh British monotone through 0:10, silence during crunch, one deadpan word at 0:14",
+    "voice": "posh British accent, British female, flat monotone through 0:10, silence during crunch, one deadpan British word at 0:14",
     "text": "The pool boy left a note about pH. I left one about boundaries. He cried. Men do. I don't. Before six I don't do chlorine, or hope, or subtitles. My mother says I'm dramatic. She's in a frame. Not mine. I don't collect guilt. I collect exits.",
     "post_crunch_word": "Bold."
   },
@@ -29,56 +30,56 @@
     {
       "start": "0:00",
       "end": "0:04",
-      "shot": "wide to medium-wide",
-      "scene": "indoor pool conservatory, steamy glass walls, turquoise water, brass pool ladder",
-      "action": "actress stands fully dressed at marble pool edge talking to camera, white swan glides across water behind her, she does not react",
-      "camera": "wide establish pool room, cut to medium poolside on actress, hold medium-wide as swan passes behind",
-      "audio": "soft water lap, distant room echo, dialogue on pool boy and boundaries"
+      "shot": "wide to medium-wide 50mm",
+      "scene": "indoor pool conservatory, steamy glass walls, turquoise water, brass ladder, cream moulding, honey hardwood trim",
+      "action": "she stands fully dressed at marble pool edge talking to camera with posh British deadpan, white swan glides across water behind her, she does not react",
+      "camera": "wide establish pool room, cut to medium poolside, hold medium-wide as swan passes behind",
+      "audio": "soft water lap, distant room echo, British monotone dialogue on pool boy and boundaries"
     },
     {
       "start": "0:04",
       "end": "0:07",
-      "shot": "wide tracking",
-      "scene": "gallery hall, dark wood panelling, crystal chandelier, red runner carpet",
-      "action": "actress walks toward camera in gold dress, deadpan delivery continues on chlorine and hope",
-      "camera": "smooth backward track keeping her centred in hallway",
-      "audio": "footsteps on runner under dialogue"
+      "shot": "wide tracking 50mm",
+      "scene": "gallery hall, cream walls, honey hardwood, oil portraits, brass table lamps",
+      "action": "she walks toward camera in gold dress, posh British deadpan delivery continues on chlorine and hope",
+      "camera": "smooth backward track keeping her centred",
+      "audio": "footsteps on hardwood under British dialogue"
     },
     {
       "start": "0:07",
       "end": "0:10",
-      "shot": "medium",
-      "scene": "drawing room, white marble fireplace, gilt mantel, stern older woman oil portrait in heavy gilt frame on wall",
-      "action": "actress stands centre frame facing camera, finishes monologue on mother in frame and exits, does not glance at portrait behind her",
+      "shot": "medium 50mm",
+      "scene": "drawing room, white marble fireplace, gilt mantel, brass andirons, Persian rug, stern older woman oil portrait in gilt frame",
+      "action": "she stands centre frame facing camera, finishes monologue with British accent on mother in frame and exits, does not glance at portrait behind her",
       "camera": "static medium, slow push in on her face as last line lands",
-      "audio": "quiet drawing room tone, dialogue ends at 0:10"
+      "audio": "quiet drawing room tone, posh British dialogue ends at 0:10"
     },
     {
       "start": "0:10",
       "end": "0:12",
-      "shot": "medium to close-up",
+      "shot": "medium to close-up 50mm",
       "scene": "same drawing room",
-      "action": "butler enters from right with silver platter holding opened Nacho Cheese Doritos bag, actress reaches to platter and lifts one chip without breaking eye contact with camera",
+      "action": "butler enters from right with silver platter holding opened Nacho Cheese Doritos bag, she reaches to platter and lifts one chip without breaking eye contact with camera",
       "camera": "medium two-shot as butler enters, cut to close-up hand lifting chip, face still on lens",
       "audio": "silver tray faint clink, no dialogue"
     },
     {
       "start": "0:12",
       "end": "0:13",
-      "shot": "close-up",
+      "shot": "close-up 50mm",
       "scene": "drawing room",
-      "action": "actress bites Dorito chip, loud crisp crunch, expression completely unchanged",
+      "action": "she bites Dorito chip, loud crisp crunch, British deadpan expression completely unchanged",
       "camera": "tight close-up mouth and eyes, shallow depth of field",
       "audio": "LOUD Dorito crunch, room tone dips under crunch"
     },
     {
       "start": "0:13",
       "end": "0:15",
-      "shot": "wide then extreme close-up",
+      "shot": "wide locked-off then extreme close-up 50mm",
       "scene": "drawing room, herringbone parquet floor",
-      "action": "white peacock with full tail struts across foreground left to right, actress by fireplace mid-ground chewing, does not look at peacock, hard cut to extreme close-up as she says one deadpan word",
+      "action": "white peacock with full tail struts across foreground left to right, she by fireplace mid-ground chewing, does not look at peacock, hard cut to extreme close-up as she says one deadpan British word",
       "camera": "wide punchline hold one second, snap to ECU on lens",
-      "audio": "soft peacock call, actress says 'Bold.', super title sting",
+      "audio": "soft peacock call, she says 'Bold.' in posh British accent, super title sting",
       "end_card": {
         "graphic": "Doritos. For the Bold.",
         "vo": "Doritos. For the Bold."

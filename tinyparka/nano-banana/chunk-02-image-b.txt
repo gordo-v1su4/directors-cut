@@ -1,16 +1,16 @@
-Image 1: character sheet — same actress, same gold wrap dress, same hair and makeup every panel.
-Image 2: style reference — match mansion woods, golds, burgundy accents, soft cinematic lighting from approved still.
+Image 1: character sheet — same actress, gold floral wrap dress, voluminous blonde hair, heavy gold earrings, posh British demeanor.
+Image 2: style reference — warm prestige American manor, cream walls, honey hardwood floors, oil portrait paintings, brass table lamps, soft practical tungsten light, 50mm shallow DOF, warm champagne grade.
 
-One output image only: 3x3 storyboard contact sheet, nine equal panels, no text, consistent grade.
+One output image only: 3x3 storyboard contact sheet, nine equal panels, no text, consistent grade. Deadpan blocking, sincere camera. She speaks with a posh British accent in performance — flat monotone, matter-of-fact.
 
-Panel 1: wide marble kitchen with copper pots and cream cabinetry, young chef in white uniform kneels beside counter openly weeping over a single asparagus spear on a cutting board, actress in gold wrap dress stands foreground right stirring tea in a thin china cup, completely calm.
-Panel 2: medium kitchen, actress holds tea cup at chest height and talks toward camera, weeping chef and asparagus still visible on counter behind her in soft focus, she does not turn.
-Panel 3: close-up kitchen, actress deadpan face filling frame, gold hoop earrings, red lips, warm bokeh, blurred chef shoulders shaking behind.
-Panel 4: wide primary bathroom, gilt-framed mirror above white marble vanity, actress seated on velvet stool reapplying red lipstick, crystal chandelier reflected in mirror.
-Panel 5: medium bathroom through doorway reflection, middle-aged man in grey solicitor suit stands in hall doorway behind actress holding phone to ear mid-call, actress continues lipstick at mirror and does not acknowledge him.
-Panel 6: vanity close-up, actress eyes on camera via mirror reflection, solicitor still visible in reflected doorway behind her, deadpan expression unchanged.
-Panel 7: wide shot from top of grand curved staircase, oil portraits in gold frames on burgundy walls, actress in gold heels at top landing, one hand on banister.
-Panel 8: medium staircase shot, actress descends steps, Black butler four steps behind carries white marble classical bust wearing a gold Venetian carnival mask on the bust's face, she does not look back.
-Panel 9: low angle from stair landing, actress mid-descent still talking to camera, butler and masked bust behind her on marble steps, chandelier overhead.
+Panel 1: wide manor kitchen cream cabinetry copper pots honey hardwood floors brass pendant light, young chef in white uniform kneels beside counter openly weeping over single asparagus spear on cutting board, blonde woman in gold floral wrap dress stands foreground right stirring tea in thin china cup completely calm.
+Panel 2: medium kitchen 50mm shallow DOF, woman holds tea cup at chest height talks toward camera with British deadpan expression, weeping chef and asparagus visible on counter behind in soft focus she does not turn.
+Panel 3: close-up 50mm static kitchen, her deadpan face fills frame gold hoop earrings red lips warm tungsten bokeh, blurred chef shoulders shaking behind.
+Panel 4: wide primary bathroom cream walls gilt-framed mirror above white marble vanity brass sconces, woman seated on velvet stool reapplying red lipstick, oil portrait reflected in mirror edge.
+Panel 5: medium bathroom mirror reflection, middle-aged man in grey solicitor suit stands in honey-hardwood hall doorway behind her holding phone to ear mid-call, she continues lipstick at mirror does not acknowledge him.
+Panel 6: vanity close-up 50mm via mirror reflection, her eyes on camera deadpan British boredom, solicitor still visible in reflected doorway behind.
+Panel 7: wide from top of grand curved staircase cream walls oil portraits in gold frames honey hardwood banister brass chandelier, woman in gold heels at top landing one hand on banister.
+Panel 8: medium staircase 50mm, woman descends steps in gold dress, Black butler four steps behind carries white marble classical bust wearing gold Venetian carnival mask on bust face, she does not look back.
+Panel 9: low angle stair landing, woman mid-descent still addressing camera with flat British deadpan, butler and masked bust behind on honey hardwood steps chandelier overhead.
 
 Same gold wrap dress throughout. No bear. No steak. No Doritos.

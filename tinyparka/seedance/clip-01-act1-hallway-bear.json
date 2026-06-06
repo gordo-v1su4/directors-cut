@@ -1,68 +1,69 @@
 {
   "project": "tinyparka-doritos",
   "clip": 1,
-  "title": "Act I — Hallway to Bear Den",
+  "title": "Act I — Hallway to Study Bear",
   "duration_seconds": 14,
   "aspect_ratio": "9:16",
   "references": {
     "@Image1": "character sheet — subject appearance, wardrobe, hair, makeup",
-    "@Image2": "style plate — mansion lighting, color grade, lens feel",
+    "@Image2": "style plate — American manor lighting, champagne grade, 50mm lens feel",
     "@Image3": "Chunk 1 storyboard grid — shot composition and sequence"
   },
-  "prompt": "@Image1's character as the subject, wearing the gold wrap dress from @Image1. Scene and color grade reference @Image2. Shot sequence and framing reference @Image3. Cinematic prestige commercial, warm gold burgundy pink palette, soft shallow depth of field, deadpan surreal tone, 14 seconds.\n\n0–2s: Medium wide, white portrait hallway, Black butler in tuxedo holds silver platter with raw steak, actress opposite, she waves off platter once with flat deadpan expression, static centered symmetry, quiet hall ambience.\n\n2–4s: Hard cut extreme close-up, actress breaks fourth wall staring into lens, gold hoops red lips, locked close-up soft bokeh, posh British monotone dialogue begins immediately.\n\n4–7s: Wide symmetrical portrait gallery, red runner, actress walks briskly toward camera hands in pockets, smooth backward track keeping her centered, footsteps under dense fast dialogue.\n\n7–8s: Hard cut medium through white doorframe into dark wood-panelled den, pink wingback visible inside, static frame, dialogue continuous.\n\n8–14s: Hard cut wide then medium in den, actress already seated legs crossed in dusty-pink wingback, large brown bear already seated upright in matching chair beside her, both face forward, she never looks at bear, continues talking to camera, slow push to medium on actress only, low room tone, no bear sounds.\n\nVoice: posh British female, flat monotone, very fast clipped pace, no pauses.\n\nDialogue: I don't eat red meat before four o'clock. My neighbour has this gnome in her garden that she dresses for the seasons. Last winter it wore a tiny parka, which felt sincere. In July it had a swimsuit on. That felt like a cry for help. Anyway, she asked if I wanted to borrow it for a party and I said absolutely not, I don't borrow statuary, I don't borrow spandex, I don't borrow regret, she's still texting me about hydration, I've muted her, I've muted Tuesdays, Tuesdays are aggressively middle.",
+  "prompt": "@Image1's character as the subject, gold floral wrap dress, voluminous blonde hair, heavy gold earrings. She speaks throughout with a posh British accent — flat monotone, matter-of-fact grocery-list cadence. Scene and color grade reference @Image2. Shot sequence reference @Image3. Warm prestige American manor, cream walls honey hardwood oil portraits brass lamps soft tungsten light, 50mm shallow depth of field warm champagne grade, deadpan blocking sincere camera, 14 seconds.\n\n0–2s: Medium wide locked-off manor hallway, butler in black tuxedo white gloves presents silver platter with raw steak, she picks up steak looks once tosses casually off-screen left like discarding napkin, butler does not react, quiet hall ambience.\n\n2–4s: Hard cut close-up 50mm static, face fills frame, looks directly into lens jaw relaxed matter-of-fact grocery-list cadence, posh British monotone dialogue begins.\n\n4–7s: Wide stabilized tracking gallery hallway, she strides away from camera mid-anecdote oil paintings both sides, camera tracks ahead of her retreating, she does not look at camera, footsteps on honey hardwood.\n\n7–10s: Wide slow dolly-in warm traditional study, pink velvet wingback beside brass floor lamp Persian rug dark wood bookshelves, she crosses sits crosses one leg settles back looks at camera completely still.\n\n10–14s: Hard cut wide locked-off from across study, she seated pink velvet wingback, large well-groomed calm brown bear upright in identical wingback immediate right paws in lap, she does not look at bear continues speaking to camera, static hold warm lamplight neither acknowledges the other.\n\nVoice: posh British female, flat monotone, very fast clipped pace, no pauses.\n\nDialogue: I don't eat red meat before four o'clock. My neighbour has this gnome in her garden that she dresses for the seasons. Last winter it wore a tiny parka, which felt sincere. In July it had a swimsuit on. That felt like a cry for help. Anyway, she asked if I wanted to borrow it for a party and I said absolutely not, I don't borrow statuary, I don't borrow spandex, I don't borrow regret, she's still texting me about hydration, I've muted her, I've muted Tuesdays, Tuesdays are aggressively middle.",
   "style": {
-    "look": "prestige perfume commercial, warm gold burgundy pink, soft cinematic light, shallow depth of field",
-    "mood": "deadpan surreal, ultra-wealthy, zero comedy performance",
-    "pacing": "jarring unmotivated cuts, no pause for visual jokes"
+    "look": "warm prestige American manor, cream walls honey hardwood, 50mm shallow DOF, champagne grade, practical tungsten light",
+    "mood": "deadpan comedy blocking, camera sincere, humor in performance only",
+    "pacing": "hard cuts, gallery track then study dolly then locked-off bear wide",
+    "accent": "posh British accent throughout, flat monotone, upper-class cadence"
   },
   "dialogue": {
-    "voice": "posh British female, flat monotone, very fast clipped pace, continuous no pauses",
+    "voice": "posh British accent, British female, flat monotone, matter-of-fact grocery-list cadence, very fast no pauses",
     "text": "I don't eat red meat before four o'clock. My neighbour has this gnome in her garden that she dresses for the seasons. Last winter it wore a tiny parka, which felt sincere. In July it had a swimsuit on. That felt like a cry for help. Anyway, she asked if I wanted to borrow it for a party and I said absolutely not, I don't borrow statuary, I don't borrow spandex, I don't borrow regret, she's still texting me about hydration, I've muted her, I've muted Tuesdays, Tuesdays are aggressively middle."
   },
   "segments": [
     {
       "start": "0:00",
       "end": "0:02",
-      "shot": "medium wide",
-      "scene": "white portrait hallway, butler with silver platter and raw steak, actress opposite",
-      "action": "actress waves off platter once, dismissive, no emotion",
-      "camera": "static, centered symmetry",
-      "audio": "quiet hall ambience, faint fabric rustle"
+      "shot": "medium wide locked-off",
+      "scene": "cream-walled manor hallway, honey hardwood, oil portraits, brass lamps, butler with silver platter and raw steak",
+      "action": "she picks up steak from platter, looks once, tosses off-screen left like napkin, butler does not react",
+      "camera": "static centered, 50mm",
+      "audio": "quiet hall ambience, faint steak thud off-screen"
     },
     {
       "start": "0:02",
       "end": "0:04",
-      "shot": "extreme close-up",
-      "scene": "same mansion world",
-      "action": "hard cut to actress face, breaks fourth wall, stares into lens",
-      "camera": "locked close-up, soft bokeh",
+      "shot": "close-up 50mm static",
+      "scene": "same manor world",
+      "action": "face fills frame, voluminous blonde hair heavy gold earrings, looks into lens jaw relaxed",
+      "camera": "locked close-up, shallow DOF tungsten bokeh",
       "audio": "dialogue begins immediately, no music sting"
     },
     {
       "start": "0:04",
       "end": "0:07",
-      "shot": "wide tracking",
-      "scene": "symmetrical portrait gallery, red runner",
-      "action": "actress walks briskly toward camera, hands in pockets",
-      "camera": "smooth backward track keeping her centered",
-      "audio": "footsteps on carpet under dense dialogue"
+      "shot": "wide stabilized tracking",
+      "scene": "gallery hallway, oil paintings both sides, honey floors cream walls",
+      "action": "she strides through hallway away from camera mid-anecdote, does not look at camera",
+      "camera": "camera tracks ahead of her retreating",
+      "audio": "footsteps on hardwood under dense dialogue"
     },
     {
       "start": "0:07",
-      "end": "0:08",
-      "shot": "medium",
-      "scene": "white doorframe into wood-panelled den",
-      "action": "hard cut, brief glimpse of pink wingback through doorway",
-      "camera": "static frame through door",
-      "audio": "dialogue continues without beat drop"
+      "end": "0:10",
+      "shot": "wide slow dolly-in",
+      "scene": "traditional manor study, pink velvet wingback, brass floor lamp, Persian rug, dark bookshelves",
+      "action": "she enters crosses sits in wingback, crosses one leg, settles back, looks at camera completely still",
+      "camera": "slow dolly-in toward chair",
+      "audio": "dialogue continues, soft lamplight room tone"
     },
     {
-      "start": "0:08",
+      "start": "0:10",
       "end": "0:14",
-      "shot": "wide then medium",
-      "scene": "wood den, pink wingback chairs, bookshelves",
-      "action": "hard cut — actress already seated legs crossed, brown bear already seated upright in matching chair beside her, both forward, she never looks at bear, continues talking to camera",
-      "camera": "wide establish then slow push to medium on actress only",
+      "shot": "wide locked-off",
+      "scene": "study from across room, pink velvet wingbacks, brass lamp, Persian rug",
+      "action": "she seated in chair, well-groomed brown bear in identical wingback immediate right paws in lap, she does not look at bear, continues speaking to camera, neither acknowledges the other",
+      "camera": "static locked-off wide from across room",
       "audio": "low room tone, dialogue carries through, no bear sounds"
     }
   ]

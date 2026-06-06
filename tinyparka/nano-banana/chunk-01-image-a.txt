@@ -1,16 +1,14 @@
-Image 1: character sheet — lock face, blonde waves, red lips, gold hoop earrings, mustard-gold silk floral wrap dress.
-Image 2: style reference — ultra-wealthy mansion, warm gold burgundy pink palette, soft prestige commercial lighting, surreal deadpan tone.
+Image 1: character sheet — blonde voluminous waves, heavy gold hoop earrings, gold floral wrap dress, posh British demeanor.
+Image 2: style reference — warm prestige American manor, cream walls, honey hardwood, oil portraits, brass lamps, tungsten light, 50mm shallow DOF, champagne grade.
 
-One output image only: 3x3 storyboard contact sheet, nine equal cinematic film-still panels, no text, no labels, no borders, consistent character and color grade.
+One output image only: 3x3 storyboard contact sheet, nine equal cinematic film-still panels, no text, no labels, no borders, consistent character and color grade. Deadpan blocking, sincere camera, no comedy faces. She speaks with a posh British accent in performance — flat monotone, matter-of-fact.
 
-Panel 1: medium wide, white portrait hallway with gold-framed paintings and red carpet runner, Black butler in tuxedo and white gloves holds silver platter with raw steak, blonde actress in gold wrap dress stands opposite him.
-Panel 2: medium close, actress waves off the platter with flat deadpan expression, raw steak still on silver tray, same hallway.
-Panel 3: extreme close-up, actress breaks fourth wall, stares directly into camera lens, gold hoops, red lips, soft warm bokeh.
-Panel 4: wide symmetrical shot down portrait gallery, actress walks toward camera on red runner, hands in pockets, camera tracks backward.
-Panel 5: medium tracking shot, waist up, actress still walking down same hallway toward camera, brisk pace, deadpan.
-Panel 6: view through white doorframe into dark wood-panelled den, pink wingback chair visible inside, bright hall behind doorframe.
-Panel 7: hard cut, wide den shot, actress already seated in dusty-pink wingback chair with legs crossed, large brown bear already seated upright in matching chair beside her, both face camera, she does not look at bear.
-Panel 8: medium shot inside den, actress talks to camera, bear motionless in adjacent chair, warm wood bookshelves and floor lamp behind.
-Panel 9: slightly wider den composition, same seated bear beat, perfume-commercial framing, actress still ignores bear completely.
-
-No comedy faces. Absurd elements treated as mundane.
+Panel 1: medium wide locked-off, cream-walled manor hallway honey hardwood floors oil portraits brass table lamps, blonde woman in gold floral wrap dress faces butler in black tuxedo white gloves presenting silver platter with raw steak.
+Panel 2: medium wide same hallway, woman holds raw steak she just picked up from platter, looks at it once, tosses it casually off-screen left like discarding a napkin, butler frozen does not react.
+Panel 3: close-up 50mm static, her face fills frame voluminous blonde hair heavy gold earrings, looks directly into lens jaw relaxed matter-of-fact British deadpan expression, soft tungsten bokeh.
+Panel 4: wide stabilized tracking, she strides through gallery hallway away from camera oil paintings passing both sides honey floors cream walls, mid-stride mid-anecdote she does not look at camera.
+Panel 5: wide tracking three-quarter from behind, camera ahead of her retreating down same gallery hallway oil portraits on walls brass lamp visible, still mid-anecdote not facing lens.
+Panel 6: wide slow dolly-in warm traditional manor study, pink velvet wingback chair faces camera beside brass floor lamp dark wood bookshelves oil paintings Persian rug, she enters frame crossing toward chair.
+Panel 7: medium study shot, she sits in pink velvet wingback crosses one leg settles back looks directly at camera completely still, warm lamplight, study empty beside her.
+Panel 8: wide locked-off from across study room, she seated in pink velvet wingback, large well-groomed calm brown bear sits upright in identical wingback immediate right paws resting in lap, she does not look at bear continues speaking toward camera.
+Panel 9: same wide locked-off study composition static, Persian rug brass floor lamp dark bookshelves, neither occupant acknowledges the other, warm champagne lamplight.
