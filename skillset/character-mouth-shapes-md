@@ -1,0 +1,67 @@
+Create a clean, production-ready 2D sprite sheet for an animated LLM live-assistant avatar face system.
+
+The image should show a complete reusable facial animation library, designed for real-time layered avatar animation. Use a consistent character style across every sprite: same face proportions, same camera angle, same lighting, same line weight, same color palette, same mouth position, same eye position, and same overall design language.
+
+STYLE:
+Premium modern 2D digital avatar art, clean vector-like finish with subtle painterly softness, high-resolution, polished app-ready UI character design, friendly but intelligent, expressive, professional, not childish, not anime exaggeration, not corporate generic, not overly cartoony. The avatar should feel like a warm, helpful AI assistant with personality.
+
+CANVAS / LAYOUT:
+Create one organized sprite sheet on a clean white or transparent background. Use a thin grid layout with clear spacing between sprites. Each sprite should be isolated and centered in its own cell. Include small clean labels under each cell. Keep every sprite aligned to the same anchor point so it can be layered in animation software.
+
+CHARACTER BASE:
+A neutral forward-facing avatar head, shoulders optional, simple clean design, symmetrical head angle, soft natural skin shading, expressive eyes, simple brows, and a mouth area designed for swapping mouth sprites. The face should be calm, intelligent, approachable, and usable for a live voice assistant.
+
+SPRITE GROUP 1 — MOUTH / VISEME LIBRARY:
+Create separate mouth sprites for real-time lip-sync animation. Each mouth must use the exact same size, position, style, and anchor alignment.
+
+Include these mouth shapes:
+
+1. REST / SILENCE — relaxed closed mouth
+2. SMALL OPEN — subtle open mouth for soft speech
+3. AA / AH — wide vertical open mouth
+4. EE / IH — horizontal stretched mouth, slight smile tension
+5. OH — rounded open mouth
+6. OO / W — small tight rounded mouth
+7. M / B / P — fully closed pressed lips
+8. F / V — upper teeth touching lower lip
+9. L / D / T / N — tongue touching behind upper teeth
+10. TH — tongue slightly visible between teeth
+11. SMILE TALK — open smiling speech mouth
+12. TENSE / EMPHASIS — sharper open mouth with slight teeth, for stressed syllables
+
+SPRITE GROUP 2 — EYES:
+Create separate eye sprites, same alignment and scale:
+
+1. Neutral open eyes
+2. Soft blink half-closed
+3. Full blink closed
+4. Happy eyes
+5. Focused/listening eyes
+6. Thinking eyes looking slightly upward
+7. Surprised wide eyes
+8. Tired or unimpressed eyes
+
+SPRITE GROUP 3 — BROWS:
+Create separate eyebrow sprites, same alignment and scale:
+
+1. Neutral brows
+2. Raised brows
+3. Focused brows
+4. Concerned brows
+5. One brow raised / curious
+6. Soft happy brows
+
+SPRITE GROUP 4 — FULL FACE EXPRESSION PREVIEWS:
+Show a few combined face examples using the same character:
+
+1. Neutral listening
+2. Speaking friendly
+3. Thinking
+4. Excited / happy
+5. Confused / curious
+6. Serious / focused
+
+TECHNICAL REQUIREMENTS:
+Every sprite should be cleanly separated, centered, and readable at small size. Avoid motion blur, texture noise, extra accessories, extreme expressions, inconsistent head angles, inconsistent lighting, or changing the character identity between cells. Mouth shapes must be clear enough for lip-sync use. Eyes, brows, and mouths must look like separate reusable animation layers.
+
+The final result should look like a professional avatar facial rig sprite sheet for a real-time AI assistant, ready to cut into individual PNG sprites for use in PixiJS, Unity, Godot, Live2D-style layering, or a web canvas renderer.
