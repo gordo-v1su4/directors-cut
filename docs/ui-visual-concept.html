@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Directors Cut — UI Visual Concept</title>
+<style>
+  :root{
+    --bg:#07080a; --panel:#101113; --panel2:#15171a; --panel3:#1b1d22;
+    --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.12);
+    --text:#f5f6f8; --muted:#a4a7ad; --dim:#6e737c;
+    --red:#ff6363; --blue:#55b3ff; --green:#64d693; --yellow:#ffbc33; --purple:#a88cff;
+    --shadow:0 22px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(255,99,99,.10),transparent 28%),radial-gradient(circle at 80% 10%,rgba(85,179,255,.08),transparent 26%),var(--bg);color:var(--text);font:13px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.2px}
+  .frame{width:1440px;height:900px;margin:0 auto;padding:18px;display:grid;grid-template-columns:220px 1fr;gap:14px;overflow:hidden}
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.028),transparent),var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+  .sidebar{padding:16px;display:flex;flex-direction:column;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--red),#9f57ff);box-shadow:0 0 28px rgba(255,99,99,.25)}
+  .nav{display:flex;flex-direction:column;gap:6px}.nav div{padding:9px 10px;border-radius:10px;color:var(--muted)}.nav .active{background:#191b20;color:#fff;border:1px solid var(--line)}
+  .mini{margin-top:auto;padding:12px;border-radius:14px;background:#0c0d10;border:1px solid var(--line);color:var(--muted);font-size:12px}.mini strong{color:#fff}.red{color:var(--red)}
+  main{display:grid;grid-template-rows:58px 112px 1fr 194px;gap:14px;min-width:0}
+  .top{display:flex;align-items:center;gap:12px;padding:10px 12px}.search{flex:1;background:#0b0c0f;border:1px solid var(--line);height:38px;border-radius:999px;display:flex;align-items:center;padding:0 14px;color:var(--dim)}.pill{border:1px solid var(--line2);background:#15171a;border-radius:999px;padding:7px 10px;color:#dfe2e7;font-size:12px}.pill.red{background:rgba(255,99,99,.1);border-color:rgba(255,99,99,.22)}
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.stat{padding:16px}.stat .n{font-size:28px;font-weight:700;letter-spacing:-.5px}.stat .l{color:var(--muted);font-size:12px}.stat:nth-child(4){border-color:rgba(255,99,99,.22)}.stat:nth-child(5){border-color:rgba(85,179,255,.22)}.stat:nth-child(6){border-color:rgba(168,140,255,.22)}
+  .workspace{display:grid;grid-template-columns:1fr 410px;gap:14px;min-height:0}.library{padding:14px;overflow:hidden}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.title{font-weight:700;font-size:16px}.filters{display:flex;gap:7px}.chip{background:#191b20;border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);font-size:11px}
+  table{width:100%;border-collapse:collapse;font-size:12px}th{color:var(--dim);font-weight:600;text-align:left;padding:9px;border-bottom:1px solid var(--line)}td{padding:10px 9px;border-bottom:1px solid rgba(255,255,255,.045);vertical-align:middle}tr.sel{background:rgba(255,99,99,.065)}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;border:1px solid var(--line);background:#181a1f;color:#d9dce2;font-size:11px;margin-right:4px}.b-red{border-color:rgba(255,99,99,.25);color:#ffaaaa}.b-blue{border-color:rgba(85,179,255,.25);color:#9bd3ff}.b-purple{border-color:rgba(168,140,255,.25);color:#c8bbff}.b-green{border-color:rgba(100,214,147,.25);color:#a6edc5}.muted{color:var(--muted)}.dim{color:var(--dim)}
+  .detail{padding:16px;display:flex;flex-direction:column;gap:13px}.hero-card{border-radius:16px;padding:16px;background:linear-gradient(135deg,rgba(255,99,99,.12),rgba(85,179,255,.04)),#0c0d10;border:1px solid rgba(255,255,255,.09)}.hero-card h2{margin:0 0 8px;font-size:22px;line-height:1.1}.summary{color:#c6cad2}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.meta{background:#0c0d10;border:1px solid var(--line);border-radius:12px;padding:10px}.meta label{display:block;color:var(--dim);font-size:10px;text-transform:uppercase;margin-bottom:5px}.sources{display:flex;flex-direction:column;gap:7px}.source{padding:9px 10px;background:#0c0d10;border:1px solid var(--line);border-radius:11px;color:#cfd3da}.actions{display:flex;gap:8px;margin-top:auto}.button{height:31px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:#181a1f;color:#fff;display:flex;align-items:center;font-size:12px}.button.primary{background:rgba(255,255,255,.88);color:#151515}
+  .bottom{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}.map,.lab{padding:15px;overflow:hidden}.nodegrid{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;margin-top:10px;font-size:12px}.node{background:#0c0d10;border:1px solid var(--line);border-radius:11px;padding:8px;color:#dce0e6}.arrow{color:var(--red);display:flex;align-items:center;justify-content:center}.empty{height:116px;margin-top:12px;border:1px dashed rgba(255,255,255,.16);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);background:rgba(255,255,255,.02)}
+  .ascii{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;white-space:pre;color:#89909b;background:#0b0c0f;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="sidebar panel">
+    <div class="brand"><div class="logo"></div><div>Directors Cut</div></div>
+    <div class="nav">
+      <div class="active">Dashboard</div><div>Prompt Library</div><div>Source Map</div><div>Comparison Lab</div><div>Raycast Bridge</div><div>Settings</div>
+    </div>
+    <div class="mini"><strong>Design intent</strong><br/>Dark, dense, visual. Table for scan speed; cards for comprehension. <span class="red">No fake model answers.</span></div>
+  </aside>
+  <main>
+    <section class="top panel"><div class="search">⌘K  Search prompt cards, models, use cases, sources...</div><div class="pill red">cmux note</div><div class="pill">Bun verified</div><div class="pill">Raycast pending</div></section>
+    <section class="stats">
+      <div class="stat panel"><div class="n">10</div><div class="l">Prompt cards</div></div><div class="stat panel"><div class="n">8</div><div class="l">Sources</div></div><div class="stat panel"><div class="n">0</div><div class="l">Tested outputs</div></div><div class="stat panel"><div class="n">3</div><div class="l">Seedance</div></div><div class="stat panel"><div class="n">4</div><div class="l">Sora</div></div><div class="stat panel"><div class="n">3</div><div class="l">Cross-model</div></div>
+    </section>
+    <section class="workspace">
+      <div class="library panel">
+        <div class="section-head"><div class="title">Prompt Library</div><div class="filters"><span class="chip">family</span><span class="chip">target</span><span class="chip">use case</span><span class="chip">confidence</span><span class="chip">tested</span></div></div>
+        <table><thead><tr><th>Title</th><th>Family</th><th>Use case</th><th>Mode</th><th>Aspect</th><th>Conf</th><th>Src</th><th>Test</th></tr></thead><tbody>
+          <tr class="sel"><td>Seedance Netflix Teaser Title Slam</td><td><span class="badge b-red">seedance</span></td><td>teaser</td><td>timecoded</td><td>16:9 / 12s</td><td>med</td><td>3</td><td class="dim">no</td></tr>
+          <tr><td>Sora Audio-First Micro Documentary</td><td><span class="badge b-blue">sora</span></td><td>audio/doc</td><td>audio-first</td><td>16:9 / 15s</td><td>med</td><td>2</td><td class="dim">no</td></tr>
+          <tr><td>Cross-Model Reference Role Ledger</td><td><span class="badge b-purple">cross</span></td><td>references</td><td>ledger</td><td>variable</td><td>med</td><td>3</td><td class="dim">no</td></tr>
+          <tr><td>Seedance Beat-Sync MV Trio</td><td><span class="badge b-red">seedance</span></td><td>music-video</td><td>beat-sync</td><td>9:16 / 10s</td><td>med</td><td>2</td><td class="dim">no</td></tr>
+          <tr><td>Sora World-Simulator Physics Loop</td><td><span class="badge b-blue">sora</span></td><td>physics</td><td>world-sim</td><td>16:9 / 8s</td><td>high</td><td>2</td><td class="dim">no</td></tr>
+          <tr><td>Modular JSON Shot Spec</td><td><span class="badge b-purple">cross</span></td><td>json/spec</td><td>structured</td><td>16:9 / 10s</td><td>med</td><td>3</td><td class="dim">no</td></tr>
+        </tbody></table>
+      </div>
+      <div class="detail panel">
+        <div class="hero-card"><h2>Seedance Netflix Teaser Title Slam</h2><div class="summary">A 10–12s trailer pattern: ominous location → reaction → symbolic impact → hard title card.</div></div>
+        <div><span class="badge b-red">seedance-2.0</span><span class="badge">12s</span><span class="badge">16:9</span><span class="badge b-green">medium confidence</span></div>
+        <div class="meta-grid"><div class="meta"><label>Prompt anatomy</label>timecoded montage<br/><span class="muted">title-card, trailer, audio-hit</span></div><div class="meta"><label>Status</label>seed pattern<br/><span class="muted">not tested by us yet</span></div></div>
+        <div class="sources"><div class="source">↗ songguoxs / seedance-prompt-skill</div><div class="source">↗ HuyLe82US / awesome-seedance-prompts</div><div class="source">↗ rich5000 / seedance-prompt-guide</div></div>
+        <div class="actions"><div class="button primary">Open card</div><div class="button">Copy prompt</div><div class="button">Mark tested</div></div>
+      </div>
+    </section>
+    <section class="bottom">
+      <div class="map panel"><div class="title">Source Map</div><div class="nodegrid"><div class="node">seedance-prompt-skill</div><div class="arrow">→</div><div class="node">Teaser / Product / Beat Sync</div><div class="node">awesome_sora2_prompt</div><div class="arrow">→</div><div class="node">Audio Doc / Physics / Ledger</div><div class="node">awesome-video-prompts</div><div class="arrow">→</div><div class="node">JSON Shot Spec</div></div></div>
+      <div class="lab panel"><div class="title">Comparison Lab</div><div class="empty">No real Raycast / model answers captured yet.<br/>Design the space, but do not invent outputs.</div><div class="ascii">[Brief] → [Seedance] [Sora] [Raycast]
+          ↓       ↓       ↓
+      Gordo rating / keep / remix / reject</div></div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
