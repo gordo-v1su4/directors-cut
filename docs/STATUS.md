@@ -1,7 +1,7 @@
 # Directors Cut — Session Status & Handoff
 
-> **Last updated:** 2026-07-02 by omp (Oh My Pi)
-> **Purpose:** If omp's session cuts off, Hermes or the user can pick up from here.
+> **Last updated:** 2026-07-03 by Hermes
+> **Purpose:** Prevent duplicated agent work and make the Phase 0 handoff explicit.
 
 ## Current state
 
@@ -9,24 +9,64 @@
 - `github.com/gordo-v1su4/directors-cut` — creative consumer (prompt library, workflows, Svelte visual browser)
 - `github.com/gordo-v1su4/raycast-pro-bridge` — Raycast Pro layer (MCP bridge, AI Commands, Agents, Script Commands)
 
+Notes:
+- `directors-cut` is the active repo on this host: `/root/Github/directors-cut`.
+- `raycast-pro-bridge` exists on GitHub, but no local checkout was found at `/root/Github/raycast-pro-bridge` during this handoff cleanup. Clone/inspect it tomorrow before assuming any Raycast implementation exists.
+
 ### Plan written
 - `docs/directors-cut-deep-dive-plan.md` — 1003-line plan authored by Hermes
 - Covers: prompt-card schema, Obsidian structure, multi-agent comparison flow, Svelte 5 visual browser, Raycast/Hermes consumption, build phases 0-5
-- Hermes updated plan: **repo first, Obsidian after milestones** (not Obsidian first)
+- Current build order: **repo first, Obsidian after milestones**
 
-### Skills updated
-- `~/.codex/skills/svelte-frontend/SKILL.md` — updated with July 2026 cutting-edge Svelte (const tags, SvelteKit config in vite.config, TanStack Table v9, official sveltejs/ai-tools best practices)
-- Hermes patched its own skills: `agent-notebook-project-ops` and `obsidian-vault-curator` — repo-first documentation rule
+### Phase 0 status
 
-### Hermes state
-- Session: 162K/272K context (59% used), ~2h 38m runtime
-- Skills loaded: seedance-director, teaser-trailer-screenplay, agent-notebook-project-ops, obsidian-vault-curator
-- Idle at prompt, ready for next task
+Phase 0 prompt-library baseline is complete and merged on top of `origin/main`, except for optional/manual Raycast comparison answers.
 
-### omp state
-- No hard token cap set (uncapped)
-- Model: opencode-go/glm-5.2
-- Spent: ~553K tokens
+Delivered in `directors-cut/`:
+1. Prompt-card Markdown library under `content/cards/`
+   - 3 Seedance cards
+   - 4 Sora cards
+   - 3 cross-model cards
+   - 10 total cards
+2. Schema drafts under `schemas/`
+   - `prompt-card.schema.json`
+   - `prompt-pack.schema.json`
+   - `comparison-run.schema.json`
+   - `model-answer.schema.json`
+3. Bun-native index builder
+   - `scripts/build-index.ts`
+   - Usage: `bun run scripts/build-index.ts`
+   - No npm/package-lock workflow should be introduced unless the repo explicitly changes direction.
+4. Generated browser index
+   - `public/data/prompt-cards.index.jsonl`
+   - Includes card frontmatter, body excerpt, file path, `source_urls`, and `source_notes`
+5. GitHub reference index
+   - `content/references/repos.md`
+
+Not done / intentionally deferred:
+- No Raycast model answers were invented. A comparison run folder should only be created once real Raycast/model answers exist.
+- No Svelte app scaffold yet; Phase 1 starts from the real cards and JSONL index.
+- No local `raycast-pro-bridge` checkout was present on this host during cleanup; inspect/clone tomorrow.
+- Obsidian mirror should be updated after this repo commit/push if a project-map milestone note is desired.
+
+### Verification run
+
+Use Bun only:
+
+```bash
+cd /root/Github/directors-cut
+bun run scripts/build-index.ts
+bun scripts/validate-schemas.ts
+for f in schemas/*.json; do bun -e "JSON.parse(await Bun.file('$f').text()); console.log('valid schema json: $f')"; done
+find . -maxdepth 3 \( -name package-lock.json -o -name npm-shrinkwrap.json -o -name pnpm-lock.yaml -o -name yarn.lock -o -name package.json \) -print | sort
+```
+
+Expected current result:
+- 10 prompt cards found
+- 10 JSONL index entries written
+- schema/card/index validation passes
+- all schema JSON files parse successfully
+- no npm/yarn/pnpm/package-lock artifacts found
 
 ## Key decisions made
 1. Two repos, not one: `raycast-pro-bridge` (Raycast layer) + `directors-cut` (creative consumer)
@@ -35,38 +75,47 @@
 4. HTTP MCP bridge on RackNerd5 over Tailscale (not stdio)
 5. Hybrid storage: Markdown canonical in repo, JSONL index for app
 6. Library-first build order: prove creative loop before plumbing
-7. Repo-first, Obsidian-after-milestones (Hermes updated this mid-session)
+7. Repo-first, Obsidian-after-milestones
 8. Svelte 5 with runes preferred for the visual browser
 9. TanStack Table v9 Svelte adapter (alpha), isolated behind wrapper component
-10. Pindeck-style dark/dense visual tokens (--dc-* prefix)
-
-## Next action: Phase 0
-
-**Goal:** Prove the creative loop before any plumbing. No app, no bridge.
-
-**Deliverables:**
-1. Repo folder structure in `directors-cut/` (not Obsidian first)
-2. `schemas/prompt-card.schema.json` + `comparison-run.schema.json` + `model-answer.schema.json`
-3. 5-10 Markdown prompt cards (3 Seedance, 2 Sora, 1 cross-model Netflix teaser)
-4. `scripts/build-index.ts` — parses frontmatter, emits `public/data/prompt-cards.index.jsonl`
-5. One comparison run folder with manually collected answers
-
-**Who does what:**
-- **Hermes:** research Seedance/Sora Netflix teaser prompt patterns from GitHub + web, write 5-10 draft cards with evidence grading, write schema JSON files. Has seedance-director and teaser-trailer-screenplay skills loaded.
-- **omp:** scaffold repo structure (`content/`, `schemas/`, `scripts/`, `public/data/`), write `build-index.ts`, generate first JSONL index, commit and push.
-- **After milestone:** update Obsidian with concise project map note pointing to repo.
+10. Pindeck-style dark/dense visual tokens (`--dc-*` prefix)
+11. Use Bun for JS/TS work here. Do not introduce npm/package-lock unless the repo explicitly requires it.
+12. Terminology correction: user meant `cmux`, not `omx`. Use cmux wording/commands unless a file or running process explicitly says OMX/OMP.
 
 ## Key files
 - Plan: `docs/directors-cut-deep-dive-plan.md`
-- Obsidian copy: `hermes-notebook-vault/04-Projects/Directors Cut/Directors Cut Deep-Dive Plan.md`
-- Pindeck style ref: `~/Documents/Github/pindeck/style.md`
-- Seedance skill (omp): `skill://seedance2-director`
+- Status: `docs/STATUS.md`
+- Tomorrow TODO: `docs/TODO.md`
+- References: `content/references/repos.md`
+- Cards: `content/cards/`
+- Schemas: `schemas/`
+- Index builder: `scripts/build-index.ts`
+- Generated index: `public/data/prompt-cards.index.jsonl`
 - Seedance skill (Hermes): `seedance-director`
 - Trailer skill (Hermes): `teaser-trailer-screenplay`
-- Svelte skill: `~/.codex/skills/svelte-frontend/SKILL.md`
+- cmux steering skill (Hermes): `cmux-agent-steering`
 
-## If picking up from scratch
-1. Read `docs/directors-cut-deep-dive-plan.md` in this repo (the full plan)
-2. Read this STATUS.md for where we are
-3. Check Hermes pane: `cmux capture-pane --surface surface:2 | tail -30`
-4. Phase 0 is the next action — delegate research to Hermes, scaffold repo to omp
+## If picking up from scratch tomorrow
+1. Read `docs/directors-cut-deep-dive-plan.md` for the full roadmap.
+2. Read this `STATUS.md` and `docs/TODO.md` for current state.
+3. Do **not** ask Kimi/GLM/another agent to redo Phase 0; inspect the current repo first.
+4. Run the Bun verification block above.
+5. Start Phase 1 only after confirming the real cards render from `public/data/prompt-cards.index.jsonl`.
+6. For Raycast work, first clone/inspect `github.com/gordo-v1su4/raycast-pro-bridge`; do not assume the local repo already exists.
+
+## cmux / peer-agent inspection note
+
+If another agent is working in cmux, inspect before steering:
+
+```bash
+cmux capture-pane --surface surface:1 | tail -30
+# or
+cmux capture-pane --surface surface:2 | tail -30
+```
+
+To steer/take over, send a concise message into the same surface:
+
+```bash
+cmux send --surface surface:1 'HERMES - I am taking over. Stop editing and leave the worktree as-is.'
+cmux send-key --surface surface:1 enter
+```

@@ -7,12 +7,12 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
-import Ajv from "ajv";
+import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import * as yaml from "js-yaml";
 
 const ROOT = join(import.meta.dir, "..");
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true });
 addFormats(ajv);
 
 const promptCardSchema = JSON.parse(readFileSync(join(ROOT, "schemas", "prompt-card.schema.json"), "utf-8"));

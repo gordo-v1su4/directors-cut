@@ -5,13 +5,13 @@
  *
  * Usage: bun run scripts/build-index.ts
  *
- * Reads:  content/cards/<any-path>.md
+ * Reads:  Markdown files under content/cards/
  * Writes: public/data/prompt-cards.index.jsonl
  *
  * Each JSONL line = one card's frontmatter + file path + body excerpt.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from "fs";
 import { join, relative, extname } from "path";
 
 const ROOT = join(import.meta.dir, "..");
@@ -34,6 +34,8 @@ interface PromptCardIndex {
   evidence_type: string;
   confidence: string;
   source_count: number;
+  source_urls: string[];
+  source_notes: string[];
   library_status: string;
   tested_by_us: boolean;
   tags: string[];
@@ -50,15 +52,85 @@ interface PromptCardIndex {
   body_excerpt: string;
 }
 
-import * as yaml from "js-yaml";
-
 /** Extract YAML frontmatter from Markdown. Returns { frontmatter, body }. */
 function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: content };
 
-  const frontmatter = yaml.load(match[1]) as Record<string, unknown>;
-  return { frontmatter, body: match[2] };
+  const yamlText = match[1];
+  const body = match[2];
+  const frontmatter: Record<string, unknown> = {};
+
+  // Minimal YAML parser for flat key: value and key: [list] and nested key:\n  - item
+  let currentKey = "";
+  let inList = false;
+  let listItems: string[] = [];
+  let nestedItems: string[] = [];
+
+  for (const line of yamlText.split("\n")) {
+    const trimmed = line.trim();
+
+    // List item under a key
+    if (trimmed.startsWith("- ") && currentKey) {
+      const value = trimmed.replace(/^- /, "").replace(/^"(.*)"$/, "$1").trim();
+      if (inList) {
+        listItems.push(value);
+      } else {
+        nestedItems.push(value);
+      }
+      continue;
+    }
+
+    // Save previous list
+    if (inList && listItems.length > 0) {
+      frontmatter[currentKey] = listItems;
+      listItems = [];
+      inList = false;
+    }
+    if (nestedItems.length > 0 && currentKey) {
+      frontmatter[currentKey] = nestedItems;
+      nestedItems = [];
+    }
+
+    // Key: value
+    const kvMatch = trimmed.match(/^(\w[\w_]*):\s*(.*)$/);
+    if (kvMatch) {
+      currentKey = kvMatch[1];
+      const value = kvMatch[2].replace(/^"(.*)"$/, "$1").trim();
+
+      if (value === "" || value === "[]") {
+        inList = true;
+        listItems = [];
+        if (value === "[]") {
+          frontmatter[currentKey] = [];
+          inList = false;
+        }
+      } else {
+        // Try to parse as number, boolean, null
+        if (value === "null") {
+          frontmatter[currentKey] = null;
+        } else if (value === "true") {
+          frontmatter[currentKey] = true;
+        } else if (value === "false") {
+          frontmatter[currentKey] = false;
+        } else if (/^-?\d+(\.\d+)?$/.test(value)) {
+          frontmatter[currentKey] = Number(value);
+        } else {
+          frontmatter[currentKey] = value;
+        }
+      }
+    }
+  }
+
+  // Save final list
+  if (inList && listItems.length > 0) {
+    frontmatter[currentKey] = listItems;
+  }
+  if (nestedItems.length > 0 && currentKey) {
+    frontmatter[currentKey] = nestedItems;
+  }
+
+  return { frontmatter, body };
 }
 
 /** Recursively find all .md files in a directory. */
@@ -102,7 +174,7 @@ function extractExcerpt(body: string, maxLen = 200): string {
   return excerpt;
 }
 
-/** Build prompt-cards.index.jsonl from all Markdown files under content/cards/. */
+/** Build prompt-cards.index.jsonl from Markdown files under content/cards. */
 function buildPromptCardsIndex(): void {
   const files = findMarkdownFiles(CARDS_DIR);
   console.log(`Found ${files.length} prompt card(s)`);
@@ -129,6 +201,8 @@ function buildPromptCardsIndex(): void {
       evidence_type: (frontmatter.evidence_type as string) || "unknown",
       confidence: (frontmatter.confidence as string) || "low",
       source_count: (frontmatter.source_count as number) || 0,
+      source_urls: (frontmatter.source_urls as string[]) || [],
+      source_notes: (frontmatter.source_notes as string[]) || [],
       library_status: (frontmatter.library_status as string) || "seed_pattern",
       tested_by_us: (frontmatter.tested_by_us as boolean) || false,
       tags: (frontmatter.tags as string[]) || [],
@@ -149,7 +223,6 @@ function buildPromptCardsIndex(): void {
   const outputPath = join(OUTPUT_DIR, "prompt-cards.index.jsonl");
 
   if (!existsSync(OUTPUT_DIR)) {
-    const { mkdirSync } = require("fs");
     mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
