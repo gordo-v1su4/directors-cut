@@ -32,8 +32,12 @@ Last updated: 2026-07-03 by Hermes.
 ## Next work items
 
 ### 1. Phase 1 visual browser
+- Start from `docs/ui-ux-handoff.md` for the UI/UX schema, information architecture, component inventory, and ASCII wireframes.
 - Scaffold the Svelte visual browser only after confirming the 10-card JSONL index is valid.
 - Build a simple card table/grid that reads `public/data/prompt-cards.index.jsonl`.
+- Add a selected-card detail drawer/panel so the table is visual, not just spreadsheet-like.
+- Add a Source Map view from `content/references/repos.md` or a generated source index.
+- Add a Comparison Lab empty state, but do not fabricate Raycast/model answers.
 - Keep Pindeck-style dark/dense tokens with `--dc-*` variables.
 - If using TanStack Table v9 alpha, isolate it behind a wrapper so alpha API churn is contained.
 
