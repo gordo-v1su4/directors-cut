@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://directors-cut.example/schemas/prompt-card.schema.json",
+  "title": "Directors Cut Prompt Card",
+  "description": "YAML frontmatter + Markdown body schema for a single prompt card in the Directors Cut library.",
+  "type": "object",
+  "required": ["id", "title", "model_family", "evidence_type", "library_status", "tags", "updated"],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable kebab-case identifier for the card."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "URL-friendly slug. Defaults to id."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable card title."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line summary of what the card does."
+    },
+    "repo_scope": {
+      "type": "string",
+      "enum": ["directors-cut", "raycast-pro-bridge", "hermes", "general"],
+      "description": "Which repo owns the card artifact."
+    },
+    "card_type": {
+      "type": "string",
+      "enum": ["prompt_card", "prompt_pack", "comparison_result", "workflow_setup"],
+      "default": "prompt_card",
+      "description": "Artifact type for mixed folders."
+    },
+    "created": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO-8601 date the card was created."
+    },
+    "updated": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO-8601 date the card was last updated."
+    },
+    "created_by": {
+      "type": "string",
+      "enum": ["hermes", "omp", "gordo", "raycast", "imported", "kimi"],
+      "description": "Provenance: which agent/workflow authored the card."
+    },
+    "curator": {
+      "type": "string",
+      "description": "Human curator/owner for taste review."
+    },
+    "model_family": {
+      "type": "string",
+      "enum": ["seedance", "sora", "veo", "kling", "runway", "general_video", "image", "text"],
+      "description": "Primary model family this prompt targets."
+    },
+    "model_targets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific model versions the prompt was written for."
+    },
+    "prompt_mode": {
+      "type": "string",
+      "enum": ["seedance_director", "seedance_json_en_zh", "teaser_trailer_screenplay", "sora_freeform", "comparison_question"],
+      "description": "Which prompting style/adapter this card follows."
+    },
+    "output_shape": {
+      "type": "string",
+      "enum": ["prose", "json", "bilingual_json", "timecoded", "shot_list", "table"],
+      "description": "Shape of the reusable prompt content."
+    },
+    "use_cases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tagged use cases, e.g. netflix_teaser, music_video, product_reveal."
+    },
+    "aspect_ratio": {
+      "type": "string",
+      "description": "Recommended aspect ratio, e.g. 2.39:1."
+    },
+    "runtime_seconds": {
+      "type": ["integer", "null"],
+      "description": "Recommended clip duration in seconds."
+    },
+    "evidence_type": {
+      "type": "string",
+      "enum": ["official", "prompt_with_output", "community_corroborated", "practitioner_claim", "generic_pattern", "unknown"],
+      "description": "Type of evidence supporting the pattern."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "speculative"],
+      "description": "Confidence level based on evidence."
+    },
+    "source_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Number of independent sources backing the pattern."
+    },
+    "source_urls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "description": "Hyperlinks to repos, docs, videos, or articles that informed the card."
+    },
+    "source_notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Short excerpts or notes tying the card to its sources."
+    },
+    "library_status": {
+      "type": "string",
+      "enum": ["seed_pattern", "adapted_template", "internally_tested", "promoted", "deprecated"],
+      "description": "Stage of the card in the library workflow."
+    },
+    "tested_by_us": {
+      "type": "boolean",
+      "description": "Whether we have rendered/dry-run the prompt ourselves."
+    },
+    "test_runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run_id": { "type": "string" },
+          "model": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "succeeded", "failed", "rejected", "partial"]
+          },
+          "output_url": { "type": ["string", "null"], "format": "uri" },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "human_rating": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "gordo_score": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 5
+        },
+        "aesthetic_fit": {
+          "type": "string",
+          "enum": ["strong", "good", "mixed", "weak", "unrated"]
+        },
+        "production_readiness": {
+          "type": "string",
+          "enum": ["draft", "usable", "ready", "archive"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Searchable tags for filtering and grouping."
+    }
+  }
+}

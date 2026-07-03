@@ -5,7 +5,7 @@
  *
  * Usage: bun run scripts/build-index.ts
  *
- * Reads:  content/cards/**/*.md
+ * Reads:  content/cards/<any-path>.md
  * Writes: public/data/prompt-cards.index.jsonl
  *
  * Each JSONL line = one card's frontmatter + file path + body excerpt.
@@ -50,85 +50,15 @@ interface PromptCardIndex {
   body_excerpt: string;
 }
 
+import * as yaml from "js-yaml";
+
 /** Extract YAML frontmatter from Markdown. Returns { frontmatter, body }. */
 function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: content };
 
-  const yamlText = match[1];
-  const body = match[2];
-  const frontmatter: Record<string, unknown> = {};
-
-  // Minimal YAML parser for flat key: value and key: [list] and nested key:\n  - item
-  let currentKey = "";
-  let inList = false;
-  let listItems: string[] = [];
-  let nestedItems: string[] = [];
-
-  for (const line of yamlText.split("\n")) {
-    const trimmed = line.trim();
-
-    // List item under a key
-    if (trimmed.startsWith("- ") && currentKey) {
-      const value = trimmed.replace(/^- /, "").replace(/^"(.*)"$/, "$1").trim();
-      if (inList) {
-        listItems.push(value);
-      } else {
-        nestedItems.push(value);
-      }
-      continue;
-    }
-
-    // Save previous list
-    if (inList && listItems.length > 0) {
-      frontmatter[currentKey] = listItems;
-      listItems = [];
-      inList = false;
-    }
-    if (nestedItems.length > 0 && currentKey) {
-      frontmatter[currentKey] = nestedItems;
-      nestedItems = [];
-    }
-
-    // Key: value
-    const kvMatch = trimmed.match(/^(\w[\w_]*):\s*(.*)$/);
-    if (kvMatch) {
-      currentKey = kvMatch[1];
-      const value = kvMatch[2].replace(/^"(.*)"$/, "$1").trim();
-
-      if (value === "" || value === "[]") {
-        inList = true;
-        listItems = [];
-        if (value === "[]") {
-          frontmatter[currentKey] = [];
-          inList = false;
-        }
-      } else {
-        // Try to parse as number, boolean, null
-        if (value === "null") {
-          frontmatter[currentKey] = null;
-        } else if (value === "true") {
-          frontmatter[currentKey] = true;
-        } else if (value === "false") {
-          frontmatter[currentKey] = false;
-        } else if (/^-?\d+(\.\d+)?$/.test(value)) {
-          frontmatter[currentKey] = Number(value);
-        } else {
-          frontmatter[currentKey] = value;
-        }
-      }
-    }
-  }
-
-  // Save final list
-  if (inList && listItems.length > 0) {
-    frontmatter[currentKey] = listItems;
-  }
-  if (nestedItems.length > 0 && currentKey) {
-    frontmatter[currentKey] = nestedItems;
-  }
-
-  return { frontmatter, body };
+  const frontmatter = yaml.load(match[1]) as Record<string, unknown>;
+  return { frontmatter, body: match[2] };
 }
 
 /** Recursively find all .md files in a directory. */
@@ -172,7 +102,7 @@ function extractExcerpt(body: string, maxLen = 200): string {
   return excerpt;
 }
 
-/** Build prompt-cards.index.jsonl from content/cards/**/*.md */
+/** Build prompt-cards.index.jsonl from all Markdown files under content/cards/. */
 function buildPromptCardsIndex(): void {
   const files = findMarkdownFiles(CARDS_DIR);
   console.log(`Found ${files.length} prompt card(s)`);
