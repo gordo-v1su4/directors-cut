@@ -1,0 +1,61 @@
+# Character Sheet YAML Template
+
+Copy this template for each character. Fill in all fields.
+
+```yaml
+character:
+  name: "Character Name"
+  role: "protagonist / antagonist / supporting / background"
+  age_appearance: "25-30 years old"
+  ethnicity: "East Asian"
+  body_type: "slim, athletic build"
+  height: "average (5'6\")"
+  hair:
+    color: "jet black"
+    style: "straight, parted in middle"
+    length: "shoulder length"
+  eyes:
+    color: "dark brown"
+    shape: "almond-shaped"
+  skin_tone: "light with warm undertone"
+  distinctive_features:
+    - "thin scar above left eyebrow"
+    - "small mole on right cheek"
+  default_clothing:
+    top: "dark navy blazer over white button-up shirt"
+    bottom: "charcoal grey slacks"
+    footwear: "black leather oxford shoes"
+    accessories:
+      - "silver wristwatch"
+      - "thin-framed glasses"
+  alternate_outfits:
+    - name: "Casual"
+      description: "grey hoodie, dark jeans, white sneakers, no glasses"
+    - name: "Formal"
+      description: "black suit, red tie, polished shoes"
+  personality_visual: "confident posture, direct gaze, slight smirk"
+  reference_prompt: "young East Asian woman, 25-30 years old, slim athletic build, jet black straight shoulder-length hair parted in middle, dark brown almond-shaped eyes, light warm skin, thin scar above left eyebrow, small mole on right cheek, wearing dark navy blazer over white button-up shirt and charcoal grey slacks, black leather oxford shoes, silver wristwatch, thin-framed glasses, confident posture, direct gaze, full body portrait, front view, neutral pose, white background, character reference sheet, high detail, sharp focus"
+```
+
+## Prompt Construction Formula
+
+```
+[age] [ethnicity] [gender],
+[body_type],
+[hair_color] [hair_style] [hair_length] hair,
+[eye_color] [eye_shape] eyes,
+[skin_tone] skin,
+[distinctive_features joined by comma],
+wearing [clothing description],
+[personality_visual],
+full body portrait, front view, neutral pose,
+white background, character reference sheet,
+high detail, sharp focus, [STYLE_SUFFIX]
+```
+
+## Key Rules
+
+1. ALWAYS describe hair, eyes, skin, and distinctive features in this exact order
+2. ALWAYS use the same STYLE_SUFFIX as your storyline's visual_style
+3. For portrait shots: use "head and shoulders portrait" instead of "full body"
+4. For action poses: add pose description after personality_visual

@@ -1,0 +1,1855 @@
+{
+  "success": true,
+  "video": {
+    "id": "6jPhOTUlPq8",
+    "title": "Hermes Agent + LTX 2.3 Local AI Build Visual Storyline Pipeline From Scratch",
+    "duration": 856,
+    "uploader": "Benji’s AI Playground",
+    "webpage_url": "https://www.youtube.com/watch?v=6jPhOTUlPq8",
+    "requested_url": "https://www.youtube.com/watch?v=6jPhOTUlPq8"
+  },
+  "transcript": {
+    "language": "en",
+    "source": "automatic",
+    "format": "json3",
+    "segment_count": 367,
+    "segments": [
+      {
+        "start": 0.0,
+        "duration": 5.32,
+        "text": "Hello everyone. So, today we are talking"
+      },
+      {
+        "start": 2.32,
+        "duration": 5.04,
+        "text": "about not just one, but two new techs"
+      },
+      {
+        "start": 5.32,
+        "duration": 4.08,
+        "text": "that are running together. First, we're"
+      },
+      {
+        "start": 7.36,
+        "duration": 4.6,
+        "text": "going to check out a new way of making"
+      },
+      {
+        "start": 9.4,
+        "duration": 6.88,
+        "text": "LTX video better at syncing video and"
+      },
+      {
+        "start": 11.96,
+        "duration": 6.12,
+        "text": "audio together. This is called Omni NFT."
+      },
+      {
+        "start": 16.28,
+        "duration": 4.4,
+        "text": "This is for video diffusion, where it"
+      },
+      {
+        "start": 18.08,
+        "duration": 4.88,
+        "text": "stands for negative aware fine-tuning."
+      },
+      {
+        "start": 20.68,
+        "duration": 4.48,
+        "text": "And what this does, it syncs the video"
+      },
+      {
+        "start": 22.96,
+        "duration": 4.76,
+        "text": "and audio better. As we all know,"
+      },
+      {
+        "start": 25.16,
+        "duration": 5.2,
+        "text": "sometimes [music] in LTX video when you"
+      },
+      {
+        "start": 27.72,
+        "duration": 4.76,
+        "text": "use the base model to generate out of"
+      },
+      {
+        "start": 30.36,
+        "duration": 4.36,
+        "text": "sync motions. And sometimes you'll even"
+      },
+      {
+        "start": 32.48,
+        "duration": 3.96,
+        "text": "see the video quality going downhill."
+      },
+      {
+        "start": 34.72,
+        "duration": 4.52,
+        "text": "So, this Laura model helps with the"
+      },
+      {
+        "start": 36.44,
+        "duration": 5.08,
+        "text": "motions for LTX videos in general, and"
+      },
+      {
+        "start": 39.24,
+        "duration": 4.68,
+        "text": "also helps sync the video and audio in a"
+      },
+      {
+        "start": 41.52,
+        "duration": 4.88,
+        "text": "better way."
+      },
+      {
+        "start": 43.92,
+        "duration": 4.32,
+        "text": "Now, this fine-tuned Laura model, you"
+      },
+      {
+        "start": 46.4,
+        "duration": 5.0,
+        "text": "can download it from the Hugging Face"
+      },
+      {
+        "start": 48.24,
+        "duration": 5.0,
+        "text": "repo. It's called Omni NFT. This one's"
+      },
+      {
+        "start": 51.4,
+        "duration": 5.04,
+        "text": "going to be a little bit larger file"
+      },
+      {
+        "start": 53.24,
+        "duration": 4.96,
+        "text": "size because it's FP32 precision. So, by"
+      },
+      {
+        "start": 56.44,
+        "duration": 4.8,
+        "text": "default, it's set up so you can run it"
+      },
+      {
+        "start": 58.2,
+        "duration": 4.6,
+        "text": "in Python code or run it in ComfyUI,"
+      },
+      {
+        "start": 61.24,
+        "duration": 4.04,
+        "text": "either way."
+      },
+      {
+        "start": 62.8,
+        "duration": 4.92,
+        "text": "But, if you prefer less file sizes, or"
+      },
+      {
+        "start": 65.28,
+        "duration": 5.2,
+        "text": "you want the ComfyUI default format"
+      },
+      {
+        "start": 67.72,
+        "duration": 5.36,
+        "text": "using BF16, then you can try out this"
+      },
+      {
+        "start": 70.48,
+        "duration": 4.08,
+        "text": "BF16 Laura model here."
+      },
+      {
+        "start": 73.08,
+        "duration": 3.0,
+        "text": "I'm going to provide in the video"
+      },
+      {
+        "start": 74.56,
+        "duration": 4.88,
+        "text": "description, so you guys can check it"
+      },
+      {
+        "start": 76.08,
+        "duration": 4.76,
+        "text": "out. So, that's the Laura. And also, I"
+      },
+      {
+        "start": 79.44,
+        "duration": 3.44,
+        "text": "want to talk about how to automate the"
+      },
+      {
+        "start": 80.84,
+        "duration": 4.16,
+        "text": "video creations. Well, not only with"
+      },
+      {
+        "start": 82.88,
+        "duration": 3.88,
+        "text": "ComfyUI. You can automate that with"
+      },
+      {
+        "start": 85.0,
+        "duration": 4.2,
+        "text": "other AI models, too, whether you have a"
+      },
+      {
+        "start": 86.76,
+        "duration": 5.6,
+        "text": "server-side API or just running locally"
+      },
+      {
+        "start": 89.2,
+        "duration": 5.84,
+        "text": "using ComfyUI. Because Norse Research,"
+      },
+      {
+        "start": 92.36,
+        "duration": 5.32,
+        "text": "the Hermes agents, now natively support"
+      },
+      {
+        "start": 95.04,
+        "duration": 5.72,
+        "text": "ComfyUI workflows. So, it does"
+      },
+      {
+        "start": 97.68,
+        "duration": 6.2,
+        "text": "understand how and what to input in"
+      },
+      {
+        "start": 100.76,
+        "duration": 4.64,
+        "text": "Comfy workflows with this agent. But,"
+      },
+      {
+        "start": 103.88,
+        "duration": 3.68,
+        "text": "you still have to convert the"
+      },
+      {
+        "start": 105.4,
+        "duration": 5.32,
+        "text": "agent-friendly workflow, which is the"
+      },
+      {
+        "start": 107.56,
+        "duration": 6.24,
+        "text": "API format workflow JSON files of"
+      },
+      {
+        "start": 110.72,
+        "duration": 6.04,
+        "text": "ComfyUI. So, I'm going to show you here."
+      },
+      {
+        "start": 113.8,
+        "duration": 5.0,
+        "text": "First of all, I have an LTX workflow."
+      },
+      {
+        "start": 116.76,
+        "duration": 4.04,
+        "text": "And this was talked about previously"
+      },
+      {
+        "start": 118.8,
+        "duration": 4.24,
+        "text": "that I was using the prompt relay and"
+      },
+      {
+        "start": 120.8,
+        "duration": 5.96,
+        "text": "auto generating the text prompts using"
+      },
+      {
+        "start": 123.04,
+        "duration": 5.24,
+        "text": "VLM. In this case, I'm using Kwen 3VL."
+      },
+      {
+        "start": 126.76,
+        "duration": 3.44,
+        "text": "And here we have linked it up together"
+      },
+      {
+        "start": 128.28,
+        "duration": 3.48,
+        "text": "with other Laura models that I usually"
+      },
+      {
+        "start": 130.2,
+        "duration": 3.92,
+        "text": "run with."
+      },
+      {
+        "start": 131.76,
+        "duration": 4.0,
+        "text": "And the VBVR L that I am using,"
+      },
+      {
+        "start": 134.12,
+        "duration": 4.08,
+        "text": "currently the highest data set trained"
+      },
+      {
+        "start": 135.76,
+        "duration": 5.48,
+        "text": "VBVR Laura model. And here I am running"
+      },
+      {
+        "start": 138.2,
+        "duration": 6.08,
+        "text": "the Omni NFT model. And then above that,"
+      },
+      {
+        "start": 141.24,
+        "duration": 4.6,
+        "text": "this is the crisp enhanced Laura model."
+      },
+      {
+        "start": 144.28,
+        "duration": 3.6,
+        "text": "And that's all the Laura models that we"
+      },
+      {
+        "start": 145.84,
+        "duration": 4.24,
+        "text": "need. And lastly, of course, you're"
+      },
+      {
+        "start": 147.88,
+        "duration": 4.16,
+        "text": "going to run with the distillation. Add"
+      },
+      {
+        "start": 150.08,
+        "duration": 3.72,
+        "text": "the distillation here."
+      },
+      {
+        "start": 152.04,
+        "duration": 3.16,
+        "text": "So, the overall workflow is going to be"
+      },
+      {
+        "start": 153.8,
+        "duration": 4.2,
+        "text": "the same as what I talked about"
+      },
+      {
+        "start": 155.2,
+        "duration": 4.72,
+        "text": "previously using LTX video generation."
+      },
+      {
+        "start": 158.0,
+        "duration": 5.08,
+        "text": "So, once you have your comfy UI"
+      },
+      {
+        "start": 159.92,
+        "duration": 4.56,
+        "text": "workflows exported as API format, like"
+      },
+      {
+        "start": 163.08,
+        "duration": 5.28,
+        "text": "in this case, the one that I just"
+      },
+      {
+        "start": 164.48,
+        "duration": 5.52,
+        "text": "created using prompt relay LTX workflow."
+      },
+      {
+        "start": 168.36,
+        "duration": 4.28,
+        "text": "This is going to use for building your"
+      },
+      {
+        "start": 170.0,
+        "duration": 4.64,
+        "text": "scenes with image reference. And I also"
+      },
+      {
+        "start": 172.64,
+        "duration": 4.92,
+        "text": "have Z image turbo for creating"
+      },
+      {
+        "start": 174.64,
+        "duration": 4.72,
+        "text": "backgrounds and characters. That one has"
+      },
+      {
+        "start": 177.56,
+        "duration": 3.24,
+        "text": "already been integrated into Hermes"
+      },
+      {
+        "start": 179.36,
+        "duration": 3.4,
+        "text": "agent."
+      },
+      {
+        "start": 180.8,
+        "duration": 4.76,
+        "text": "So, this is called the visual storyline"
+      },
+      {
+        "start": 182.76,
+        "duration": 5.08,
+        "text": "pipeline that I created. As you can see,"
+      },
+      {
+        "start": 185.56,
+        "duration": 5.16,
+        "text": "the folder path in here, this is using"
+      },
+      {
+        "start": 187.84,
+        "duration": 5.44,
+        "text": "Hermes agent, and I am using this skill."
+      },
+      {
+        "start": 190.72,
+        "duration": 5.12,
+        "text": "And basically, what this skill does, it"
+      },
+      {
+        "start": 193.28,
+        "duration": 3.72,
+        "text": "tells the AI agents what to do."
+      },
+      {
+        "start": 195.84,
+        "duration": 2.64,
+        "text": "So, let's check it out in the web"
+      },
+      {
+        "start": 197.0,
+        "duration": 2.92,
+        "text": "browser."
+      },
+      {
+        "start": 198.48,
+        "duration": 2.6,
+        "text": "And we can see what it is actually"
+      },
+      {
+        "start": 199.92,
+        "duration": 2.08,
+        "text": "doing."
+      },
+      {
+        "start": 201.08,
+        "duration": 3.24,
+        "text": "So,"
+      },
+      {
+        "start": 202.0,
+        "duration": 4.04,
+        "text": "this visual storyline pipeline is used"
+      },
+      {
+        "start": 204.32,
+        "duration": 4.4,
+        "text": "for creating a visual story from"
+      },
+      {
+        "start": 206.04,
+        "duration": 4.479,
+        "text": "scratch. It starts from a storyline. And"
+      },
+      {
+        "start": 208.72,
+        "duration": 4.519,
+        "text": "basically, you're going to be creating"
+      },
+      {
+        "start": 210.519,
+        "duration": 5.161,
+        "text": "stories with the AI agents. Like in this"
+      },
+      {
+        "start": 213.239,
+        "duration": 5.361,
+        "text": "case, it's Hermes. But of course, this"
+      },
+      {
+        "start": 215.68,
+        "duration": 5.44,
+        "text": "skills.md file, you can also import that"
+      },
+      {
+        "start": 218.6,
+        "duration": 4.639,
+        "text": "into Open Claw or any other AI agents"
+      },
+      {
+        "start": 221.12,
+        "duration": 3.88,
+        "text": "that use the skills architecture. And"
+      },
+      {
+        "start": 223.239,
+        "duration": 3.961,
+        "text": "that way you have a solid foundation of"
+      },
+      {
+        "start": 225.0,
+        "duration": 3.6,
+        "text": "stories before you move on to the script"
+      },
+      {
+        "start": 227.2,
+        "duration": 3.72,
+        "text": "or your character building or the"
+      },
+      {
+        "start": 228.6,
+        "duration": 4.84,
+        "text": "scenes, keyframes, whatever."
+      },
+      {
+        "start": 230.92,
+        "duration": 4.52,
+        "text": "Because a lot of times I see people"
+      },
+      {
+        "start": 233.44,
+        "duration": 3.68,
+        "text": "starting from creating a character,"
+      },
+      {
+        "start": 235.44,
+        "duration": 3.56,
+        "text": "generating images of their character"
+      },
+      {
+        "start": 237.12,
+        "duration": 4.24,
+        "text": "using character sheet, or having"
+      },
+      {
+        "start": 239.0,
+        "duration": 3.76,
+        "text": "multiple images of a character, which"
+      },
+      {
+        "start": 241.36,
+        "duration": 3.16,
+        "text": "you won't have a story background of"
+      },
+      {
+        "start": 242.76,
+        "duration": 3.92,
+        "text": "what it's actually doing. You won't be"
+      },
+      {
+        "start": 244.52,
+        "duration": 4.04,
+        "text": "able to have, you know, a full picture"
+      },
+      {
+        "start": 246.68,
+        "duration": 4.12,
+        "text": "of what you actually want to create as a"
+      },
+      {
+        "start": 248.56,
+        "duration": 5.0,
+        "text": "full story. So therefore, we're going to"
+      },
+      {
+        "start": 250.8,
+        "duration": 5.279,
+        "text": "do this step-by-step with the AI agent."
+      },
+      {
+        "start": 253.56,
+        "duration": 4.519,
+        "text": "You're not going to fully automate like"
+      },
+      {
+        "start": 256.079,
+        "duration": 3.801,
+        "text": "hands-off everything, but you're going"
+      },
+      {
+        "start": 258.079,
+        "duration": 4.521,
+        "text": "to be involved in the development with"
+      },
+      {
+        "start": 259.88,
+        "duration": 4.76,
+        "text": "the AI agents. That means the human step"
+      },
+      {
+        "start": 262.6,
+        "duration": 3.96,
+        "text": "in the loop in the angelic way that I"
+      },
+      {
+        "start": 264.64,
+        "duration": 4.64,
+        "text": "talk about, that we're going to have"
+      },
+      {
+        "start": 266.56,
+        "duration": 4.72,
+        "text": "human involvement in the workflow. So in"
+      },
+      {
+        "start": 269.28,
+        "duration": 4.4,
+        "text": "here, as you can see, the visual"
+      },
+      {
+        "start": 271.28,
+        "duration": 4.52,
+        "text": "storyline pipeline. We're starting with"
+      },
+      {
+        "start": 273.68,
+        "duration": 4.44,
+        "text": "story creation, where you first let the"
+      },
+      {
+        "start": 275.8,
+        "duration": 4.52,
+        "text": "AI agents know that you're chatting,"
+      },
+      {
+        "start": 278.12,
+        "duration": 4.44,
+        "text": "brainstorming the story, whatever you"
+      },
+      {
+        "start": 280.32,
+        "duration": 3.24,
+        "text": "want to create. Like in the examples I'm"
+      },
+      {
+        "start": 282.56,
+        "duration": 2.72,
+        "text": "using"
+      },
+      {
+        "start": 283.56,
+        "duration": 3.56,
+        "text": "for creating a Korean horror story,"
+      },
+      {
+        "start": 285.28,
+        "duration": 4.2,
+        "text": "which works as well."
+      },
+      {
+        "start": 287.12,
+        "duration": 4.28,
+        "text": "But the concept of the stories, you must"
+      },
+      {
+        "start": 289.48,
+        "duration": 4.24,
+        "text": "be involved as a human in the loop with"
+      },
+      {
+        "start": 291.4,
+        "duration": 4.519,
+        "text": "the AI agents. Then the tedious work"
+      },
+      {
+        "start": 293.72,
+        "duration": 4.56,
+        "text": "gets passed to the AI agents. So the"
+      },
+      {
+        "start": 295.919,
+        "duration": 4.601,
+        "text": "pipeline here, it has instructions for"
+      },
+      {
+        "start": 298.28,
+        "duration": 4.32,
+        "text": "whatever content or data that we need,"
+      },
+      {
+        "start": 300.52,
+        "duration": 5.0,
+        "text": "that allow the AI agents to understand"
+      },
+      {
+        "start": 302.6,
+        "duration": 4.8,
+        "text": "what it's going to do step-by-step."
+      },
+      {
+        "start": 305.52,
+        "duration": 3.96,
+        "text": "So in here, after we create the"
+      },
+      {
+        "start": 307.4,
+        "duration": 3.48,
+        "text": "storylines, we got to create a list of"
+      },
+      {
+        "start": 309.48,
+        "duration": 3.56,
+        "text": "characters."
+      },
+      {
+        "start": 310.88,
+        "duration": 4.48,
+        "text": "This is all text files first."
+      },
+      {
+        "start": 313.04,
+        "duration": 4.36,
+        "text": "We're not creating image files yet."
+      },
+      {
+        "start": 315.36,
+        "duration": 3.96,
+        "text": "So until you get everything solid, have"
+      },
+      {
+        "start": 317.4,
+        "duration": 4.28,
+        "text": "a good foundation of your stories or any"
+      },
+      {
+        "start": 319.32,
+        "duration": 4.48,
+        "text": "video content that you want to create,"
+      },
+      {
+        "start": 321.68,
+        "duration": 3.92,
+        "text": "then you move on to visual design, which"
+      },
+      {
+        "start": 323.8,
+        "duration": 3.08,
+        "text": "is creating your character sheet image"
+      },
+      {
+        "start": 325.6,
+        "duration": 3.92,
+        "text": "files."
+      },
+      {
+        "start": 326.88,
+        "duration": 4.2,
+        "text": "I've also imported the Kling AI API,"
+      },
+      {
+        "start": 329.52,
+        "duration": 4.92,
+        "text": "just in case people like to run this"
+      },
+      {
+        "start": 331.08,
+        "duration": 5.839,
+        "text": "pipeline using Frontier AI video models."
+      },
+      {
+        "start": 334.44,
+        "duration": 5.52,
+        "text": "Kling AI is one example, or right now"
+      },
+      {
+        "start": 336.919,
+        "duration": 5.161,
+        "text": "there's SeaDance 2.0 as well. You can"
+      },
+      {
+        "start": 339.96,
+        "duration": 3.24,
+        "text": "import that just by typing text with the"
+      },
+      {
+        "start": 342.08,
+        "duration": 4.24,
+        "text": "agent."
+      },
+      {
+        "start": 343.2,
+        "duration": 5.72,
+        "text": "Anyway, in this case we're using ComfyUI"
+      },
+      {
+        "start": 346.32,
+        "duration": 5.68,
+        "text": "just for local demo purpose."
+      },
+      {
+        "start": 348.92,
+        "duration": 5.04,
+        "text": "So, all of this is just instructions. As"
+      },
+      {
+        "start": 352.0,
+        "duration": 4.48,
+        "text": "a human, you're going to see all this"
+      },
+      {
+        "start": 353.96,
+        "duration": 5.56,
+        "text": "text and you might feel bored, but don't"
+      },
+      {
+        "start": 356.48,
+        "duration": 5.76,
+        "text": "worry. Just import that skills to Hermes"
+      },
+      {
+        "start": 359.52,
+        "duration": 5.28,
+        "text": "or create something similar into an AI"
+      },
+      {
+        "start": 362.24,
+        "duration": 4.08,
+        "text": "agent. Allow the AI agent to have a"
+      },
+      {
+        "start": 364.8,
+        "duration": 4.04,
+        "text": "step-by-step guide to know what it"
+      },
+      {
+        "start": 366.32,
+        "duration": 4.96,
+        "text": "should do on every single step."
+      },
+      {
+        "start": 368.84,
+        "duration": 4.64,
+        "text": "So, here, well, there's a new web UI"
+      },
+      {
+        "start": 371.28,
+        "duration": 4.32,
+        "text": "that you can use, but I still like to"
+      },
+      {
+        "start": 373.48,
+        "duration": 4.24,
+        "text": "use the command prompt window. It loads"
+      },
+      {
+        "start": 375.6,
+        "duration": 3.48,
+        "text": "way faster without less stuff dangling"
+      },
+      {
+        "start": 377.72,
+        "duration": 3.48,
+        "text": "around."
+      },
+      {
+        "start": 379.08,
+        "duration": 3.839,
+        "text": "Anyway, we're going to see here I have"
+      },
+      {
+        "start": 381.2,
+        "duration": 3.2,
+        "text": "the short video scenes that I just"
+      },
+      {
+        "start": 382.919,
+        "duration": 3.401,
+        "text": "mentioned."
+      },
+      {
+        "start": 384.4,
+        "duration": 5.16,
+        "text": "As you can see, there's three phases of"
+      },
+      {
+        "start": 386.32,
+        "duration": 5.599,
+        "text": "steps. Narrative, we create the stories,"
+      },
+      {
+        "start": 389.56,
+        "duration": 4.48,
+        "text": "characters, everything with context."
+      },
+      {
+        "start": 391.919,
+        "duration": 4.0,
+        "text": "Then image generation, that's the second"
+      },
+      {
+        "start": 394.04,
+        "duration": 4.16,
+        "text": "step where we create the places,"
+      },
+      {
+        "start": 395.919,
+        "duration": 4.081,
+        "text": "characters, as well as some backgrounds"
+      },
+      {
+        "start": 398.2,
+        "duration": 3.6,
+        "text": "we need in the stories. This is going to"
+      },
+      {
+        "start": 400.0,
+        "duration": 4.44,
+        "text": "be used for image reference because the"
+      },
+      {
+        "start": 401.8,
+        "duration": 5.16,
+        "text": "next step is creating keyframes. And"
+      },
+      {
+        "start": 404.44,
+        "duration": 3.68,
+        "text": "this time, the concept I'm using is the"
+      },
+      {
+        "start": 406.96,
+        "duration": 3.76,
+        "text": "flux."
+      },
+      {
+        "start": 408.12,
+        "duration": 4.2,
+        "text": "That's going to use reference to image."
+      },
+      {
+        "start": 410.72,
+        "duration": 4.08,
+        "text": "There's other options as well if you're"
+      },
+      {
+        "start": 412.32,
+        "duration": 5.12,
+        "text": "not using ComfyUI locally."
+      },
+      {
+        "start": 414.8,
+        "duration": 5.2,
+        "text": "Either way works, but before that, just"
+      },
+      {
+        "start": 417.44,
+        "duration": 4.6,
+        "text": "tell the AI what you want in each phase"
+      },
+      {
+        "start": 420.0,
+        "duration": 4.12,
+        "text": "and that's going to be good. Like in"
+      },
+      {
+        "start": 422.04,
+        "duration": 4.96,
+        "text": "this case, if you need to have the"
+      },
+      {
+        "start": 424.12,
+        "duration": 5.72,
+        "text": "specific workflow to run with the AI,"
+      },
+      {
+        "start": 427.0,
+        "duration": 6.36,
+        "text": "you can just drag and drop or copy and"
+      },
+      {
+        "start": 429.84,
+        "duration": 6.2,
+        "text": "paste that workflow JSON file link in"
+      },
+      {
+        "start": 433.36,
+        "duration": 4.76,
+        "text": "here. And tell the Hermes agents to use"
+      },
+      {
+        "start": 436.04,
+        "duration": 5.08,
+        "text": "this workflow for a specific video"
+      },
+      {
+        "start": 438.12,
+        "duration": 4.56,
+        "text": "creation. Or you can drill down to every"
+      },
+      {
+        "start": 441.12,
+        "duration": 3.56,
+        "text": "single scene that's going to have"
+      },
+      {
+        "start": 442.68,
+        "duration": 3.48,
+        "text": "different reference of workflow. You can"
+      },
+      {
+        "start": 444.68,
+        "duration": 3.72,
+        "text": "do that, too."
+      },
+      {
+        "start": 446.16,
+        "duration": 4.88,
+        "text": "It just depends on how your conversation"
+      },
+      {
+        "start": 448.4,
+        "duration": 4.96,
+        "text": "is communicated with the AI agent. So,"
+      },
+      {
+        "start": 451.04,
+        "duration": 4.08,
+        "text": "as you can see, the next step, the AI"
+      },
+      {
+        "start": 453.36,
+        "duration": 3.44,
+        "text": "agent is showing me that the stories are"
+      },
+      {
+        "start": 455.12,
+        "duration": 4.32,
+        "text": "ready and we're able to go to the next"
+      },
+      {
+        "start": 456.8,
+        "duration": 4.76,
+        "text": "step. And right now, let's say that the"
+      },
+      {
+        "start": 459.44,
+        "duration": 4.72,
+        "text": "character and place are going to use"
+      },
+      {
+        "start": 461.56,
+        "duration": 4.76,
+        "text": "that Z image turbo text to image"
+      },
+      {
+        "start": 464.16,
+        "duration": 4.4,
+        "text": "workflow. So, I'm just doing basic"
+      },
+      {
+        "start": 466.32,
+        "duration": 4.16,
+        "text": "conversations here. Nothing fancy, no"
+      },
+      {
+        "start": 468.56,
+        "duration": 4.04,
+        "text": "pre-designed text prompts, just"
+      },
+      {
+        "start": 470.48,
+        "duration": 4.28,
+        "text": "conversations. I need a character in"
+      },
+      {
+        "start": 472.6,
+        "duration": 4.52,
+        "text": "place using the Z image text to image"
+      },
+      {
+        "start": 474.76,
+        "duration": 4.44,
+        "text": "workflow. And after that, the generation"
+      },
+      {
+        "start": 477.12,
+        "duration": 4.28,
+        "text": "lets me know the progress. So, we as a"
+      },
+      {
+        "start": 479.2,
+        "duration": 4.52,
+        "text": "human can step in and see what kind of"
+      },
+      {
+        "start": 481.4,
+        "duration": 4.12,
+        "text": "image it actually generated."
+      },
+      {
+        "start": 483.72,
+        "duration": 3.68,
+        "text": "What you need is to focus on talking"
+      },
+      {
+        "start": 485.52,
+        "duration": 3.72,
+        "text": "with the agent. That's all you need to"
+      },
+      {
+        "start": 487.4,
+        "duration": 4.0,
+        "text": "do because those workflows are already"
+      },
+      {
+        "start": 489.24,
+        "duration": 4.76,
+        "text": "exported and the AI agents know how to"
+      },
+      {
+        "start": 491.4,
+        "duration": 5.519,
+        "text": "import that into ComfyUI. So, once you"
+      },
+      {
+        "start": 494.0,
+        "duration": 4.56,
+        "text": "enable or turn on the ComfyUI backend,"
+      },
+      {
+        "start": 496.919,
+        "duration": 4.201,
+        "text": "just like in this example, it's"
+      },
+      {
+        "start": 498.56,
+        "duration": 4.84,
+        "text": "generated the image. Okay? So, after"
+      },
+      {
+        "start": 501.12,
+        "duration": 4.72,
+        "text": "generation, this is going to be another"
+      },
+      {
+        "start": 503.4,
+        "duration": 4.84,
+        "text": "step that it will pause here. I set the"
+      },
+      {
+        "start": 505.84,
+        "duration": 4.96,
+        "text": "skills for the agents to not automate"
+      },
+      {
+        "start": 508.24,
+        "duration": 4.919,
+        "text": "everything because when you just created"
+      },
+      {
+        "start": 510.8,
+        "duration": 5.04,
+        "text": "the character list and the place, you"
+      },
+      {
+        "start": 513.159,
+        "duration": 4.801,
+        "text": "want to review that before you continue."
+      },
+      {
+        "start": 515.84,
+        "duration": 4.4,
+        "text": "So, in this case, let's go back to here."
+      },
+      {
+        "start": 517.96,
+        "duration": 4.12,
+        "text": "In Hermes agent, I have a new message."
+      },
+      {
+        "start": 520.24,
+        "duration": 3.64,
+        "text": "So, I'll say that for characters, I want"
+      },
+      {
+        "start": 522.08,
+        "duration": 3.56,
+        "text": "each character with multiple angles and"
+      },
+      {
+        "start": 523.88,
+        "duration": 4.16,
+        "text": "with the same white background. So, I"
+      },
+      {
+        "start": 525.64,
+        "duration": 4.16,
+        "text": "need front view, side view, back view,"
+      },
+      {
+        "start": 528.04,
+        "duration": 3.64,
+        "text": "and also one close-up shot of each"
+      },
+      {
+        "start": 529.8,
+        "duration": 3.48,
+        "text": "character. So, I'm going to regenerate"
+      },
+      {
+        "start": 531.68,
+        "duration": 3.52,
+        "text": "all of those and replace that in the"
+      },
+      {
+        "start": 533.28,
+        "duration": 3.72,
+        "text": "same folder."
+      },
+      {
+        "start": 535.2,
+        "duration": 3.76,
+        "text": "Here, just want to show you guys that"
+      },
+      {
+        "start": 537.0,
+        "duration": 4.08,
+        "text": "it's in progress. And as you can see,"
+      },
+      {
+        "start": 538.96,
+        "duration": 4.52,
+        "text": "all the characters have been replaced as"
+      },
+      {
+        "start": 541.08,
+        "duration": 3.92,
+        "text": "well as all of that updated. Switch back"
+      },
+      {
+        "start": 543.48,
+        "duration": 3.08,
+        "text": "to Hermes agent, you'll see there's a"
+      },
+      {
+        "start": 545.0,
+        "duration": 2.92,
+        "text": "notification telling me that all these"
+      },
+      {
+        "start": 546.56,
+        "duration": 3.92,
+        "text": "characters have been changed to the"
+      },
+      {
+        "start": 547.92,
+        "duration": 5.64,
+        "text": "character sheet and the full body view,"
+      },
+      {
+        "start": 550.48,
+        "duration": 4.92,
+        "text": "etc. This all works. So, I viewed that"
+      },
+      {
+        "start": 553.56,
+        "duration": 3.88,
+        "text": "again in the file browser and it's all"
+      },
+      {
+        "start": 555.4,
+        "duration": 3.6,
+        "text": "done here. So, we're going to move on to"
+      },
+      {
+        "start": 557.44,
+        "duration": 3.2,
+        "text": "the next step."
+      },
+      {
+        "start": 559.0,
+        "duration": 4.32,
+        "text": "And remember to type something to let"
+      },
+      {
+        "start": 560.64,
+        "duration": 4.72,
+        "text": "the AI agent pause, so you can review"
+      },
+      {
+        "start": 563.32,
+        "duration": 3.8,
+        "text": "those images before moving on to video"
+      },
+      {
+        "start": 565.36,
+        "duration": 3.8,
+        "text": "generation."
+      },
+      {
+        "start": 567.12,
+        "duration": 4.48,
+        "text": "Otherwise, you might have some wrong"
+      },
+      {
+        "start": 569.16,
+        "duration": 4.28,
+        "text": "images you want to refine and you'd just"
+      },
+      {
+        "start": 571.6,
+        "duration": 4.6,
+        "text": "be spending all your computing power"
+      },
+      {
+        "start": 573.44,
+        "duration": 5.32,
+        "text": "going straight to video creation."
+      },
+      {
+        "start": 576.2,
+        "duration": 5.2,
+        "text": "With the angelic way of running this,"
+      },
+      {
+        "start": 578.76,
+        "duration": 4.96,
+        "text": "what I want to demonstrate is that why I"
+      },
+      {
+        "start": 581.4,
+        "duration": 5.36,
+        "text": "was talking about using whatever ComfyUI"
+      },
+      {
+        "start": 583.72,
+        "duration": 4.68,
+        "text": "or any image or video generation models,"
+      },
+      {
+        "start": 586.76,
+        "duration": 3.84,
+        "text": "those are just tools."
+      },
+      {
+        "start": 588.4,
+        "duration": 3.6,
+        "text": "That's not everything in your toolbox."
+      },
+      {
+        "start": 590.6,
+        "duration": 2.56,
+        "text": "Think of those as just one of your"
+      },
+      {
+        "start": 592.0,
+        "duration": 2.92,
+        "text": "tools."
+      },
+      {
+        "start": 593.16,
+        "duration": 3.64,
+        "text": "That's why in recent months I've been"
+      },
+      {
+        "start": 594.92,
+        "duration": 4.64,
+        "text": "creating workflows that are more focused"
+      },
+      {
+        "start": 596.8,
+        "duration": 4.88,
+        "text": "on singular features, more modular, the"
+      },
+      {
+        "start": 599.56,
+        "duration": 4.08,
+        "text": "way I think about it. Because the design"
+      },
+      {
+        "start": 601.68,
+        "duration": 3.84,
+        "text": "is going to be using this workflow as"
+      },
+      {
+        "start": 603.64,
+        "duration": 4.56,
+        "text": "one feature, which is the video"
+      },
+      {
+        "start": 605.52,
+        "duration": 4.2,
+        "text": "generation. That's all I need, and I put"
+      },
+      {
+        "start": 608.2,
+        "duration": 3.88,
+        "text": "this into a whole system for"
+      },
+      {
+        "start": 609.72,
+        "duration": 3.92,
+        "text": "integration. And that's why recently I'm"
+      },
+      {
+        "start": 612.08,
+        "duration": 4.4,
+        "text": "trying to create workflows that are"
+      },
+      {
+        "start": 613.64,
+        "duration": 4.84,
+        "text": "simpler and also, you know, easier for"
+      },
+      {
+        "start": 616.48,
+        "duration": 4.8,
+        "text": "users at a lot of different levels to"
+      },
+      {
+        "start": 618.48,
+        "duration": 4.4,
+        "text": "understand and run. Hopefully, that's"
+      },
+      {
+        "start": 621.28,
+        "duration": 4.08,
+        "text": "the concept."
+      },
+      {
+        "start": 622.88,
+        "duration": 4.4,
+        "text": "Okay, so come back to ComfyUI. As you"
+      },
+      {
+        "start": 625.36,
+        "duration": 3.6,
+        "text": "can see, there's some different images"
+      },
+      {
+        "start": 627.28,
+        "duration": 4.04,
+        "text": "of this character in some kind of"
+      },
+      {
+        "start": 628.96,
+        "duration": 5.0,
+        "text": "haunting or mystery places where she is"
+      },
+      {
+        "start": 631.32,
+        "duration": 4.72,
+        "text": "in different scenes and multiple shots."
+      },
+      {
+        "start": 633.96,
+        "duration": 4.0,
+        "text": "And we can review this before we move on"
+      },
+      {
+        "start": 636.04,
+        "duration": 4.36,
+        "text": "to video generation."
+      },
+      {
+        "start": 637.96,
+        "duration": 4.8,
+        "text": "For example, like this one, it's kind of"
+      },
+      {
+        "start": 640.4,
+        "duration": 4.68,
+        "text": "generating weird color on the eyes and"
+      },
+      {
+        "start": 642.76,
+        "duration": 4.04,
+        "text": "some kind of weird color on the shirt."
+      },
+      {
+        "start": 645.08,
+        "duration": 3.92,
+        "text": "So, you can check if this really follows"
+      },
+      {
+        "start": 646.8,
+        "duration": 4.76,
+        "text": "the story or not before moving on to the"
+      },
+      {
+        "start": 649.0,
+        "duration": 5.0,
+        "text": "next steps. That's why I like to have a"
+      },
+      {
+        "start": 651.56,
+        "duration": 5.24,
+        "text": "human involved before moving on to fully"
+      },
+      {
+        "start": 654.0,
+        "duration": 4.6,
+        "text": "generating all the videos. That way, you"
+      },
+      {
+        "start": 656.8,
+        "duration": 4.52,
+        "text": "can ensure the story is intact with"
+      },
+      {
+        "start": 658.6,
+        "duration": 4.36,
+        "text": "whatever content you created."
+      },
+      {
+        "start": 661.32,
+        "duration": 4.4,
+        "text": "Since I've just generated five scenes"
+      },
+      {
+        "start": 662.96,
+        "duration": 5.28,
+        "text": "here, there's a total of 30 scenes. So,"
+      },
+      {
+        "start": 665.72,
+        "duration": 4.72,
+        "text": "just for demo purposes, I only generated"
+      },
+      {
+        "start": 668.24,
+        "duration": 4.2,
+        "text": "five scenes. I paused in the middle of"
+      },
+      {
+        "start": 670.44,
+        "duration": 3.84,
+        "text": "the progress, and that's one of the good"
+      },
+      {
+        "start": 672.44,
+        "duration": 3.88,
+        "text": "things about Hermes agent. In the"
+      },
+      {
+        "start": 674.28,
+        "duration": 4.12,
+        "text": "multiple steps or a large volume of"
+      },
+      {
+        "start": 676.32,
+        "duration": 4.56,
+        "text": "work, in the middle of the process, you"
+      },
+      {
+        "start": 678.4,
+        "duration": 5.12,
+        "text": "can interrupt the AI agents to pause,"
+      },
+      {
+        "start": 680.88,
+        "duration": 5.08,
+        "text": "input your new message to update. Like"
+      },
+      {
+        "start": 683.52,
+        "duration": 4.48,
+        "text": "let's take 10 scenes for generation, or"
+      },
+      {
+        "start": 685.96,
+        "duration": 4.32,
+        "text": "even right now I'm taking like five."
+      },
+      {
+        "start": 688.0,
+        "duration": 4.0,
+        "text": "That's good enough for this video demo."
+      },
+      {
+        "start": 690.28,
+        "duration": 3.92,
+        "text": "Then that just updates the progress of"
+      },
+      {
+        "start": 692.0,
+        "duration": 3.92,
+        "text": "whatever task it's doing."
+      },
+      {
+        "start": 694.2,
+        "duration": 4.48,
+        "text": "You don't need to even touch anything in"
+      },
+      {
+        "start": 695.92,
+        "duration": 4.72,
+        "text": "the ComfyUI workflow diagrams or do all"
+      },
+      {
+        "start": 698.68,
+        "duration": 5.24,
+        "text": "the complex settings because this is all"
+      },
+      {
+        "start": 700.64,
+        "duration": 5.28,
+        "text": "handled by the AI agents already."
+      },
+      {
+        "start": 703.92,
+        "duration": 4.44,
+        "text": "So this is overall how I'll be doing for"
+      },
+      {
+        "start": 705.92,
+        "duration": 4.72,
+        "text": "a long sequence of multi-shot videos"
+      },
+      {
+        "start": 708.36,
+        "duration": 4.0,
+        "text": "like a storytelling. I see a lot of"
+      },
+      {
+        "start": 710.64,
+        "duration": 4.4,
+        "text": "people nowadays have been talking about"
+      },
+      {
+        "start": 712.36,
+        "duration": 4.56,
+        "text": "using Claude with other AI models. A lot"
+      },
+      {
+        "start": 715.04,
+        "duration": 4.12,
+        "text": "of different kinds of AI models that you"
+      },
+      {
+        "start": 716.92,
+        "duration": 5.12,
+        "text": "can try with this as well. My way of"
+      },
+      {
+        "start": 719.16,
+        "duration": 6.12,
+        "text": "using this is just LTX for local AI"
+      },
+      {
+        "start": 722.04,
+        "duration": 5.24,
+        "text": "examples. I do also try with Kling AI C"
+      },
+      {
+        "start": 725.28,
+        "duration": 2.96,
+        "text": "dance, those kind of frontier models as"
+      },
+      {
+        "start": 727.28,
+        "duration": 2.92,
+        "text": "well."
+      },
+      {
+        "start": 728.24,
+        "duration": 4.04,
+        "text": "But the concept is the same. How to"
+      },
+      {
+        "start": 730.2,
+        "duration": 4.24,
+        "text": "process using Hermes agents with"
+      },
+      {
+        "start": 732.28,
+        "duration": 4.56,
+        "text": "different language models and generating"
+      },
+      {
+        "start": 734.44,
+        "duration": 3.76,
+        "text": "the content. So"
+      },
+      {
+        "start": 736.84,
+        "duration": 4.08,
+        "text": "after all the content that you've"
+      },
+      {
+        "start": 738.2,
+        "duration": 5.04,
+        "text": "generated, check it out one more time."
+      },
+      {
+        "start": 740.92,
+        "duration": 4.76,
+        "text": "See the first five scenes, all the video"
+      },
+      {
+        "start": 743.24,
+        "duration": 5.16,
+        "text": "content are also included. So we can"
+      },
+      {
+        "start": 745.68,
+        "duration": 4.2,
+        "text": "bring this to a short video scenes demo."
+      },
+      {
+        "start": 748.4,
+        "duration": 3.92,
+        "text": "It might not be accurate for some of the"
+      },
+      {
+        "start": 749.88,
+        "duration": 4.959,
+        "text": "actions. You have to do some trimming,"
+      },
+      {
+        "start": 752.32,
+        "duration": 4.6,
+        "text": "video editing by yourself, or even using"
+      },
+      {
+        "start": 754.839,
+        "duration": 3.561,
+        "text": "AI to do that as well."
+      },
+      {
+        "start": 756.92,
+        "duration": 4.12,
+        "text": "In the beginning we were talking about"
+      },
+      {
+        "start": 758.4,
+        "duration": 4.439,
+        "text": "this Omni NFT Laura model that's able to"
+      },
+      {
+        "start": 761.04,
+        "duration": 4.04,
+        "text": "bring better coherence for the video"
+      },
+      {
+        "start": 762.839,
+        "duration": 4.201,
+        "text": "generations. And the main point of this"
+      },
+      {
+        "start": 765.08,
+        "duration": 3.96,
+        "text": "Laura model is not ultimate high"
+      },
+      {
+        "start": 767.04,
+        "duration": 4.08,
+        "text": "quality. It just helps you bring this"
+      },
+      {
+        "start": 769.04,
+        "duration": 3.72,
+        "text": "negative aware fine-tuned model to"
+      },
+      {
+        "start": 771.12,
+        "duration": 6.52,
+        "text": "improve your visual and audio"
+      },
+      {
+        "start": 772.76,
+        "duration": 4.88,
+        "text": "presentation. So, let's check it out."
+      },
+      {
+        "start": 810.899,
+        "duration": 4.181,
+        "text": ">> [clears throat]"
+      },
+      {
+        "start": 812.72,
+        "duration": 4.6,
+        "text": ">> Let this for us Jana but"
+      },
+      {
+        "start": 815.08,
+        "duration": 3.8,
+        "text": "Here's the city and the this building's"
+      },
+      {
+        "start": 817.32,
+        "duration": 5.04,
+        "text": "map."
+      },
+      {
+        "start": 818.88,
+        "duration": 3.48,
+        "text": "Enjoy your holiday here."
+      },
+      {
+        "start": 824.88,
+        "duration": 3.48,
+        "text": "You never need to remember."
+      },
+      {
+        "start": 828.4,
+        "duration": 3.4,
+        "text": "That's part of the service."
+      },
+      {
+        "start": 839.8,
+        "duration": 3.84,
+        "text": "You are new."
+      },
+      {
+        "start": 841.36,
+        "duration": 4.68,
+        "text": "I can tell."
+      },
+      {
+        "start": 843.64,
+        "duration": 5.36,
+        "text": "Listen to me."
+      },
+      {
+        "start": 846.04,
+        "duration": 4.68,
+        "text": "Do not go to the garden. Years."
+      },
+      {
+        "start": 849.0,
+        "duration": 3.48,
+        "text": "I think there is no way to know. The"
+      },
+      {
+        "start": 850.72,
+        "duration": 3.16,
+        "text": "concierge will be kind first, then he"
+      },
+      {
+        "start": 852.48,
+        "duration": 3.36,
+        "text": "will take you to the garden, and then"
+      },
+      {
+        "start": 853.88,
+        "duration": 4.44,
+        "text": "you will never leave. None of them ever"
+      },
+      {
+        "start": 855.84,
+        "duration": 2.48,
+        "text": "leave."
+      }
+    ],
+    "text": "Hello everyone. So, today we are talking\nabout not just one, but two new techs\nthat are running together. First, we're\ngoing to check out a new way of making\nLTX video better at syncing video and\naudio together. This is called Omni NFT.\nThis is for video diffusion, where it\nstands for negative aware fine-tuning.\nAnd what this does, it syncs the video\nand audio better. As we all know,\nsometimes [music] in LTX video when you\nuse the base model to generate out of\nsync motions. And sometimes you'll even\nsee the video quality going downhill.\nSo, this Laura model helps with the\nmotions for LTX videos in general, and\nalso helps sync the video and audio in a\nbetter way.\nNow, this fine-tuned Laura model, you\ncan download it from the Hugging Face\nrepo. It's called Omni NFT. This one's\ngoing to be a little bit larger file\nsize because it's FP32 precision. So, by\ndefault, it's set up so you can run it\nin Python code or run it in ComfyUI,\neither way.\nBut, if you prefer less file sizes, or\nyou want the ComfyUI default format\nusing BF16, then you can try out this\nBF16 Laura model here.\nI'm going to provide in the video\ndescription, so you guys can check it\nout. So, that's the Laura. And also, I\nwant to talk about how to automate the\nvideo creations. Well, not only with\nComfyUI. You can automate that with\nother AI models, too, whether you have a\nserver-side API or just running locally\nusing ComfyUI. Because Norse Research,\nthe Hermes agents, now natively support\nComfyUI workflows. So, it does\nunderstand how and what to input in\nComfy workflows with this agent. But,\nyou still have to convert the\nagent-friendly workflow, which is the\nAPI format workflow JSON files of\nComfyUI. So, I'm going to show you here.\nFirst of all, I have an LTX workflow.\nAnd this was talked about previously\nthat I was using the prompt relay and\nauto generating the text prompts using\nVLM. In this case, I'm using Kwen 3VL.\nAnd here we have linked it up together\nwith other Laura models that I usually\nrun with.\nAnd the VBVR L that I am using,\ncurrently the highest data set trained\nVBVR Laura model. And here I am running\nthe Omni NFT model. And then above that,\nthis is the crisp enhanced Laura model.\nAnd that's all the Laura models that we\nneed. And lastly, of course, you're\ngoing to run with the distillation. Add\nthe distillation here.\nSo, the overall workflow is going to be\nthe same as what I talked about\npreviously using LTX video generation.\nSo, once you have your comfy UI\nworkflows exported as API format, like\nin this case, the one that I just\ncreated using prompt relay LTX workflow.\nThis is going to use for building your\nscenes with image reference. And I also\nhave Z image turbo for creating\nbackgrounds and characters. That one has\nalready been integrated into Hermes\nagent.\nSo, this is called the visual storyline\npipeline that I created. As you can see,\nthe folder path in here, this is using\nHermes agent, and I am using this skill.\nAnd basically, what this skill does, it\ntells the AI agents what to do.\nSo, let's check it out in the web\nbrowser.\nAnd we can see what it is actually\ndoing.\nSo,\nthis visual storyline pipeline is used\nfor creating a visual story from\nscratch. It starts from a storyline. And\nbasically, you're going to be creating\nstories with the AI agents. Like in this\ncase, it's Hermes. But of course, this\nskills.md file, you can also import that\ninto Open Claw or any other AI agents\nthat use the skills architecture. And\nthat way you have a solid foundation of\nstories before you move on to the script\nor your character building or the\nscenes, keyframes, whatever.\nBecause a lot of times I see people\nstarting from creating a character,\ngenerating images of their character\nusing character sheet, or having\nmultiple images of a character, which\nyou won't have a story background of\nwhat it's actually doing. You won't be\nable to have, you know, a full picture\nof what you actually want to create as a\nfull story. So therefore, we're going to\ndo this step-by-step with the AI agent.\nYou're not going to fully automate like\nhands-off everything, but you're going\nto be involved in the development with\nthe AI agents. That means the human step\nin the loop in the angelic way that I\ntalk about, that we're going to have\nhuman involvement in the workflow. So in\nhere, as you can see, the visual\nstoryline pipeline. We're starting with\nstory creation, where you first let the\nAI agents know that you're chatting,\nbrainstorming the story, whatever you\nwant to create. Like in the examples I'm\nusing\nfor creating a Korean horror story,\nwhich works as well.\nBut the concept of the stories, you must\nbe involved as a human in the loop with\nthe AI agents. Then the tedious work\ngets passed to the AI agents. So the\npipeline here, it has instructions for\nwhatever content or data that we need,\nthat allow the AI agents to understand\nwhat it's going to do step-by-step.\nSo in here, after we create the\nstorylines, we got to create a list of\ncharacters.\nThis is all text files first.\nWe're not creating image files yet.\nSo until you get everything solid, have\na good foundation of your stories or any\nvideo content that you want to create,\nthen you move on to visual design, which\nis creating your character sheet image\nfiles.\nI've also imported the Kling AI API,\njust in case people like to run this\npipeline using Frontier AI video models.\nKling AI is one example, or right now\nthere's SeaDance 2.0 as well. You can\nimport that just by typing text with the\nagent.\nAnyway, in this case we're using ComfyUI\njust for local demo purpose.\nSo, all of this is just instructions. As\na human, you're going to see all this\ntext and you might feel bored, but don't\nworry. Just import that skills to Hermes\nor create something similar into an AI\nagent. Allow the AI agent to have a\nstep-by-step guide to know what it\nshould do on every single step.\nSo, here, well, there's a new web UI\nthat you can use, but I still like to\nuse the command prompt window. It loads\nway faster without less stuff dangling\naround.\nAnyway, we're going to see here I have\nthe short video scenes that I just\nmentioned.\nAs you can see, there's three phases of\nsteps. Narrative, we create the stories,\ncharacters, everything with context.\nThen image generation, that's the second\nstep where we create the places,\ncharacters, as well as some backgrounds\nwe need in the stories. This is going to\nbe used for image reference because the\nnext step is creating keyframes. And\nthis time, the concept I'm using is the\nflux.\nThat's going to use reference to image.\nThere's other options as well if you're\nnot using ComfyUI locally.\nEither way works, but before that, just\ntell the AI what you want in each phase\nand that's going to be good. Like in\nthis case, if you need to have the\nspecific workflow to run with the AI,\nyou can just drag and drop or copy and\npaste that workflow JSON file link in\nhere. And tell the Hermes agents to use\nthis workflow for a specific video\ncreation. Or you can drill down to every\nsingle scene that's going to have\ndifferent reference of workflow. You can\ndo that, too.\nIt just depends on how your conversation\nis communicated with the AI agent. So,\nas you can see, the next step, the AI\nagent is showing me that the stories are\nready and we're able to go to the next\nstep. And right now, let's say that the\ncharacter and place are going to use\nthat Z image turbo text to image\nworkflow. So, I'm just doing basic\nconversations here. Nothing fancy, no\npre-designed text prompts, just\nconversations. I need a character in\nplace using the Z image text to image\nworkflow. And after that, the generation\nlets me know the progress. So, we as a\nhuman can step in and see what kind of\nimage it actually generated.\nWhat you need is to focus on talking\nwith the agent. That's all you need to\ndo because those workflows are already\nexported and the AI agents know how to\nimport that into ComfyUI. So, once you\nenable or turn on the ComfyUI backend,\njust like in this example, it's\ngenerated the image. Okay? So, after\ngeneration, this is going to be another\nstep that it will pause here. I set the\nskills for the agents to not automate\neverything because when you just created\nthe character list and the place, you\nwant to review that before you continue.\nSo, in this case, let's go back to here.\nIn Hermes agent, I have a new message.\nSo, I'll say that for characters, I want\neach character with multiple angles and\nwith the same white background. So, I\nneed front view, side view, back view,\nand also one close-up shot of each\ncharacter. So, I'm going to regenerate\nall of those and replace that in the\nsame folder.\nHere, just want to show you guys that\nit's in progress. And as you can see,\nall the characters have been replaced as\nwell as all of that updated. Switch back\nto Hermes agent, you'll see there's a\nnotification telling me that all these\ncharacters have been changed to the\ncharacter sheet and the full body view,\netc. This all works. So, I viewed that\nagain in the file browser and it's all\ndone here. So, we're going to move on to\nthe next step.\nAnd remember to type something to let\nthe AI agent pause, so you can review\nthose images before moving on to video\ngeneration.\nOtherwise, you might have some wrong\nimages you want to refine and you'd just\nbe spending all your computing power\ngoing straight to video creation.\nWith the angelic way of running this,\nwhat I want to demonstrate is that why I\nwas talking about using whatever ComfyUI\nor any image or video generation models,\nthose are just tools.\nThat's not everything in your toolbox.\nThink of those as just one of your\ntools.\nThat's why in recent months I've been\ncreating workflows that are more focused\non singular features, more modular, the\nway I think about it. Because the design\nis going to be using this workflow as\none feature, which is the video\ngeneration. That's all I need, and I put\nthis into a whole system for\nintegration. And that's why recently I'm\ntrying to create workflows that are\nsimpler and also, you know, easier for\nusers at a lot of different levels to\nunderstand and run. Hopefully, that's\nthe concept.\nOkay, so come back to ComfyUI. As you\ncan see, there's some different images\nof this character in some kind of\nhaunting or mystery places where she is\nin different scenes and multiple shots.\nAnd we can review this before we move on\nto video generation.\nFor example, like this one, it's kind of\ngenerating weird color on the eyes and\nsome kind of weird color on the shirt.\nSo, you can check if this really follows\nthe story or not before moving on to the\nnext steps. That's why I like to have a\nhuman involved before moving on to fully\ngenerating all the videos. That way, you\ncan ensure the story is intact with\nwhatever content you created.\nSince I've just generated five scenes\nhere, there's a total of 30 scenes. So,\njust for demo purposes, I only generated\nfive scenes. I paused in the middle of\nthe progress, and that's one of the good\nthings about Hermes agent. In the\nmultiple steps or a large volume of\nwork, in the middle of the process, you\ncan interrupt the AI agents to pause,\ninput your new message to update. Like\nlet's take 10 scenes for generation, or\neven right now I'm taking like five.\nThat's good enough for this video demo.\nThen that just updates the progress of\nwhatever task it's doing.\nYou don't need to even touch anything in\nthe ComfyUI workflow diagrams or do all\nthe complex settings because this is all\nhandled by the AI agents already.\nSo this is overall how I'll be doing for\na long sequence of multi-shot videos\nlike a storytelling. I see a lot of\npeople nowadays have been talking about\nusing Claude with other AI models. A lot\nof different kinds of AI models that you\ncan try with this as well. My way of\nusing this is just LTX for local AI\nexamples. I do also try with Kling AI C\ndance, those kind of frontier models as\nwell.\nBut the concept is the same. How to\nprocess using Hermes agents with\ndifferent language models and generating\nthe content. So\nafter all the content that you've\ngenerated, check it out one more time.\nSee the first five scenes, all the video\ncontent are also included. So we can\nbring this to a short video scenes demo.\nIt might not be accurate for some of the\nactions. You have to do some trimming,\nvideo editing by yourself, or even using\nAI to do that as well.\nIn the beginning we were talking about\nthis Omni NFT Laura model that's able to\nbring better coherence for the video\ngenerations. And the main point of this\nLaura model is not ultimate high\nquality. It just helps you bring this\nnegative aware fine-tuned model to\nimprove your visual and audio\npresentation. So, let's check it out.\n>> [clears throat]\n>> Let this for us Jana but\nHere's the city and the this building's\nmap.\nEnjoy your holiday here.\nYou never need to remember.\nThat's part of the service.\nYou are new.\nI can tell.\nListen to me.\nDo not go to the garden. Years.\nI think there is no way to know. The\nconcierge will be kind first, then he\nwill take you to the garden, and then\nyou will never leave. None of them ever\nleave."
+  }
+}

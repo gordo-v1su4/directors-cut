@@ -1,0 +1,65 @@
+# Place / Background Reference Template
+
+```yaml
+place:
+  name: "coffee_shop"
+  display_name: "The Morning Cup Coffee Shop"
+  type: "interior / exterior / vehicle / abstract"
+  era: "modern day"
+  world_type: "realistic / cyberpunk / fantasy / historical"
+  size: "small cozy / medium / large / massive"
+  description: "A small cozy coffee shop with warm wood paneling, large front windows, and exposed brick walls. Counter along the left side, small round tables scattered throughout."
+  
+  architecture:
+    style: "industrial-rustic"
+    materials: ["exposed brick", "warm wood", "glass", "wrought iron"]
+    notable_features:
+      - "large floor-to-ceiling front windows"
+      - "exposed wooden ceiling beams"
+      - "vintage pendant lights"
+      - "chalkboard menu above counter"
+  
+  lighting:
+    primary: "natural morning light through front windows"
+    secondary: "warm pendant lights"
+    mood: "inviting, warm"
+  
+  color_palette:
+    walls: "warm brick red and cream"
+    furniture: "dark wood and black leather"
+    accents: "copper and green plants"
+  
+  props:
+    permanent: ["espresso machine", "display case with pastries", "bookshelf in corner"]
+    variable: ["coffee cups", "newspapers", "laptop on table"]
+  
+  weather_effects:
+    clear: "bright sunlight streaming through windows, dust motes visible"
+    rain: "raindrops on windows, warm interior contrast, condensation"
+    night: "interior lights reflect in dark windows, cozy glow"
+  
+  background_prompt: "cozy coffee shop interior, exposed brick walls, warm wood paneling, large front windows with morning sunlight streaming in, vintage pendant lights, espresso machine on counter, small round wooden tables, black leather chairs, industrial-rustic style, inviting warm atmosphere, no people, background plate, high detail, [STYLE_SUFFIX]"
+```
+
+## Prompt Construction Formula
+
+```
+[place_type] [place_description],
+[architectural_style] style,
+[materials] materials,
+[lighting_description],
+[color_palette highlights],
+[prop details],
+[weather_effects if applicable],
+establishing shot, wide angle,
+no people, background plate,
+high detail, [STYLE_SUFFIX]
+```
+
+## Key Rules
+
+1. ALWAYS include "no people, background plate" — these are reference backgrounds
+2. ALWAYS match the weather to the scene's weather setting
+3. Use consistent lighting across all shots in the same location
+4. Include at least 3 architectural details for richness
+5. Save with a descriptive filename: `place_name.png` not `bg_001.png`

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Seedance Cinematic Trailer"
+  short_description: "Best Seedance teaser prompt architect"
+  default_prompt: "Use $seedance-cinematic-trailer to turn any concept, images, title, or rough prompt into a strong cinematic Seedance teaser trailer prompt."
+
+policy:
+  allow_implicit_invocation: true

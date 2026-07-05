@@ -1,0 +1,51 @@
+generation_settings:
+  model: Z_Image_Turbo_BF16
+  images: 1
+  steps: 9
+  cfgscale: 1
+  sampler: euler
+  scheduler: beta
+  sigmashift: 7
+  negativeprompt: "blurry, low quality, distorted, watermark, text, bad anatomy, extra fingers"
+
+character_sheets:
+  - id: hermes_agent_builder_character
+    name: Hermes Agent Builder Character Reference
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/00_character_hermes_builder.png
+    seed: 610001
+    prompt: "character reference sheet for a friendly AI systems builder named Hermes, young technical creator wearing a dark hoodie, laptop stickers, thoughtful expression, front view and three-quarter view, clean readable silhouette, cinematic production design, high detail, sharp focus, consistent character identity, no text"
+
+place_backgrounds:
+  - id: local_ai_studio_environment
+    name: Local AI Studio Environment Reference
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/01_place_local_ai_studio.png
+    seed: 610002
+    prompt: "wide environment reference image of a cozy local AI video production studio, dual monitors showing node graphs, GPU workstation tower with subtle RGB, storyboard wall, cables and notes, warm practical lighting mixed with neon blue rim light, cinematic composition, high detail, sharp focus, no people, no text"
+
+keyframes:
+  - id: seq_01_intro_desktop_pipeline
+    name: Sequence 01 Intro Desktop Pipeline
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/02_keyframe_intro_desktop_pipeline.png
+    seed: 610101
+    prompt: "cinematic keyframe, Hermes AI builder sits at a desk in the local AI studio, looking at a ComfyUI-style node graph on glowing monitors, storyboards on the wall, medium wide shot, eye level angle, warm practical lights, neon blue accents, documentary tutorial mood, high detail, sharp focus, no text"
+  - id: seq_02_character_background_assets
+    name: Sequence 02 Character And Background Assets
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/03_keyframe_character_background_assets.png
+    seed: 610102
+    prompt: "cinematic keyframe, a visual storyline pipeline workspace where character reference images and background concept art are arranged on a large digital canvas, Hermes AI builder points at the asset board, over-the-shoulder shot, three-quarter view, organized creative production pipeline, high detail, sharp focus, no text"
+  - id: seq_03_image_sequence_review
+    name: Sequence 03 Image Sequence Review
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/04_keyframe_image_sequence_review.png
+    seed: 610103
+    prompt: "cinematic keyframe, four generated 16:9 keyframes displayed as a horizontal storyboard timeline on a monitor, Hermes AI builder reviews them before video generation, close-up over shoulder, soft monitor glow, focused technical mood, crisp composition, high detail, sharp focus, no readable text"
+  - id: seq_04_ready_for_video_model
+    name: Sequence 04 Ready For Video Model
+    resolution: 1280x720
+    save_as: outputs/youtube_workflow_image_sequence/05_keyframe_ready_for_video_model.png
+    seed: 610104
+    prompt: "cinematic keyframe, final approved 16:9 image frame being prepared for an image-to-video model, GPU workstation in background, timeline interface glow, Hermes AI builder presses a launch button, dramatic low angle, optimistic build-in-public energy, high detail, sharp focus, no text"

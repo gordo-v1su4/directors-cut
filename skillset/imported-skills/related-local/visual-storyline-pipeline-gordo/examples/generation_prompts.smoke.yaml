@@ -1,0 +1,17 @@
+generation_settings:
+  model: Z_Image_Turbo_BF16
+  images: 1
+  steps: 9
+  cfgscale: 1
+  sampler: euler
+  scheduler: beta
+  sigmashift: 7
+  negativeprompt: "blurry, low quality, distorted, watermark, text"
+
+keyframes:
+  - id: swarmui_harness_smoke
+    name: SwarmUI Harness Smoke Test
+    resolution: 1280x720
+    save_as: outputs/smoke/swarmui_harness_smoke.png
+    seed: 424242
+    prompt: "cinematic keyframe, a tiny robot assistant in a cozy neon-lit creative studio, storyboards on the wall, glowing monitors, warm practical lights, high detail, sharp focus"

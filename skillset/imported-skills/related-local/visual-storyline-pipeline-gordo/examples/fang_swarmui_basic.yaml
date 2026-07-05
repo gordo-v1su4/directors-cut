@@ -1,0 +1,20 @@
+generation_settings:
+  model: qwen_image_2512_fp8_e4m3fn.safetensors
+  images: 1
+  steps: 8
+  cfgscale: 1
+  sampler: res_2s_ode
+  scheduler: beta57
+  sigmashift: 1
+  loras: Wuli-Qwen-Image-2512-Turbo-LoRA-2steps-V1.0-bf16.safetensors
+  loraweights: 0.65
+  negativeprompt: "blurry, low quality, distorted, bad anatomy, extra limbs, watermark, logo, captions, labels, typography, readable text, frame numbers, speech bubbles, cartoon, anime, superhero suit, fantasy weapon, monster"
+
+keyframes:
+  - id: fang_swarmui_basic_smoke_01
+    name: Fang SwarmUI Basic Smoke 01
+    resolution: 1280x720
+    save_as: outputs/fang_smoke/fang_swarmui_basic_smoke_01.png
+    seed: 6162026
+    prompt: >
+      Cinematic film still from a gritty 30-second cold-open teaser: Fang, a young streetwise man with short vivid purple hair, sharp facial and neck tattoos, dark gray black hoodie, gold chains and rings, black streetwear silhouette, rain-damp ID lanyard at his chest, pauses at the threshold of a gothic institutional building after running through a wet city alley. He is breathing hard and looking back over his shoulder, tough exterior but hunted and volatile, same grounded urban character continuity. Motivated lighting only: sodium-vapor streetlight behind him, cold fluorescent lobby glow ahead, rain on stone, faint headlight spill in the background, shallow depth of field, anamorphic cinema lens, subtle halation, film grain, realistic skin texture, dramatic but not cyberpunk, no readable text anywhere.

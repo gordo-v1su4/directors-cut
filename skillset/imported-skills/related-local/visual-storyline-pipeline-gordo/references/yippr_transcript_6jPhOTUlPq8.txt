@@ -1,0 +1,367 @@
+Hello everyone. So, today we are talking
+about not just one, but two new techs
+that are running together. First, we're
+going to check out a new way of making
+LTX video better at syncing video and
+audio together. This is called Omni NFT.
+This is for video diffusion, where it
+stands for negative aware fine-tuning.
+And what this does, it syncs the video
+and audio better. As we all know,
+sometimes [music] in LTX video when you
+use the base model to generate out of
+sync motions. And sometimes you'll even
+see the video quality going downhill.
+So, this Laura model helps with the
+motions for LTX videos in general, and
+also helps sync the video and audio in a
+better way.
+Now, this fine-tuned Laura model, you
+can download it from the Hugging Face
+repo. It's called Omni NFT. This one's
+going to be a little bit larger file
+size because it's FP32 precision. So, by
+default, it's set up so you can run it
+in Python code or run it in ComfyUI,
+either way.
+But, if you prefer less file sizes, or
+you want the ComfyUI default format
+using BF16, then you can try out this
+BF16 Laura model here.
+I'm going to provide in the video
+description, so you guys can check it
+out. So, that's the Laura. And also, I
+want to talk about how to automate the
+video creations. Well, not only with
+ComfyUI. You can automate that with
+other AI models, too, whether you have a
+server-side API or just running locally
+using ComfyUI. Because Norse Research,
+the Hermes agents, now natively support
+ComfyUI workflows. So, it does
+understand how and what to input in
+Comfy workflows with this agent. But,
+you still have to convert the
+agent-friendly workflow, which is the
+API format workflow JSON files of
+ComfyUI. So, I'm going to show you here.
+First of all, I have an LTX workflow.
+And this was talked about previously
+that I was using the prompt relay and
+auto generating the text prompts using
+VLM. In this case, I'm using Kwen 3VL.
+And here we have linked it up together
+with other Laura models that I usually
+run with.
+And the VBVR L that I am using,
+currently the highest data set trained
+VBVR Laura model. And here I am running
+the Omni NFT model. And then above that,
+this is the crisp enhanced Laura model.
+And that's all the Laura models that we
+need. And lastly, of course, you're
+going to run with the distillation. Add
+the distillation here.
+So, the overall workflow is going to be
+the same as what I talked about
+previously using LTX video generation.
+So, once you have your comfy UI
+workflows exported as API format, like
+in this case, the one that I just
+created using prompt relay LTX workflow.
+This is going to use for building your
+scenes with image reference. And I also
+have Z image turbo for creating
+backgrounds and characters. That one has
+already been integrated into Hermes
+agent.
+So, this is called the visual storyline
+pipeline that I created. As you can see,
+the folder path in here, this is using
+Hermes agent, and I am using this skill.
+And basically, what this skill does, it
+tells the AI agents what to do.
+So, let's check it out in the web
+browser.
+And we can see what it is actually
+doing.
+So,
+this visual storyline pipeline is used
+for creating a visual story from
+scratch. It starts from a storyline. And
+basically, you're going to be creating
+stories with the AI agents. Like in this
+case, it's Hermes. But of course, this
+skills.md file, you can also import that
+into Open Claw or any other AI agents
+that use the skills architecture. And
+that way you have a solid foundation of
+stories before you move on to the script
+or your character building or the
+scenes, keyframes, whatever.
+Because a lot of times I see people
+starting from creating a character,
+generating images of their character
+using character sheet, or having
+multiple images of a character, which
+you won't have a story background of
+what it's actually doing. You won't be
+able to have, you know, a full picture
+of what you actually want to create as a
+full story. So therefore, we're going to
+do this step-by-step with the AI agent.
+You're not going to fully automate like
+hands-off everything, but you're going
+to be involved in the development with
+the AI agents. That means the human step
+in the loop in the angelic way that I
+talk about, that we're going to have
+human involvement in the workflow. So in
+here, as you can see, the visual
+storyline pipeline. We're starting with
+story creation, where you first let the
+AI agents know that you're chatting,
+brainstorming the story, whatever you
+want to create. Like in the examples I'm
+using
+for creating a Korean horror story,
+which works as well.
+But the concept of the stories, you must
+be involved as a human in the loop with
+the AI agents. Then the tedious work
+gets passed to the AI agents. So the
+pipeline here, it has instructions for
+whatever content or data that we need,
+that allow the AI agents to understand
+what it's going to do step-by-step.
+So in here, after we create the
+storylines, we got to create a list of
+characters.
+This is all text files first.
+We're not creating image files yet.
+So until you get everything solid, have
+a good foundation of your stories or any
+video content that you want to create,
+then you move on to visual design, which
+is creating your character sheet image
+files.
+I've also imported the Kling AI API,
+just in case people like to run this
+pipeline using Frontier AI video models.
+Kling AI is one example, or right now
+there's SeaDance 2.0 as well. You can
+import that just by typing text with the
+agent.
+Anyway, in this case we're using ComfyUI
+just for local demo purpose.
+So, all of this is just instructions. As
+a human, you're going to see all this
+text and you might feel bored, but don't
+worry. Just import that skills to Hermes
+or create something similar into an AI
+agent. Allow the AI agent to have a
+step-by-step guide to know what it
+should do on every single step.
+So, here, well, there's a new web UI
+that you can use, but I still like to
+use the command prompt window. It loads
+way faster without less stuff dangling
+around.
+Anyway, we're going to see here I have
+the short video scenes that I just
+mentioned.
+As you can see, there's three phases of
+steps. Narrative, we create the stories,
+characters, everything with context.
+Then image generation, that's the second
+step where we create the places,
+characters, as well as some backgrounds
+we need in the stories. This is going to
+be used for image reference because the
+next step is creating keyframes. And
+this time, the concept I'm using is the
+flux.
+That's going to use reference to image.
+There's other options as well if you're
+not using ComfyUI locally.
+Either way works, but before that, just
+tell the AI what you want in each phase
+and that's going to be good. Like in
+this case, if you need to have the
+specific workflow to run with the AI,
+you can just drag and drop or copy and
+paste that workflow JSON file link in
+here. And tell the Hermes agents to use
+this workflow for a specific video
+creation. Or you can drill down to every
+single scene that's going to have
+different reference of workflow. You can
+do that, too.
+It just depends on how your conversation
+is communicated with the AI agent. So,
+as you can see, the next step, the AI
+agent is showing me that the stories are
+ready and we're able to go to the next
+step. And right now, let's say that the
+character and place are going to use
+that Z image turbo text to image
+workflow. So, I'm just doing basic
+conversations here. Nothing fancy, no
+pre-designed text prompts, just
+conversations. I need a character in
+place using the Z image text to image
+workflow. And after that, the generation
+lets me know the progress. So, we as a
+human can step in and see what kind of
+image it actually generated.
+What you need is to focus on talking
+with the agent. That's all you need to
+do because those workflows are already
+exported and the AI agents know how to
+import that into ComfyUI. So, once you
+enable or turn on the ComfyUI backend,
+just like in this example, it's
+generated the image. Okay? So, after
+generation, this is going to be another
+step that it will pause here. I set the
+skills for the agents to not automate
+everything because when you just created
+the character list and the place, you
+want to review that before you continue.
+So, in this case, let's go back to here.
+In Hermes agent, I have a new message.
+So, I'll say that for characters, I want
+each character with multiple angles and
+with the same white background. So, I
+need front view, side view, back view,
+and also one close-up shot of each
+character. So, I'm going to regenerate
+all of those and replace that in the
+same folder.
+Here, just want to show you guys that
+it's in progress. And as you can see,
+all the characters have been replaced as
+well as all of that updated. Switch back
+to Hermes agent, you'll see there's a
+notification telling me that all these
+characters have been changed to the
+character sheet and the full body view,
+etc. This all works. So, I viewed that
+again in the file browser and it's all
+done here. So, we're going to move on to
+the next step.
+And remember to type something to let
+the AI agent pause, so you can review
+those images before moving on to video
+generation.
+Otherwise, you might have some wrong
+images you want to refine and you'd just
+be spending all your computing power
+going straight to video creation.
+With the angelic way of running this,
+what I want to demonstrate is that why I
+was talking about using whatever ComfyUI
+or any image or video generation models,
+those are just tools.
+That's not everything in your toolbox.
+Think of those as just one of your
+tools.
+That's why in recent months I've been
+creating workflows that are more focused
+on singular features, more modular, the
+way I think about it. Because the design
+is going to be using this workflow as
+one feature, which is the video
+generation. That's all I need, and I put
+this into a whole system for
+integration. And that's why recently I'm
+trying to create workflows that are
+simpler and also, you know, easier for
+users at a lot of different levels to
+understand and run. Hopefully, that's
+the concept.
+Okay, so come back to ComfyUI. As you
+can see, there's some different images
+of this character in some kind of
+haunting or mystery places where she is
+in different scenes and multiple shots.
+And we can review this before we move on
+to video generation.
+For example, like this one, it's kind of
+generating weird color on the eyes and
+some kind of weird color on the shirt.
+So, you can check if this really follows
+the story or not before moving on to the
+next steps. That's why I like to have a
+human involved before moving on to fully
+generating all the videos. That way, you
+can ensure the story is intact with
+whatever content you created.
+Since I've just generated five scenes
+here, there's a total of 30 scenes. So,
+just for demo purposes, I only generated
+five scenes. I paused in the middle of
+the progress, and that's one of the good
+things about Hermes agent. In the
+multiple steps or a large volume of
+work, in the middle of the process, you
+can interrupt the AI agents to pause,
+input your new message to update. Like
+let's take 10 scenes for generation, or
+even right now I'm taking like five.
+That's good enough for this video demo.
+Then that just updates the progress of
+whatever task it's doing.
+You don't need to even touch anything in
+the ComfyUI workflow diagrams or do all
+the complex settings because this is all
+handled by the AI agents already.
+So this is overall how I'll be doing for
+a long sequence of multi-shot videos
+like a storytelling. I see a lot of
+people nowadays have been talking about
+using Claude with other AI models. A lot
+of different kinds of AI models that you
+can try with this as well. My way of
+using this is just LTX for local AI
+examples. I do also try with Kling AI C
+dance, those kind of frontier models as
+well.
+But the concept is the same. How to
+process using Hermes agents with
+different language models and generating
+the content. So
+after all the content that you've
+generated, check it out one more time.
+See the first five scenes, all the video
+content are also included. So we can
+bring this to a short video scenes demo.
+It might not be accurate for some of the
+actions. You have to do some trimming,
+video editing by yourself, or even using
+AI to do that as well.
+In the beginning we were talking about
+this Omni NFT Laura model that's able to
+bring better coherence for the video
+generations. And the main point of this
+Laura model is not ultimate high
+quality. It just helps you bring this
+negative aware fine-tuned model to
+improve your visual and audio
+presentation. So, let's check it out.
+>> [clears throat]
+>> Let this for us Jana but
+Here's the city and the this building's
+map.
+Enjoy your holiday here.
+You never need to remember.
+That's part of the service.
+You are new.
+I can tell.
+Listen to me.
+Do not go to the garden. Years.
+I think there is no way to know. The
+concierge will be kind first, then he
+will take you to the garden, and then
+you will never leave. None of them ever
+leave.
