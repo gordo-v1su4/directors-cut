@@ -1,0 +1,8 @@
+interface:
+  display_name: "Sora Cinematic Teaser"
+  short_description: "Best Sora teaser prompt architect"
+  default_prompt: "Use $sora-cinematic-teaser to turn this concept, references, or Seedance-style prompt into a Sora-ready cinematic teaser."
+
+policy:
+  allow_implicit_invocation: true
+
