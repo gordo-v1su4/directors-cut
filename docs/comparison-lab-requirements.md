@@ -102,6 +102,121 @@ content/comparisons/<run-id>/
   references/            # optional safe reference image metadata, not large binaries
 ```
 
+
+## Version and reference-image comparison UX
+
+Gordo's desired B3b/B3c interaction is not just a static answer table. Each visual slot should behave like a fast version browser.
+
+### Per-cell version dropdown / quick toggle
+
+For every visual result cell — Nano Banana Pro shot grid, still image result, Sora result, Seedance result, or final/end video — the UI should support previous versions:
+
+- compact version dropdown in the cell header, e.g. `v1`, `v2`, `v3`, `latest`
+- keyboard/arrow or tiny previous/next controls for rapid toggling
+- instant thumbnail/preview swap while toggling
+- selected version metadata visible without leaving the table:
+  - provider/model
+  - created_at
+  - prompt/revision id
+  - reference image set, if any
+  - status: pending / generated / failed / selected / rejected
+- do not reload the whole page when switching versions
+- preserve the user's selected version in UI state so comparing across columns remains stable
+
+The version browser should feel like scrubbing through creative takes, not opening separate pages.
+
+Suggested in-memory shape for a visual cell:
+
+```ts
+type VersionedArtifactSlot = {
+  slot_type: 'shot_grid' | 'image_result' | 'video_result' | 'end_video';
+  active_artifact_id: string | null;
+  versions: ComparisonArtifact[];
+};
+```
+
+### Column groups: no-reference vs reference-assisted generations
+
+The comparison table should separate prompt-only generations from reference-assisted generations.
+
+Recommended columns:
+
+```text
+Model / Answer
+Prompt-only image or 3x3 grid
+Prompt-only Sora/Seedance video
+Reference images used
+Reference-assisted image or 3x3 grid
+Reference-assisted Sora/Seedance video
+Notes / Keep / Remix
+```
+
+This lets Gordo compare:
+
+1. the model answer text itself
+2. what the prompt produces with no visual references
+3. what the same or revised prompt produces with Pinterest/reference images
+4. whether references improved style, composition, casting, lighting, or continuity
+
+### Pinterest references vs generic reference images
+
+Use these terms distinctly:
+
+- **Reference image**: any image used to guide the next generation. It can be a screenshot, uploaded image, generated frame, moodboard image, product image, character image, Pinterest image, or prior output.
+- **Pinterest reference**: a reference image whose source/provenance is Pinterest or a Pinterest-style moodboard. It is mainly useful for aesthetic direction: composition, palette, wardrobe, interior design, lighting, poster framing, etc.
+
+UI implication:
+
+- Store both under the same `reference_image` artifact type.
+- Add `source_platform: 'pinterest' | 'upload' | 'generated' | 'web' | 'manual' | string`.
+- Show a Pinterest badge only when the source is Pinterest.
+- Do not assume Pinterest references are legally safe production assets; treat them as visual mood/style references unless explicitly cleared.
+
+Suggested reference metadata:
+
+```ts
+type ReferenceImageArtifact = ComparisonArtifact & {
+  artifact_type: 'reference_image';
+  source_platform?: 'pinterest' | 'upload' | 'generated' | 'web' | 'manual' | string;
+  reference_role?: 'style' | 'composition' | 'character' | 'product' | 'lighting' | 'environment' | 'mood';
+  rights_status?: 'unknown' | 'mood_reference_only' | 'owned' | 'licensed' | 'generated';
+};
+```
+
+### Fast preview behavior
+
+The UI should optimize for responsiveness:
+
+- show thumbnails/posters first, not many live video elements
+- lazy-load full video only when a user opens/plays a specific version
+- use poster frames for Sora/Seedance cells
+- keep the 3x3 shot-grid as a single preview image or sprite, with optional click-to-expand
+- avoid mounting multiple full `<video>` players in the table at once
+- preload adjacent versions' thumbnails if cheap
+
+### Revision lineage
+
+Every altered/resubmitted prompt should create a lineage, not overwrite prior work:
+
+```text
+answer_id -> revision_id -> artifact versions
+```
+
+Example:
+
+```text
+Grok-4.5 Low answer
+  rev-001 prompt-only
+    shot-grid v1
+    seedance v1
+  rev-002 with Pinterest refs: glass-house-interior, pale-woman-silhouette
+    shot-grid v1
+    seedance v1
+    seedance v2
+```
+
+The comparison UI should make this lineage visible through the version dropdown and a detail drawer.
+
 ## Required UI states
 
 For each model answer row:
@@ -166,6 +281,10 @@ If TanStack is introduced, isolate it behind a wrapper component so API churn do
 - [ ] It can compare at least three model answers side-by-side.
 - [ ] It has clear slots for Nano Banana Pro 3x3 shot-grid previews.
 - [ ] It has clear slots for Sora/Seedance video results.
+- [ ] Each image/video/end-video cell has a version dropdown or fast previous/next toggle with responsive thumbnail previews.
+- [ ] It separates prompt-only generations from reference-assisted generations in adjacent columns.
+- [ ] It distinguishes Pinterest references from generic reference images using provenance/source badges.
 - [ ] It exposes alter/resend/add-reference-image actions, even if initially disabled.
 - [ ] It preserves original answers and creates revisions instead of overwriting.
+- [ ] It avoids rendering many live video players in the table; use thumbnails/posters and lazy-load playback.
 - [ ] `bun run check` passes.
