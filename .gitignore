@@ -1,3 +1,12 @@
 Thumbs.db
 .DS_Store
 *.log
+
+# SvelteKit / Bun
+node_modules/
+.svelte-kit/
+build/
+.vite/
+.env
+.env.*
+!.env.example

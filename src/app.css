@@ -1,0 +1,124 @@
+@import 'tailwindcss';
+
+/*
+ * Directors Cut — Pindeck-style dark/dense design tokens.
+ * `--dc-*` prefix shared across components for consistency.
+ */
+:root {
+  /* Core surfaces */
+  --dc-bg: #0e0e12;
+  --dc-bg-elev: #16161d;
+  --dc-bg-elev-2: #1d1d27;
+  --dc-border: #2a2a36;
+  --dc-border-subtle: #22222c;
+
+  /* Text */
+  --dc-text: #e8e8ef;
+  --dc-text-muted: #9a9aae;
+  --dc-text-dim: #6a6a7e;
+
+  /* Accents — model families */
+  --dc-seedance: #7c5cff;
+  --dc-sora: #2dd4bf;
+  --dc-cross: #f5a623;
+  --dc-general: #6b7280;
+
+  /* Evidence */
+  --dc-evidence-official: #4ade80;
+  --dc-evidence-corroborated: #60a5fa;
+  --dc-evidence-claim: #fbbf24;
+  --dc-evidence-unknown: #6b7280;
+
+  /* Confidence */
+  --dc-conf-high: #4ade80;
+  --dc-conf-medium: #fbbf24;
+  --dc-conf-low: #f87171;
+
+  /* Layout */
+  --dc-row-height: 36px;
+  --dc-gutter: 12px;
+  --dc-radius: 6px;
+  --dc-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dense scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--dc-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dc-border);
+  border-radius: var(--dc-radius);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dc-text-dim);
+}
+
+/* Pindeck-style table density */
+.dc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.dc-table th,
+.dc-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--dc-border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dc-table th {
+  text-align: left;
+  color: var(--dc-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  background: var(--dc-bg-elev);
+  z-index: 1;
+}
+.dc-table tbody tr {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.dc-table tbody tr:hover {
+  background: var(--dc-bg-elev-2);
+}
+.dc-table tbody tr.selected {
+  background: var(--dc-bg-elev-2);
+  box-shadow: inset 2px 0 0 var(--dc-seedance);
+}
+
+/* Badge primitive */
+.dc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* Drawer panel */
+.dc-drawer {
+  border-left: 1px solid var(--dc-border);
+  background: var(--dc-bg-elev);
+  overflow-y: auto;
+}
