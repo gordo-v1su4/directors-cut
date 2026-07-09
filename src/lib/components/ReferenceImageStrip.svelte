@@ -23,39 +23,46 @@
 </script>
 
 <div class="dc-reference-strip">
-  <div class="dc-reference-grid">
-    {#each displayImages as img (img.artifact_id)}
-      <div class="dc-reference-cell" role="img" aria-label={img.title}>
-        <div class="dc-slot-frame">
+  <div class="dc-slot-frame dc-reference-frame">
+    <div class="dc-reference-segments">
+      {#each displayImages as img, i (img.artifact_id)}
+        <div class="dc-reference-segment" role="img" aria-label={img.title}>
           {#if img.thumbnail_url || img.media_url}
-            <div class="dc-slot-media">
+            <div class="dc-reference-segment-media">
               <img src={img.thumbnail_url || img.media_url} alt={img.title} loading="lazy" />
             </div>
           {:else}
-            <div class="dc-slot-placeholder">
+            <div class="dc-reference-segment-placeholder">
               {img.reference_role?.slice(0, 1).toUpperCase() || 'R'}
             </div>
           {/if}
         </div>
-        <div class="dc-reference-badges">
-          <span class="dc-reference-badge" style:color={badgeColor(img.source_platform)}>
-            {img.source_platform}
-          </span>
-          <span class="dc-reference-badge">{img.reference_role}</span>
-          <span class="dc-reference-badge dc-reference-rights">{img.rights_status}</span>
-        </div>
-      </div>
-    {/each}
+      {/each}
 
-    {#each Array.from({ length: placeholders }) as _, i (i)}
-      <div class="dc-reference-cell dc-reference-empty" role="img" aria-label="Reference image placeholder">
-        <div class="dc-slot-frame dc-slot-frame-empty">
-          <div class="dc-slot-placeholder">
-            <span>Ref {images.length + i + 1}</span>
-            <button class="dc-action-button" disabled>Add</button>
+      {#each Array.from({ length: placeholders }) as _, i (i)}
+        <div class="dc-reference-segment dc-reference-segment-empty" role="img" aria-label="Reference image placeholder">
+          <div class="dc-reference-segment-placeholder">
+            <span class="dc-ref-num">Ref {images.length + i + 1}</span>
+            <button class="dc-ref-add" disabled>+</button>
           </div>
         </div>
-      </div>
-    {/each}
+      {/each}
+    </div>
   </div>
+
+  {#if displayImages.length > 0}
+    <div class="dc-reference-badges">
+      {#each displayImages as img (img.artifact_id)}
+        <span class="dc-reference-badge" style:color={badgeColor(img.source_platform)}>
+          {img.source_platform}
+        </span>
+      {/each}
+      {#each displayImages as img (img.artifact_id)}
+        <span class="dc-reference-badge">{img.reference_role}</span>
+      {/each}
+      {#each displayImages as img (img.artifact_id)}
+        <span class="dc-reference-badge dc-reference-rights">{img.rights_status}</span>
+      {/each}
+    </div>
+  {/if}
 </div>

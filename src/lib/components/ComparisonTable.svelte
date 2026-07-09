@@ -12,11 +12,11 @@
     <thead>
       <tr>
         <th style="min-width: 140px; width: 140px;">Model / Answer</th>
-        <th style="min-width: 100px; width: 100px;">Prompt-only image</th>
-        <th style="min-width: 100px; width: 100px;">Prompt-only video</th>
-        <th style="min-width: 180px; width: 180px;">Reference images</th>
-        <th style="min-width: 100px; width: 100px;">Reference-assisted image</th>
-        <th style="min-width: 100px; width: 100px;">Reference-assisted video</th>
+        <th style="min-width: 120px; width: 120px;">Prompt-only image</th>
+        <th style="min-width: 120px; width: 120px;">Prompt-only video</th>
+        <th style="min-width: 120px; width: 120px;">Reference images</th>
+        <th style="min-width: 120px; width: 120px;">Reference-assisted image</th>
+        <th style="min-width: 120px; width: 120px;">Reference-assisted video</th>
         <th style="min-width: 80px; width: 80px;">Vision Score</th>
         <th style="min-width: 100px; width: 100px;">Notes / Actions</th>
       </tr>
