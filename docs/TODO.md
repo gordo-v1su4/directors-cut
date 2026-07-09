@@ -6,7 +6,7 @@ Last updated: 2026-07-09 by omp.
 
 - [x] **B1** — Phase 0 data gap closed (731267e, 6d38545, c2c082c). 10 cards, 10 JSONL entries, schemas valid; comparison run README proposes the first run, blocked on Gordo capturing real Raycast answers.
 - [x] **B2** — Thin typed bridge client + artifact handshake doc (731267e). `src/lib/bridge/types.ts` provenance-copied from raycast-pro-bridge `a3671a8`; `docs/bridge-artifact-handshake.md` is the single source both sides cite.
-- [ ] **B3a** — Phase 1 Svelte 5 visual browser (next — owned by omp).
+- [x] **B3a** — Phase 1 Svelte 5 visual browser. SvelteKit + Tailwind `--dc-*` tokens; `/` dashboard, `/prompts` table+filters+drawer+copy, `/sources` map. `bun run check` clean; verified 10 cards at http://127.0.0.1:5190.
 - [ ] **B3b** — Phase 2 comparison UI (after first real comparison JSONL exists).
 
 ## Ground rules
