@@ -29,15 +29,20 @@ Output only:
 
 ## Models to compare
 
-Capture 3-5 real answers. Preferred set:
+Capture 3-5 real answers. Prefer the newest/versioned model labels that Raycast exposes in the picker, and record the exact label in `answers.jsonl` (for example, `Grok-4.5 Low` if that is what Raycast shows).
+
+Required minimum set if available:
 
 1. Raycast Auto — baseline for Raycast's routing/default model behavior.
-2. GPT-5 / OpenAI reasoning-capable model — strong instruction following and structured prompt writing.
-3. Claude Sonnet / Claude Opus — strong cinematic prose and continuity.
-4. Gemini / Google model — alternative multimodal/video-prompt style.
-5. Optional: any Raycast-available video-specialist or creative model Gordo wants to test.
+2. OpenAI GPT-5 / current OpenAI reasoning-capable model — strong instruction following and structured prompt writing.
+3. xAI Grok — use the newest Grok version exposed by Raycast.
+4. One frontier non-US/alternate lab model — use the newest available Kimi, Qwen, or DeepSeek model exposed by Raycast. Prefer Kimi or Qwen if the picker has current versions; use DeepSeek if that is the available option.
 
-If only three are available, use: Raycast Auto, GPT-5/OpenAI, Claude.
+Optional 5th answer:
+
+5. Claude Sonnet/Opus or Gemini — use whichever current model Gordo wants as the prose/continuity comparator.
+
+If only three are available, use: Raycast Auto, newest Grok, and newest Kimi/Qwen/DeepSeek.
 
 ## Save shape after capture
 
