@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { VersionedArtifactSlot, ComparisonArtifact } from '$lib/types/comparison';
+  import type { VersionedArtifactSlot } from '$lib/types/comparison';
   import CopyButton from './CopyButton.svelte';
 
   let {
@@ -11,14 +11,38 @@
   } = $props();
 
   let activeIndex = $state(0);
+  let hovering = $state(false);
+  let hoverPos = $state({ x: 0, y: 0 });
   let active = $derived(
     slotData.versions.length > 0 ? slotData.versions[activeIndex] : null
   );
+  const isVideo = $derived(
+    active?.artifact_type === 'video_result' || active?.artifact_type === 'end_video'
+  );
+  const previewUrl = $derived(active?.thumbnail_url || active?.media_url);
 
   function setActive(index: number) {
     if (index < 0) index = slotData.versions.length - 1;
     if (index >= slotData.versions.length) index = 0;
     activeIndex = index;
+  }
+
+  function onHoverEnter(e: MouseEvent) {
+    hovering = true;
+    updateHoverPos(e);
+  }
+
+  function onHoverMove(e: MouseEvent) {
+    updateHoverPos(e);
+  }
+
+  function onHoverLeave() {
+    hovering = false;
+  }
+
+  function updateHoverPos(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    hoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 </script>
 
@@ -50,14 +74,22 @@
     {/if}
   </div>
 
-  <div class="dc-artifact-cell-body">
+  <div class="dc-artifact-cell-body"
+    role="img"
+    aria-label={active ? active.title : `No ${label.toLowerCase()} yet`}
+    onmouseenter={onHoverEnter}
+    onmousemove={onHoverMove}
+    onmouseleave={onHoverLeave}
+  >
     {#if active}
-      <div class="dc-artifact-preview">
-        {#if active.thumbnail_url || active.media_url}
-          {#if active.artifact_type === 'video_result' || active.artifact_type === 'end_video'}
+      <div class="dc-artifact-preview"
+        class:dc-artifact-preview-video={isVideo}
+      >
+        {#if previewUrl}
+          {#if isVideo}
             <div class="dc-video-poster">
               <img
-                src={active.thumbnail_url || active.media_url}
+                src={previewUrl}
                 alt={active.title}
                 loading="lazy"
               />
@@ -65,7 +97,7 @@
             </div>
           {:else}
             <img
-              src={active.thumbnail_url || active.media_url}
+              src={previewUrl}
               alt={active.title}
               loading="lazy"
             />
@@ -85,8 +117,36 @@
           <CopyButton text={active.prompt_text} label="Prompt" size={10} />
         </div>
       {/if}
+
+      {#if hovering && previewUrl}
+        <div
+          class="dc-hover-preview"
+          style:left="{Math.min(hoverPos.x + 12, 220)}px"
+          style:top="{Math.min(hoverPos.y + 12, 120)}px"
+        >
+          {#if isVideo}
+            <div class="dc-hover-video">
+              <img src={previewUrl} alt={active.title} />
+              <div class="dc-hover-play">▶ click to play</div>
+            </div>
+          {:else}
+            <img src={previewUrl} alt={active.title} />
+          {/if}
+          <div class="dc-hover-meta">
+            <span>{active.title}</span>
+            <span>{active.provider}</span>
+          </div>
+        </div>
+      {/if}
     {:else}
-      <div class="dc-empty-artifact">
+      <div
+        class="dc-empty-artifact"
+        role="img"
+        aria-label={`No ${label.toLowerCase()} yet`}
+        onmouseenter={onHoverEnter}
+        onmousemove={onHoverMove}
+        onmouseleave={onHoverLeave}
+      >
         <span>No {label.toLowerCase()} yet</span>
         <button class="dc-action-button" disabled>Generate {label}</button>
       </div>

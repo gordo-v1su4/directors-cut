@@ -18,7 +18,7 @@ Paste the same prompt into each model/Raycast chat being compared:
 ```text
 You are helping build a prompt-card library for AI video generation.
 
-Creative brief: Create a 10-12 second Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
+Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
 
 Task: Write the best video-generation prompt for this brief. Make it practical for an AI video model to follow. Include timing or shot structure if that helps. Include camera, lighting, motion, audio/SFX, and title reveal details. Avoid copyrighted characters, real show names, or protected IP beyond the generic phrase "Netflix-style" as a quality/aesthetic shorthand.
 

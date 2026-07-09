@@ -23,7 +23,7 @@ const PLANNED_RUN_ID = '2026-07-netflix-teaser-title-slam-001';
 
 const PLANNED_QUESTION = `You are helping build a prompt-card library for AI video generation.
 
-Creative brief: Create a 10-12 second Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
+Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
 
 Task: Write the best video-generation prompt for this brief. Make it practical for an AI video model to follow. Include timing or shot structure if that helps. Include camera, lighting, motion, audio/SFX, and title reveal details. Avoid copyrighted characters, real show names, or protected IP beyond the generic phrase "Netflix-style" as a quality/aesthetic shorthand.
 
@@ -64,8 +64,11 @@ export async function loadComparisonsIndex(): Promise<ComparisonIndexResult> {
   }
 }
 
-export async function loadComparisonRun(runId: string): Promise<ComparisonRunDetail> {
-  const run = await fetchRun(runId);
+export async function loadComparisonRun(
+  runId: string,
+  runOverride?: ComparisonRun
+): Promise<ComparisonRunDetail> {
+  const run = runOverride ?? (await fetchRun(runId));
   const answers = await fetchAnswers(runId);
   const artifacts = await fetchArtifacts(runId);
 
@@ -227,6 +230,7 @@ export function makeComparisonRow(
     referenceAssistedVideoSlot: makeSlot('video_result', referenceAssistedVideos),
     notes: '',
     reviewStatus: isPending ? 'pending' : 'pending',
+    visionScores: [],
   };
 }
 

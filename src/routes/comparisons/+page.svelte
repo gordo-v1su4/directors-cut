@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { ComparisonRunDetail } from '$lib/types/comparison';
+  import { page } from '$app/stores';
+  import type { ComparisonRunDetail, ComparisonRun } from '$lib/types/comparison';
   import { loadComparisonRun } from '$lib/data/comparisons';
+  import { loadPromptCardBySlug } from '$lib/data/loader';
   import ComparisonTable from '$lib/components/ComparisonTable.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
 
@@ -10,10 +12,33 @@
   let run = $state<ComparisonRunDetail | null>(null);
   let loading = $state(true);
   let error = $state('');
+  let promptSlug = $state('');
 
   onMount(async () => {
+    promptSlug = $page.url.searchParams.get('prompt') || '';
+
     try {
-      run = await loadComparisonRun(PLANNED_RUN_ID);
+      if (promptSlug) {
+        const card = await loadPromptCardBySlug(promptSlug);
+        if (card) {
+          const runMeta: ComparisonRun = {
+            run_id: `prompt-${card.slug}`,
+            title: `${card.title} — Model Comparison`,
+            question: card.body_excerpt,
+            created: card.created,
+            created_by: 'prompt-card',
+            status: 'running',
+            models_requested: [],
+            target_models: card.model_targets,
+            tags: card.tags,
+          };
+          run = await loadComparisonRun(runMeta.run_id, runMeta);
+        } else {
+          error = `Prompt card "${promptSlug}" not found.`;
+        }
+      } else {
+        run = await loadComparisonRun(PLANNED_RUN_ID);
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
@@ -50,6 +75,11 @@
         <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
           Answers: {run.answers.length}
         </span>
+        {#if promptSlug}
+          <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
+            From prompt: {promptSlug}
+          </span>
+        {/if}
       </div>
 
       <div class="dc-brief-panel">

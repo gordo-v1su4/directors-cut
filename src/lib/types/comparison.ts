@@ -100,6 +100,14 @@ export interface ComparisonRow {
   referenceAssistedVideoSlot: VersionedArtifactSlot;
   notes?: string;
   reviewStatus?: 'keep' | 'remix' | 'reject' | 'pending';
+  visionScores?: { model: string; score: number | null; note?: string }[];
+}
+
+export interface VisionScore {
+  model: string;
+  score: number | null;
+  note?: string;
+  scored_at?: string;
 }
 
 export interface ComparisonRunDetail extends ComparisonRun {

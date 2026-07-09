@@ -210,7 +210,7 @@ function buildComparisonsIndex(): void {
       title: 'Netflix Teaser Title Slam — First Raycast Model Comparison',
       question:
         'You are helping build a prompt-card library for AI video generation.\n\n' +
-        'Creative brief: Create a 10-12 second Netflix-style supernatural thriller teaser called THE GLASS HOUSE.\n\n' +
+        'Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance.\n\n' +
         'Task: Write the best video-generation prompt for this brief.',
       created: new Date().toISOString(),
       created_by: 'raycast-script-command',

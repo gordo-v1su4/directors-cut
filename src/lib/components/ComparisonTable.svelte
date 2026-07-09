@@ -17,6 +17,7 @@
         <th style="min-width: 160px">Reference images</th>
         <th style="min-width: 180px">Reference-assisted image / 3×3</th>
         <th style="min-width: 180px">Reference-assisted video</th>
+        <th style="min-width: 140px">Vision Score</th>
         <th style="min-width: 140px">Notes / Actions</th>
       </tr>
     </thead>
@@ -40,6 +41,35 @@
           </td>
           <td>
             <VersionedArtifactCell slotData={row.referenceAssistedVideoSlot} label="Video" />
+          </td>
+          <td>
+            <div class="dc-vision-score-cell">
+              {#if row.visionScores?.length}
+                <div class="dc-vision-score-list">
+                  {#each row.visionScores as score (score.model)}
+                    <div class="dc-vision-score-row">
+                      <span class="dc-vision-score-model">{score.model}</span>
+                      {#if score.score !== null && score.score !== undefined}
+                        <span class="dc-vision-score-badge" style:color={score.score >= 80 ? 'var(--dc-conf-high)' : score.score >= 50 ? 'var(--dc-conf-medium)' : 'var(--dc-conf-low)'}>
+                          {score.score}
+                        </span>
+                      {:else}
+                        <span class="dc-vision-score-pending">pending</span>
+                      {/if}
+                    </div>
+                    {#if score.note}
+                      <div class="dc-vision-score-note">{score.note}</div>
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <div class="dc-empty-vision-score">
+                  <span>No vision scores yet</span>
+                  <span class="dc-vision-score-hint">Gemini Pro / Qwen VL can judge the final videos.</span>
+                  <button class="dc-action-button" disabled>Score with vision model</button>
+                </div>
+              {/if}
+            </div>
           </td>
           <td>
             <div class="dc-row-actions">

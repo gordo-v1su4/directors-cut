@@ -9,7 +9,16 @@
 {#if card}
   <aside class="dc-drawer" style="padding: 16px; min-width: 340px; max-width: 420px;">
     <div style="display:flex; align-items:start; justify-content:space-between; margin-bottom: 12px;">
-      <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--dc-text);">{card.title}</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--dc-text);">{card.title}</h2>
+        <a
+          href="/comparisons?prompt={card.slug}"
+          class="dc-badge"
+          style="color: var(--dc-text-muted); border-color: var(--dc-border); text-decoration: none; align-self: flex-start;"
+        >
+          Compare →
+        </a>
+      </div>
       <CopyButton text={card.file_path} label="Path" />
     </div>
 

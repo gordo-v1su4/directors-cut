@@ -20,6 +20,11 @@ export async function loadPromptCards(): Promise<PromptCardIndex[]> {
     .map((line) => JSON.parse(line) as PromptCardIndex);
 }
 
+export async function loadPromptCardBySlug(slug: string): Promise<PromptCardIndex | null> {
+  const cards = await loadPromptCards();
+  return cards.find((c) => c.slug === slug) ?? null;
+}
+
 /** Parse a JSONL string into typed rows (testable, no fetch). */
 export function parsePromptCardsJsonl(text: string): PromptCardIndex[] {
   return text
