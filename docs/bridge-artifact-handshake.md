@@ -97,10 +97,27 @@ spawn; `stub` (default) for honest typed stubs.
 
 ## Raycast entry point (Mac-local Script Commands)
 
-Two Script Commands in `raycast-pro-bridge/script-commands/`:
+Script Commands in `raycast-pro-bridge/script-commands/`:
 
 - **Bridge Status** — checks `/health` + lists `/tools`
 - **Bridge Call Tool** — POSTs to `/tools/<tool>` with bearer token
+- **Directors Cut Comparison Prompt** — copies the canonical THE GLASS HOUSE
+  comparison prompt to the clipboard (`directors-cut-comparison-prompt.sh`)
+- **Capture Directors Cut Answer** — appends the current clipboard as one
+  schema-shaped `answers.jsonl` row under
+  `directors-cut/content/comparisons/<run-id>/` and creates `comparison-run.md`
+  on first capture (`directors-cut-capture-answer.sh`). Args: exact model
+  label, optional run id, optional target model.
+
+Capture loop (no fabrication):
+1. Raycast AI chat → `Shift+Cmd+M` pick model
+2. Run **Directors Cut Comparison Prompt** → paste → send
+3. Copy the real answer → run **Capture Directors Cut Answer** with the exact
+   model label Raycast showed
+4. Repeat for 3–5 models; only then build B3b comparison UI
+
+Hotkeys are assigned in Raycast UI (Configure Command), not in `.sh` metadata.
+Suggested: prompt `Ctrl+Opt+Cmd+P`, capture `Ctrl+Opt+Cmd+C`.
 
 Point Raycast at the `script-commands/` directory via
 Extensions → Script Commands → Add Directories.
