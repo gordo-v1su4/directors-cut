@@ -1,0 +1,23 @@
+{
+  "runs": [
+    {
+      "run_id": "2026-07-netflix-teaser-title-slam-001",
+      "title": "Netflix Teaser Title Slam — First Raycast Model Comparison",
+      "status": "running",
+      "answer_count": 0,
+      "artifact_count": 0,
+      "model_labels": [],
+      "created": "2026-07-09T08:01:21.256Z"
+    }
+  ],
+  "expected_models": [
+    "Raycast Auto",
+    "GPT-5.5",
+    "Grok-4.5 Low",
+    "Gemini Pro 3.5",
+    "Claude Opus",
+    "Kimi K2.7 Code",
+    "Qwen3-32B",
+    "DeepSeek"
+  ]
+}

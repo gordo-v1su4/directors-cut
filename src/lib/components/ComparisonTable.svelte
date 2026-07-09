@@ -1,0 +1,65 @@
+<script lang="ts">
+  import type { ComparisonRow, ComparisonRun } from '$lib/types/comparison';
+  import ModelAnswerCell from './ModelAnswerCell.svelte';
+  import VersionedArtifactCell from './VersionedArtifactCell.svelte';
+  import ReferenceImageStrip from './ReferenceImageStrip.svelte';
+
+  let { run, rows }: { run: ComparisonRun; rows: ComparisonRow[] } = $props();
+</script>
+
+<div class="dc-comparison-table-wrap">
+  <table class="dc-comparison-table">
+    <thead>
+      <tr>
+        <th style="min-width: 240px">Model / Answer</th>
+        <th style="min-width: 180px">Prompt-only image / 3×3</th>
+        <th style="min-width: 180px">Prompt-only video</th>
+        <th style="min-width: 160px">Reference images</th>
+        <th style="min-width: 180px">Reference-assisted image / 3×3</th>
+        <th style="min-width: 180px">Reference-assisted video</th>
+        <th style="min-width: 140px">Notes / Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#each rows as row (row.answer.answer_id)}
+        <tr>
+          <td>
+            <ModelAnswerCell answer={row.answer} />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shot grid" />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.promptOnlyVideoSlot} label="Video" />
+          </td>
+          <td>
+            <ReferenceImageStrip images={row.referenceImages} />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.referenceAssistedImageSlot} label="Image" />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.referenceAssistedVideoSlot} label="Video" />
+          </td>
+          <td>
+            <div class="dc-row-actions">
+              <textarea
+                class="dc-notes-input"
+                placeholder="Notes..."
+                value={row.notes}
+                readonly
+                rows={3}
+              ></textarea>
+              <div class="dc-action-group">
+                <button class="dc-action-button" disabled>Keep</button>
+                <button class="dc-action-button" disabled>Remix</button>
+                <button class="dc-action-button" disabled>Reject</button>
+                <button class="dc-action-button" disabled>Resend</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
