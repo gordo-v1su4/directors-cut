@@ -24,7 +24,8 @@
           const runMeta: ComparisonRun = {
             run_id: `prompt-${card.slug}`,
             title: `${card.title} — Model Comparison`,
-            question: card.body_excerpt,
+            brief: card.summary,
+            question: card.prompt_pattern || card.body_excerpt,
             created: card.created,
             created_by: 'prompt-card',
             status: 'running',
@@ -83,7 +84,12 @@
       </div>
 
       <div class="dc-brief-panel">
-        <div class="dc-brief-label">Brief / prompt</div>
+        <div class="dc-brief-label">Brief</div>
+        <p style="margin: 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.5;">{run.brief || 'No brief.'}</p>
+      </div>
+
+      <div class="dc-brief-panel">
+        <div class="dc-brief-label">Prompt</div>
         <pre>{run.question}</pre>
       </div>
     </div>

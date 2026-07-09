@@ -50,8 +50,14 @@ interface PromptCardIndex {
   };
   file_path: string;
   body_excerpt: string;
+  prompt_pattern?: string;
 }
 
+/** Extract the first ```text``` block under a "## Prompt pattern" section. */
+function extractPromptPattern(body: string): string | undefined {
+  const match = body.match(/##\s*Prompt\s*pattern[\s\S]*?```text\n([\s\S]*?)\n```/);
+  return match ? match[1].trim() : undefined;
+}
 /** Extract YAML frontmatter from Markdown. Returns { frontmatter, body }. */
 function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -213,6 +219,7 @@ function buildPromptCardsIndex(): void {
       human_rating: frontmatter.human_rating as PromptCardIndex["human_rating"],
       file_path: relPath,
       body_excerpt: extractExcerpt(body),
+      prompt_pattern: extractPromptPattern(body),
     });
   }
 

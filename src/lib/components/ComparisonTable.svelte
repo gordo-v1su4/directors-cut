@@ -11,14 +11,14 @@
   <table class="dc-comparison-table">
     <thead>
       <tr>
-        <th style="min-width: 240px">Model / Answer</th>
-        <th style="min-width: 180px">Prompt-only image / 3×3</th>
-        <th style="min-width: 180px">Prompt-only video</th>
-        <th style="min-width: 160px">Reference images</th>
-        <th style="min-width: 180px">Reference-assisted image / 3×3</th>
-        <th style="min-width: 180px">Reference-assisted video</th>
-        <th style="min-width: 140px">Vision Score</th>
-        <th style="min-width: 140px">Notes / Actions</th>
+        <th style="min-width: 140px; width: 140px;">Model / Answer</th>
+        <th style="min-width: 100px; width: 100px;">Prompt-only image</th>
+        <th style="min-width: 100px; width: 100px;">Prompt-only video</th>
+        <th style="min-width: 180px; width: 180px;">Reference images</th>
+        <th style="min-width: 100px; width: 100px;">Reference-assisted image</th>
+        <th style="min-width: 100px; width: 100px;">Reference-assisted video</th>
+        <th style="min-width: 80px; width: 80px;">Vision Score</th>
+        <th style="min-width: 100px; width: 100px;">Notes / Actions</th>
       </tr>
     </thead>
     <tbody>

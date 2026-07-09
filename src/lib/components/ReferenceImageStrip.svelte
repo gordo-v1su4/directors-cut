@@ -3,6 +3,9 @@
 
   let { images }: { images: ReferenceImageArtifact[] } = $props();
 
+  const placeholders = $derived(Math.max(3 - images.length, 0));
+  const displayImages = $derived(images.slice(0, 3));
+
   function badgeColor(platform: string): string {
     switch (platform) {
       case 'pinterest':
@@ -20,31 +23,39 @@
 </script>
 
 <div class="dc-reference-strip">
-  {#if images.length === 0}
-    <div class="dc-empty-reference">
-      <span>No reference images</span>
-      <button class="dc-action-button" disabled>Add reference</button>
-    </div>
-  {:else}
-    <div class="dc-reference-list">
-      {#each images as img (img.artifact_id)}
-        <div class="dc-reference-thumb" title={img.title}>
+  <div class="dc-reference-grid">
+    {#each displayImages as img (img.artifact_id)}
+      <div class="dc-reference-cell" role="img" aria-label={img.title}>
+        <div class="dc-slot-frame">
           {#if img.thumbnail_url || img.media_url}
-            <img src={img.thumbnail_url || img.media_url} alt={img.title} loading="lazy" />
+            <div class="dc-slot-media">
+              <img src={img.thumbnail_url || img.media_url} alt={img.title} loading="lazy" />
+            </div>
           {:else}
-            <div class="dc-reference-no-img">
+            <div class="dc-slot-placeholder">
               {img.reference_role?.slice(0, 1).toUpperCase() || 'R'}
             </div>
           {/if}
-          <div class="dc-reference-badges">
-            <span class="dc-reference-badge" style:color={badgeColor(img.source_platform)}>
-              {img.source_platform}
-            </span>
-            <span class="dc-reference-badge">{img.reference_role}</span>
-            <span class="dc-reference-badge dc-reference-rights">{img.rights_status}</span>
+        </div>
+        <div class="dc-reference-badges">
+          <span class="dc-reference-badge" style:color={badgeColor(img.source_platform)}>
+            {img.source_platform}
+          </span>
+          <span class="dc-reference-badge">{img.reference_role}</span>
+          <span class="dc-reference-badge dc-reference-rights">{img.rights_status}</span>
+        </div>
+      </div>
+    {/each}
+
+    {#each Array.from({ length: placeholders }) as _, i (i)}
+      <div class="dc-reference-cell dc-reference-empty" role="img" aria-label="Reference image placeholder">
+        <div class="dc-slot-frame dc-slot-frame-empty">
+          <div class="dc-slot-placeholder">
+            <span>Ref {images.length + i + 1}</span>
+            <button class="dc-action-button" disabled>Add</button>
           </div>
         </div>
-      {/each}
-    </div>
-  {/if}
+      </div>
+    {/each}
+  </div>
 </div>

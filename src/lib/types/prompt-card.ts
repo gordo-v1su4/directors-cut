@@ -37,6 +37,7 @@ export interface PromptCardIndex {
   human_rating?: PromptCardHumanRating;
   file_path: string;
   body_excerpt: string;
+  prompt_pattern?: string;
 }
 
 export type Confidence = 'low' | 'medium' | 'high';

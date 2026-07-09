@@ -8,6 +8,7 @@
 export interface ComparisonRun {
   run_id: string;
   title: string;
+  brief?: string;
   question: string;
   created: string;
   created_by: string;
