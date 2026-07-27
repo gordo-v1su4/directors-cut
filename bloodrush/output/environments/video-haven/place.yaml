@@ -1,0 +1,40 @@
+place:
+  name: "video_haven"
+  display_name: "Video Haven"
+  type: "interior retail / exterior storefront"
+  narrative_function: "Kai's ordinary workplace, the coven's practical cover, and the containment room for the first continuity test."
+  era: "fall 2003"
+  world_type: "realistic college-town supernatural drama"
+  size: "medium neighborhood video-rental store"
+  description: "A slightly worn independent video store in a college-town strip mall. The glass entrance faces the main aisle; the checkout counter runs along the left wall; low VHS and DVD aisles fill the center; a curtained staff door and locked stock room sit behind the counter."
+  architecture:
+    style: "late-1980s strip-mall retail retained into 2003"
+    materials: ["off-white acoustic ceiling tile", "scuffed charcoal commercial carpet", "laminate counter", "powder-coated metal shelving", "glass storefront", "painted cinderblock back wall"]
+    notable_features:
+      - "front glass double door visible from the counter"
+      - "four low parallel media aisles with legible sightlines"
+      - "returns slot and plastic return bin at the counter end"
+      - "rear staff door beneath a small EXIT sign"
+      - "single exterior storefront sign spelling VIDEO HAVEN exactly; no branded sign inside"
+  lighting:
+    primary: "cool green-white fluorescent ceiling tubes"
+    secondary: "faint exterior sodium-amber spill at the front glass and restrained CRT preview-monitor glow"
+    mood: "ordinary retail fatigue with a quiet nocturnal threat"
+  color_palette:
+    base: "aged cream, charcoal carpet, faded burgundy laminate"
+    practicals: "clinical cyan from fluorescents, restrained CRT color, small sodium-amber exterior spill"
+    grade: "natural 2003 retail color by day; restrained Neon Gothic after closing"
+  props:
+    permanent: ["VHS clamshell cases", "DVD keep cases", "CRT preview monitors", "wired barcode scanner", "corded landline", "plastic membership-card rack", "returns bin", "staff key hook"]
+    variable: ["paper new-release placards", "handwritten shift schedule", "burned-CD case behind counter", "amber suppressant vial hidden beside the register"]
+  signage:
+    canonical_text: "VIDEO HAVEN"
+    treatment: "one exterior red-orange tube-neon storefront sign above the entrance, crisp uppercase block letters, shown only in the dedicated exterior view; no interior neon or duplicate branding"
+  continuity:
+    - "counter remains on the left when viewed from the entrance"
+    - "front door remains visible from Kai's register position"
+    - "staff door stays behind the counter at rear left"
+    - "media aisles run front-to-back and never change count or orientation"
+    - "interior views contain no neon logo or branded wall sign"
+    - "no streaming-era branding, flat screens, smartphones, QR codes, or post-2003 products"
+  background_prompt: "Video Haven independent video-rental store interior in fall 2003, left-wall checkout counter, exactly four low VHS and DVD aisles running front-to-back, glass double-door storefront, rear staff door, scuffed charcoal carpet, faded burgundy laminate, CRT preview monitors, corded phone, wired barcode scanner, cool fluorescent ceiling light with restrained exterior streetlight and CRT spill, no interior neon or branded wall sign, full-frame live-action cinematic photograph of a practical set, no people, high detail"

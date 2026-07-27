@@ -1,0 +1,37 @@
+place:
+  name: "dorm_house_party"
+  display_name: "Off-Campus House Party"
+  type: "residential interior / exterior porch"
+  narrative_function: "Recruitment, temptation, status, and the loss of control inside recognizable freshman nightlife."
+  era: "fall 2003"
+  world_type: "realistic college-town rental house"
+  size: "two-story student rental with small living room and adjoining kitchen"
+  description: "A safe, maintained off-campus rental house furnished affordably with intact secondhand pieces, where an ordinary 2003 college party can tip into danger: front porch, narrow entry, living room, archway to a compact kitchen, and stairs rising along the right wall."
+  architecture:
+    style: "1920s bungalow maintained as a modest student rental"
+    materials: ["clean honey-toned oak floor with normal scuffs", "warm cream plaster", "dark wood trim", "vinyl kitchen tile", "intact secondhand upholstery", "maintained painted porch boards"]
+    notable_features:
+      - "front door opens directly into the living room"
+      - "staircase runs up the right wall"
+      - "wide archway connects living room to rear kitchen"
+      - "bay window faces the porch"
+      - "small mantel and nonworking fireplace on the left wall"
+  lighting:
+    primary: "warm tungsten lamps, porch bulb, and kitchen fluorescent"
+    secondary: "colored incandescent party bulbs, CRT flicker, and streetlight through blinds"
+    mood: "ordinary freshman fun with dry unease beneath it"
+  color_palette:
+    base: "warm cream, honey oak, dark wood, faded olive, burgundy upholstery"
+    party: "tungsten amber, restrained magenta, cheap cyan-green practicals"
+    grade: "lived-in 2003 party realism, not a modern nightclub"
+  props:
+    permanent: ["intact secondhand sofa", "CRT television", "VCR", "stereo receiver", "floor speakers", "mantel", "landline base", "kitchen refrigerator"]
+    variable: ["CD binders", "burned mix CDs", "paper party flyer", "disposable camera", "red plastic cups", "bottle caps", "corded game controller", "AIM screen on beige desktop computer"]
+  continuity:
+    - "stairs stay on the right, fireplace left, kitchen archway rear, and front door opposite the archway"
+    - "party traces imply people without showing any people"
+    - "colored bulbs are incandescent, never LED strips"
+    - "no nicotine stains, grime, wall holes, graffiti, broken furniture, torn upholstery, mold, water damage, or condemned-house cues"
+    - "no smartphones, streaming interfaces, ring lights, modern speakers, or post-2003 packaging"
+  camera: "full-frame 16:9 2K, Super 35 with restrained 40mm anamorphic character, protected for 2.39:1 crop, no baked bars"
+  background_prompt: "empty safe maintained off-campus student rental house after a small fall-2003 college party, 1920s bungalow living room, front door to porch, staircase right, intact fireplace and mantel left, rear archway to compact kitchen, clean honey-toned oak floor, intact secondhand olive and burgundy seating, CRT television, VCR, stereo receiver, burned mix CDs, disposable camera, several red cups, one pizza box, warm tungsten and cool streetlight, practical-location anamorphic cinematic photograph, no people, high detail"

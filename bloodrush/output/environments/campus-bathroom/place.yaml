@@ -1,0 +1,38 @@
+place:
+  name: "campus_bathroom"
+  display_name: "Campus Bathroom"
+  type: "private-college academic interior"
+  narrative_function: "Mara's transformation chamber and the pilot's recurring mirror motif."
+  era: "fall 2003"
+  world_type: "well-funded coastal California private Catholic college"
+  size: "small maintained restroom in a 1930s academic building"
+  description: "A clean, serviced-daily women's restroom in a maintained private-college academic building, with a long intact mirror over two white porcelain basins in a dark-stone counter, warm cream wall tile, intact ceiling, blue-gray stall partitions, and restrained period Catholic detail."
+  architecture:
+    style: "1930s collegiate interior with a maintained late-1990s renovation"
+    materials: ["warm cream ceramic tile", "honed dark-gray stone counter", "white porcelain", "brushed chrome", "blue-gray painted metal partitions", "dark oak", "clean repaired grout"]
+    notable_features:
+      - "single long intact clean mirror"
+      - "two white porcelain basins in one dark-stone counter"
+      - "three blue-gray stalls along the right wall"
+      - "stainless wall-mounted soap dispenser"
+      - "small understated brass cross near the entrance"
+  lighting:
+    primary: "soft neutral maintained fluorescent practicals reflected in the mirror"
+    secondary: "warm corridor spill and faint daylight from one high frosted window"
+    mood: "clinical, private, and increasingly uncanny"
+  color_palette:
+    base: "warm cream tile, dark gray stone, porcelain white, muted blue-gray, dark oak"
+    night_variant: "clinical cyan with restrained bruised-magenta edge spill"
+    grade: "clean institutional midtones with practical halation"
+  props:
+    permanent: ["two basins", "long intact mirror", "soap dispenser", "paper-towel dispenser", "three stalls", "dark oak door", "small brass cross"]
+    variable: ["paper campus notice", "neatly stocked folded paper towels"]
+  continuity:
+    - "prior dirty bathroom images are superseded as aesthetic references"
+    - "counter and two basins remain on the left wall; three stalls remain on the right"
+    - "mirror stays intact, clean, and free of human reflections"
+    - "no black tears, blood, or supernatural effects in the clean environment plate"
+    - "no graffiti, stains, broken fixtures, dirty grout, water damage, or high-school locker-room cues"
+    - "no automatic sensor faucets, touchless dispensers, LED mirrors, or post-2003 fixtures"
+  camera: "full-frame 16:9 2K, Super 35 with restrained 40mm anamorphic character, protected for 2.39:1 crop, no baked bars"
+  background_prompt: "empty maintained fall-2003 private Catholic college women's restroom, long intact clean mirror above exactly two white porcelain basins in a honed dark-gray counter, brushed chrome manual faucets, warm cream tile with clean repaired grout, muted blue-gray three-stall wall, intact ceiling, dark oak door, small brass cross, soft neutral fluorescent and warm corridor spill, practical-location anamorphic cinematic photograph, no people, no blood, no grime"
