@@ -1,0 +1,32 @@
+{
+  "run_id": "2026-07-pink-room-two-part-teaser-001",
+  "title": "THE PINK ROOM — Sora 2 vs Seedance 2.0 teaser",
+  "question": "Create a 12-second text-only teaser for THE PINK ROOM: savage-cut montage of Colombian nightlife / Guaracha house culture and a hidden pink-lit underworld ruled by a mysterious female boss, with a clean college kid pulled in too deep. No shot grid, no references — one row with prompt-only Sora 2 and Seedance 2.0 slots at 720p.",
+  "created": "2026-07-10T00:38:11Z",
+  "created_by": "hermes",
+  "status": "partially_generated",
+  "models_requested": [
+    "Hermes"
+  ],
+  "target_models": [
+    "sora-2",
+    "seedance-2.0"
+  ],
+  "tags": [
+    "sora",
+    "seedance",
+    "vice",
+    "high_society",
+    "guaracha",
+    "pink_room",
+    "text_to_video",
+    "720p"
+  ],
+  "source_refs": [
+    "title: The Pink “Cocaine” Wave | High Society | VICE"
+  ],
+  "platform": "youtube",
+  "video_id": "VOjAlLoXOhQ",
+  "url": "https://www.youtube.com/watch?v=VOjAlLoXOhQ",
+  "note": "Grounded in verified title/metadata plus user brief; no quoted transcript."
+}

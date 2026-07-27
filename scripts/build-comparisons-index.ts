@@ -19,9 +19,10 @@ import {
   statSync,
   existsSync,
   mkdirSync,
+  cpSync,
 } from 'fs';
 import { join } from 'path';
-import type { ComparisonRun, ModelAnswer, ComparisonArtifact } from '../src/lib/types/comparison';
+import type { ComparisonRun, ModelAnswer, ComparisonArtifact, GenerationPrompt } from '../src/lib/types/comparison';
 
 const ROOT = join(import.meta.dir, '..');
 const COMPARISONS_DIR = join(ROOT, 'content', 'comparisons');
@@ -51,12 +52,16 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
   let inList = false;
   let listItems: string[] = [];
 
-  for (const line of yamlText.split('\n')) {
+  const lines = yamlText.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
     const trimmed = line.trim();
 
     if (trimmed.startsWith('- ') && currentKey) {
       const value = trimmed.replace(/^- /, '').replace(/^"(.*)"$/, '$1').trim();
       listItems.push(value);
+      i++;
       continue;
     }
 
@@ -70,6 +75,37 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
     if (kvMatch) {
       currentKey = kvMatch[1];
       const value = kvMatch[2].replace(/^"(.*)"$/, '$1').trim();
+
+      // YAML block scalar indicators: > (folded), |- (literal strip), >- (folded strip), >+, |+
+      if (value === '>' || value === '|' || value === '>-' || value === '|-' || value === '>+' || value === '|+') {
+        // Collect indented continuation lines as the block content
+        const blockLines: string[] = [];
+        let j = i + 1;
+        while (j < lines.length) {
+          const bl = lines[j];
+          // Block content must be indented more than the key, or be a blank line within the block
+          if (bl.startsWith('  ') || bl.startsWith('\t') || bl.trim() === '') {
+            if (bl.trim() === '') {
+              blockLines.push('');
+            } else {
+              blockLines.push(bl.trim());
+            }
+            j++;
+          } else {
+            break;
+          }
+        }
+        // For folded (>) scalars, join with spaces; for literal (|) scalars, keep newlines
+        const isFolded = value.startsWith('>');
+        // Strip trailing blank lines
+        while (blockLines.length > 0 && blockLines[blockLines.length - 1] === '') blockLines.pop();
+        const blockText = isFolded
+          ? blockLines.join(' ').replace(/\s+/g, ' ').trim()
+          : blockLines.join('\n').trim();
+        frontmatter[currentKey] = blockText;
+        i = j;
+        continue;
+      }
 
       if (value === '' || value === '[]') {
         inList = true;
@@ -90,6 +126,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
         frontmatter[currentKey] = value;
       }
     }
+    i++;
   }
 
   if (inList && listItems.length > 0) {
@@ -99,10 +136,11 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
   return { frontmatter, body };
 }
 
-function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[]; artifacts: ComparisonArtifact[] } {
+function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[]; artifacts: ComparisonArtifact[]; prompts: GenerationPrompt[] } {
   const runFile = join(runDir, 'comparison-run.md');
   const answersFile = join(runDir, 'answers.jsonl');
   const artifactsFile = join(runDir, 'artifacts.jsonl');
+  const promptsFile = join(runDir, 'prompts.jsonl');
 
   let run: ComparisonRun = {
     run_id: '',
@@ -153,7 +191,21 @@ function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[
     }
   }
 
-  return { run, answers, artifacts };
+  const prompts: GenerationPrompt[] = [];
+  if (existsSync(promptsFile)) {
+    const text = readFileSync(promptsFile, 'utf-8');
+    for (const line of text.split('\n')) {
+      if (line.trim()) {
+        try {
+          prompts.push(JSON.parse(line) as GenerationPrompt);
+        } catch (e) {
+          console.error(`Failed to parse prompt line in ${promptsFile}:`, e);
+        }
+      }
+    }
+  }
+
+  return { run, answers, artifacts, prompts };
 }
 
 function buildComparisonsIndex(): void {
@@ -178,14 +230,30 @@ function buildComparisonsIndex(): void {
 
   for (const runId of entries) {
     const runDir = join(COMPARISONS_DIR, runId);
-    const { run, answers, artifacts } = readRunDir(runDir);
+    const { run, answers, artifacts, prompts } = readRunDir(runDir);
 
     if (!run.run_id) run.run_id = runId;
 
     const runOutputDir = join(RUNS_OUTPUT_DIR, runId);
     mkdirSync(runOutputDir, { recursive: true });
+    writeFileSync(join(runOutputDir, 'run.json'), JSON.stringify(run, null, 2));
     writeFileSync(join(runOutputDir, 'answers.json'), JSON.stringify(answers, null, 2));
     writeFileSync(join(runOutputDir, 'artifacts.json'), JSON.stringify(artifacts, null, 2));
+    writeFileSync(join(runOutputDir, 'prompts.json'), JSON.stringify(prompts, null, 2));
+
+    // Copy media files into the public data dir so static URLs resolve.
+    const mediaDir = join(runDir, 'media');
+    const mediaOutputDir = join(runOutputDir, 'media');
+    if (existsSync(mediaDir)) {
+      mkdirSync(mediaOutputDir, { recursive: true });
+      for (const entry of readdirSync(mediaDir)) {
+        const src = join(mediaDir, entry);
+        const stat = statSync(src);
+        if (stat.isFile()) {
+          cpSync(src, join(mediaOutputDir, entry), { preserveTimestamps: true });
+        }
+      }
+    }
 
     const summary = {
       run_id: run.run_id,
@@ -222,8 +290,10 @@ function buildComparisonsIndex(): void {
 
     const runOutputDir = join(RUNS_OUTPUT_DIR, plannedRunId);
     mkdirSync(runOutputDir, { recursive: true });
+    writeFileSync(join(runOutputDir, 'run.json'), JSON.stringify(plannedRun, null, 2));
     writeFileSync(join(runOutputDir, 'answers.json'), JSON.stringify([], null, 2));
     writeFileSync(join(runOutputDir, 'artifacts.json'), JSON.stringify([], null, 2));
+    writeFileSync(join(runOutputDir, 'prompts.json'), JSON.stringify([], null, 2));
 
     runs.push({
       run: plannedRun,

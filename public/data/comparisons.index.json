@@ -1,13 +1,39 @@
 {
   "runs": [
     {
+      "run_id": "2026-07-sora-vice-teaser-001",
+      "title": "Sora 2 Vice-style teaser prompts — text-only 720p",
+      "status": "answers_collected",
+      "answer_count": 2,
+      "artifact_count": 2,
+      "model_labels": [
+        "Sora 2",
+        "Sora 2"
+      ],
+      "created": "2026-07-10T00:03:12Z"
+    },
+    {
       "run_id": "2026-07-netflix-teaser-title-slam-001",
-      "title": "Netflix Teaser Title Slam — First Raycast Model Comparison",
-      "status": "running",
-      "answer_count": 0,
-      "artifact_count": 0,
-      "model_labels": [],
-      "created": "2026-07-09T15:49:22.977Z"
+      "title": "THE GLASS HOUSE — Netflix Teaser Title Slam Comparison",
+      "status": "answers_collected",
+      "answer_count": 2,
+      "artifact_count": 3,
+      "model_labels": [
+        "Nano Banana Pro (grid gen)",
+        "Seedance 2.0 (video gen)"
+      ],
+      "created": "2026-07-09T00:00:00Z"
+    },
+    {
+      "run_id": "2026-07-pink-room-two-part-teaser-001",
+      "title": "THE PINK ROOM — Sora 2 vs Seedance 2.0 teaser",
+      "status": "partially_generated",
+      "answer_count": 1,
+      "artifact_count": 3,
+      "model_labels": [
+        "Hermes"
+      ],
+      "created": "2026-07-10T00:38:11Z"
     }
   ],
   "expected_models": [

@@ -1,14 +1,23 @@
 <script lang="ts">
-  import type { VersionedArtifactSlot } from '$lib/types/comparison';
+  import type { VersionedArtifactSlot, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
   import CopyButton from './CopyButton.svelte';
+  import PromptModal from './PromptModal.svelte';
+  import MediaLightbox from './MediaLightbox.svelte';
 
   let {
     slotData,
     label = 'Artifact',
+    promptsMap = new Map(),
+    answersMap = new Map(),
   }: {
     slotData: VersionedArtifactSlot;
     label?: string;
+    promptsMap?: Map<string, GenerationPrompt>;
+    answersMap?: Map<string, ModelAnswer>;
   } = $props();
+
+  let activePrompt = $state<GenerationPrompt | null>(null);
+  let lightboxOpen = $state(false);
 
   let activeIndex = $state(0);
   let hovering = $state(false);
@@ -16,10 +25,59 @@
   let active = $derived(
     slotData.versions.length > 0 ? slotData.versions[activeIndex] : null
   );
+  let activePromptRef = $derived(active?.prompt_id ? promptsMap.get(active.prompt_id) : null);
+  let promptAuthor = $derived(
+    activePromptRef?.answer_id ? answersMap.get(activePromptRef.answer_id) : null
+  );
+  let promptPreview = $derived(
+    activePromptRef
+      ? promptAuthor
+        ? `${promptAuthor.model_name} · ${activePromptRef.model}`
+        : `${activePromptRef.model} · ${activePromptRef.provider}`
+      : active?.prompt_text
+        ? 'View prompt'
+        : null
+  );
   const isVideo = $derived(
     active?.artifact_type === 'video_result' || active?.artifact_type === 'end_video'
   );
   const previewUrl = $derived(active?.thumbnail_url || active?.media_url);
+
+  function openPrompt(e: MouseEvent) {
+    e.stopPropagation();
+    if (activePromptRef) {
+      activePrompt = {
+        ...activePromptRef,
+        notes: promptAuthor
+          ? `Prompt by ${promptAuthor.model_name} (${promptAuthor.agent_name})`
+          : activePromptRef.notes,
+      };
+    } else if (active?.prompt_text) {
+      activePrompt = {
+        prompt_id: `inline-${active.artifact_id}`,
+        run_id: active.run_id,
+        slot_type: active.artifact_type,
+        prompt_text: active.prompt_text,
+        model: active.provider,
+        provider: active.provider,
+        created_at: active.created_at,
+        source: 'generated',
+      };
+    }
+  }
+
+  function closePrompt() {
+    activePrompt = null;
+  }
+
+  function openLightbox(e: MouseEvent) {
+    e.stopPropagation();
+    lightboxOpen = true;
+  }
+
+  function closeLightbox() {
+    lightboxOpen = false;
+  }
 
   function setActive(index: number) {
     if (index < 0) index = slotData.versions.length - 1;
@@ -45,6 +103,24 @@
     hoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 </script>
+
+{#if lightboxOpen}
+  <MediaLightbox
+    artifacts={slotData.versions}
+    activeIndex={activeIndex}
+    {promptsMap}
+    {answersMap}
+    onClose={closeLightbox}
+  />
+{/if}
+
+{#if activePrompt}
+  <PromptModal
+    prompt={activePrompt}
+    images={active ? [{ url: active.media_url ?? active.thumbnail_url, title: active.title }] : []}
+    onClose={closePrompt}
+  />
+{/if}
 
 <div class="dc-artifact-cell"
   role="img"
@@ -80,20 +156,42 @@
     {/if}
   </div>
 
-  <div class="dc-slot-frame"
+  <div
+    class="dc-slot-frame"
     class:dc-slot-frame-video={isVideo}
     class:dc-slot-frame-empty={!active}
   >
     {#if active}
       {#if previewUrl}
         {#if isVideo}
-          <div class="dc-slot-media">
-            <img src={previewUrl} alt={active.title} loading="lazy" />
-            <div class="dc-play-overlay">▶</div>
+          <div class="dc-slot-media" style="position: relative;">
+            <video
+              src={previewUrl}
+              poster={active.thumbnail_url}
+              preload="metadata"
+              muted
+              style="width: 100%; height: 100%; object-fit: cover; display: block;"
+              onmouseenter={(e) => e.currentTarget.play()}
+              onmouseleave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+            ></video>
+            <button
+              class="dc-slot-expand"
+              onclick={openLightbox}
+              aria-label="Expand preview"
+            >
+              ▶
+            </button>
           </div>
         {:else}
-          <div class="dc-slot-media">
+          <div class="dc-slot-media" style="position: relative;">
             <img src={previewUrl} alt={active.title} loading="lazy" />
+            <button
+              class="dc-slot-expand"
+              onclick={openLightbox}
+              aria-label="Expand preview"
+            >
+              ⛶
+            </button>
           </div>
         {/if}
       {:else}
@@ -107,6 +205,25 @@
     {/if}
   </div>
 
+  {#if active && slotData.versions.length > 1}
+    <div class="dc-artifact-version-strip">
+      {#each slotData.versions as v, i (v.artifact_id)}
+        <button
+          class="dc-artifact-version-thumb"
+          class:dc-artifact-version-active={i === activeIndex}
+          onclick={(e) => { e.stopPropagation(); setActive(i); }}
+          aria-label={`Version ${i + 1}`}
+        >
+          {#if v.thumbnail_url || v.media_url}
+            <img src={v.thumbnail_url ?? v.media_url} alt={v.title} loading="lazy" />
+          {:else}
+            <div class="dc-artifact-version-placeholder">{i + 1}</div>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   {#if active}
     <div class="dc-artifact-meta">
       <span>{active.provider}</span>
@@ -114,7 +231,19 @@
         <span>{new Date(active.created_at).toLocaleDateString()}</span>
       {/if}
     </div>
-    {#if active.prompt_text}
+    {#if promptPreview}
+      <div class="dc-artifact-prompt-badge">
+        <button
+          class="dc-badge"
+          style:color="var(--dc-text)"
+          style:border-color="var(--dc-border)"
+          style:font-size="10px"
+          onclick={openPrompt}
+        >
+          {promptPreview}
+        </button>
+      </div>
+    {:else if active.prompt_text}
       <div class="dc-artifact-actions">
         <CopyButton text={active.prompt_text} label="Prompt" size={10} />
       </div>
@@ -140,5 +269,4 @@
         </div>
       </div>
     {/if}
-  {/if}
-</div>
+  {/if}</div>

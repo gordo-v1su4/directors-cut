@@ -1,0 +1,12 @@
+{
+  "error": {
+    "message": "Billing hard limit has been reached.",
+    "type": "billing_limit_user_error",
+    "code": "billing_hard_limit_reached"
+  },
+  "attempted_model": "sora-2",
+  "attempted_size": "1280x720",
+  "attempted_seconds": "12",
+  "blocked_reason": "wrong_openai_sora_account_or_billing_project",
+  "do_not_retry_until": "user provides correct Sora/OpenAI account route or key"
+}

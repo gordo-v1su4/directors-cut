@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/gordo-v1su4/directors-cut/schemas/generation-prompt.schema.json",
+  "title": "Directors Cut Generation Prompt",
+  "description": "A concrete prompt returned from a generation run (collage, video, etc.) and the artifacts it produced.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "prompt_id",
+    "run_id",
+    "slot_type",
+    "prompt_text",
+    "model",
+    "provider",
+    "created_at",
+    "source"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer_id": {
+      "type": "string"
+    },
+    "slot_type": {
+      "type": "string",
+      "enum": [
+        "shot_grid",
+        "image_result",
+        "video_result",
+        "end_video",
+        "reference_image",
+        "prompt_revision"
+      ]
+    },
+    "prompt_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "description": "Target model the prompt is optimized for (e.g. seedance-2.0, sora-2)."
+    },
+    "provider": {
+      "type": "string",
+      "description": "Service that generated the prompt or the media (e.g. nano_banana_pro, seedance)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "generated",
+        "uploaded",
+        "captured",
+        "manual"
+      ]
+    },
+    "artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

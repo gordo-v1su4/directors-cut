@@ -40,7 +40,7 @@ function findMarkdownFiles(dir: string): string[] {
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
       results.push(...findMarkdownFiles(fullPath));
-    } else if (entry.endsWith(".md")) {
+    } else if (entry.endsWith(".md") && entry.toLowerCase() !== "readme.md") {
       results.push(fullPath);
     }
   }

@@ -35,6 +35,14 @@ export type UseCase =
 
 export type ResearchDepth = 'quick' | 'standard' | 'deep';
 
+export type ImageModel =
+  | 'nano_banana_2'
+  | 'nano_banana_flash'
+  | 'flux_2'
+  | 'seedream_v4_5';
+
+export type GridLayout = '1x1' | '2x2' | '3x3' | '4x4';
+
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 export type LibraryStatus =
@@ -160,6 +168,32 @@ export interface SavePromptPackOutput {
   message?: string;
 }
 
+// --- Tool: generate_cinematic_grid ----------------------------------------
+
+export interface GenerateCinematicGridInput {
+  brief: string;
+  model?: ImageModel;
+  aspect_ratio?: string;
+  resolution?: '1k' | '2k' | '4k';
+  grid_layout?: GridLayout;
+  reference_image_urls?: string[];
+  seedance_skill_path?: string;
+}
+
+export interface GeneratedImage {
+  index: number;
+  caption: string;
+  result_url: string;
+  job_id: string;
+}
+
+export interface GenerateCinematicGridOutput {
+  job_id: string;
+  status: JobStatus;
+  created_at: string;
+  artifact_names?: string[];
+}
+
 // --- Tool registry ---------------------------------------------------------
 
 export type ToolName =
@@ -167,7 +201,8 @@ export type ToolName =
   | 'get_research_status'
   | 'read_research_artifact'
   | 'search_prompt_library'
-  | 'save_prompt_pack';
+  | 'save_prompt_pack'
+  | 'generate_cinematic_grid';
 
 export const ALLOWED_TOOLS: readonly ToolName[] = [
   'start_prompt_research',
@@ -175,6 +210,7 @@ export const ALLOWED_TOOLS: readonly ToolName[] = [
   'read_research_artifact',
   'search_prompt_library',
   'save_prompt_pack',
+  'generate_cinematic_grid',
 ];
 
 // --- Artifact handshake shapes ---------------------------------------------
@@ -254,8 +290,13 @@ export async function callBridgeTool<TInput, TOutput>(
     );
   }
 
-  return (await response.json()) as TOutput;
-}
+  const data = (await response.json()) as { ok?: boolean; result?: TOutput } | BridgeError;
+  if ('ok' in data && data.ok === true && 'result' in data) {
+    return data.result as TOutput;
+  }
+  throw new Error(
+    `Bridge tool ${toolName} failed: ${(data as BridgeError).code ?? response.status} — ${(data as BridgeError).message ?? response.statusText}`,
+  );}
 
 export async function bridgeHealth(
   baseUrl: string,

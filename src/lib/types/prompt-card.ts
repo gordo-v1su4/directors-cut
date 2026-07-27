@@ -10,6 +10,14 @@ export interface PromptCardHumanRating {
   production_readiness: string;
 }
 
+export interface GenerationPromptRef {
+  prompt_id: string;
+  model: string;
+  provider: string;
+  slot_type?: string;
+  created_at: string;
+}
+
 export interface PromptCardIndex {
   id: string;
   slug: string;
@@ -38,6 +46,7 @@ export interface PromptCardIndex {
   file_path: string;
   body_excerpt: string;
   prompt_pattern?: string;
+  generation_prompts?: GenerationPromptRef[];
 }
 
 export type Confidence = 'low' | 'medium' | 'high';

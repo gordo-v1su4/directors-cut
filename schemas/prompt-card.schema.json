@@ -140,6 +140,25 @@
       "type": "object",
       "additionalProperties": true
     },
+    "prompt_pattern": {
+      "type": "string",
+      "description": "Extracted template prompt pattern from the card body."
+    },
+    "generation_prompts": {
+      "type": "array",
+      "description": "References to concrete prompts generated from this card (e.g. image grids, videos).",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "prompt_id": { "type": "string" },
+          "model": { "type": "string" },
+          "provider": { "type": "string" },
+          "slot_type": { "type": "string" },
+          "created_at": { "type": "string" }
+        }
+      }
+    },
     "tags": {
       "type": "array",
       "minItems": 1,

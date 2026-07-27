@@ -59,14 +59,30 @@ export type ReferenceRole = 'style' | 'composition' | 'character' | 'product' | 
 export type RightsStatus = 'unknown' | 'mood_reference_only' | 'owned' | 'licensed' | 'generated';
 export type ArtifactStatus = 'pending' | 'generated' | 'failed' | 'selected' | 'rejected';
 
+export interface GenerationPrompt {
+  prompt_id: string;
+  run_id: string;
+  answer_id?: string;
+  slot_type: ArtifactType;
+  prompt_text: string;
+  model: string;
+  provider: ArtifactProvider;
+  created_at: string;
+  source: ArtifactSource;
+  artifact_ids?: string[];
+  notes?: string;
+}
+
 export interface ComparisonArtifact {
   artifact_id: string;
   run_id: string;
   answer_id?: string;
   revision_id?: string;
+  prompt_id?: string;
   artifact_type: ArtifactType;
   provider: ArtifactProvider;
   title: string;
+  target_model?: string;
   prompt_text?: string;
   media_url?: string;
   local_path?: string;
@@ -95,10 +111,12 @@ export interface ComparisonRow {
   run_id: string;
   answer: ModelAnswer;
   promptOnlyImageSlot: VersionedArtifactSlot;
-  promptOnlyVideoSlot: VersionedArtifactSlot;
+  promptOnlyVideoSeedanceSlot: VersionedArtifactSlot;
+  promptOnlyVideoSoraSlot: VersionedArtifactSlot;
   referenceImages: ReferenceImageArtifact[];
   referenceAssistedImageSlot: VersionedArtifactSlot;
-  referenceAssistedVideoSlot: VersionedArtifactSlot;
+  referenceAssistedVideoSeedanceSlot: VersionedArtifactSlot;
+  referenceAssistedVideoSoraSlot: VersionedArtifactSlot;
   notes?: string;
   reviewStatus?: 'keep' | 'remix' | 'reject' | 'pending';
   visionScores?: { model: string; score: number | null; note?: string }[];
@@ -114,6 +132,7 @@ export interface VisionScore {
 export interface ComparisonRunDetail extends ComparisonRun {
   answers: ModelAnswer[];
   artifacts: ComparisonArtifact[];
+  prompts: GenerationPrompt[];
   rows: ComparisonRow[];
 }
 

@@ -51,6 +51,7 @@ interface PromptCardIndex {
   file_path: string;
   body_excerpt: string;
   prompt_pattern?: string;
+  generation_prompts?: { prompt_id: string; model: string; provider: string; slot_type?: string; created_at: string }[];
 }
 
 /** Extract the first ```text``` block under a "## Prompt pattern" section. */
@@ -220,6 +221,7 @@ function buildPromptCardsIndex(): void {
       file_path: relPath,
       body_excerpt: extractExcerpt(body),
       prompt_pattern: extractPromptPattern(body),
+      generation_prompts: (frontmatter.generation_prompts as PromptCardIndex["generation_prompts"]) ?? [],
     });
   }
 

@@ -1,0 +1,30 @@
+{
+  "id": "30804753-25b2-4f46-aaac-3dc365e63147",
+  "status": "completed",
+  "display_name": "Sora 2",
+  "job_set_type": "sora2_video",
+  "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_2x2ysOb5q5Tw0qQqsK66mA3mJ9U/hf_20260710_065100_30804753-25b2-4f46-aaac-3dc365e63147.mp4",
+  "created_at": 1783666260.953316,
+  "params": {
+    "width": 1280,
+    "height": 720,
+    "input_image": null,
+    "prompt": "Create a 15-second, 16:9 teaser for THE PINK ROOM. Savage-cut montage of an innocent college driver entering a pink-lit underground Guaracha nightlife circuit controlled by a calm female boss. Rainy streets, club energy, motel corridors, motorbikes, security, frightened faces, dirty glamour. Handheld documentary urgency, fluorescent pink practicals, wet asphalt, restrained 35mm grain. Fast cuts over distorted bass, sudden silence, hard THE PINK ROOM title slam and blackout. Keep the lead and boss consistent; no subtitles or logos.\n0-3s: Slow aerial drone shot over crystal turquoise waves crashing on white sand. A diverse group of gorgeous 20-somethings in stylish summer outfits run laughing along the shoreline, hair whipping in the warm wind, golden sunlight flaring the lens.\n\n3-7s: Quick stylish cuts \u2014 close-up of a mysterious stranger\u2019s intense eyes behind dark sunglasses, a secretive glance between two leads, champagne glasses clinking at a luxurious rooftop party overlooking the ocean at dusk, neon lights reflecting on wet skin.\n\n7-10s: Dynamic tracking shot of a high-speed motorcycle chase along a coastal cliff road at magic hour, sparks flying, ocean crashing below. Cut to a passionate almost-kiss interrupted by a shocking reveal.\n\n10-12s: Freeze-frame on the full cast standing on the beach at golden hour, wind blowing, looking directly into camera with fierce energy. Bold white title text \u201cHEATWAVE\u201d slams on screen with a subtle heat-haze distortion. Soft summer R&B beat with distant waves and laughter under the score. Ultra-cinematic, 24fps film grain, anamorphic lens flares, shallow depth of field.",
+    "duration": 12,
+    "model": "sora-2",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "motion": null,
+    "link_to_ad_preset": null,
+    "social": null,
+    "style": null,
+    "music": null,
+    "language": null,
+    "speech": null,
+    "speach_tempo": null,
+    "craziness_level": null,
+    "montage": null,
+    "is_sketch": false,
+    "deflicker": false
+  }
+}

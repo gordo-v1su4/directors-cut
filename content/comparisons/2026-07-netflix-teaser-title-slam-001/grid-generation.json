@@ -1,0 +1,22 @@
+[
+  {
+    "id": "dba80933-f825-4488-878a-0ca5d18974b8",
+    "status": "completed",
+    "display_name": "Nano Banana Pro",
+    "job_set_type": "nano_banana_2",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FQ1sTqCBVKI77i2ozrxGniPWqq/hf_20260709_225818_dba80933-f825-4488-878a-0ca5d18974b8.png",
+    "created_at": 1783637898.579566,
+    "params": {
+      "width": 2752,
+      "height": 1536,
+      "aspect_ratio": "16:9",
+      "resolution": "2k",
+      "batch_size": 1,
+      "input_images": [],
+      "input_image": null,
+      "application": null,
+      "surface": null,
+      "prompt": "THE GLASS HOUSE — one 16:9 cinematic image containing a clean 3x3 semantic storyboard/contact-sheet grid, 9 rectangular film-frame panels arranged in a 3 by 3 layout, no captions, no labels, no frame numbers, no readable UI, no watermark. Current prestige streaming supernatural thriller proof-of-concept, premium Netflix-style title-slam energy without copying any existing show. One coherent directorial intention: a glass-walled modernist mansion in humid Miami becomes a transparent trap, where reflections reveal a family secret before reality fractures. Visual language: black-glass architecture, tropical storm pressure, wet limestone, neon pool light, moonlit palms, lightning reflected in floor-to-ceiling windows, anamorphic lenses, ARRI Alexa grain, crushed blacks, cyan moonlight, amber interior practicals, subtle crimson warning accents, high-end ominous thriller grade. Panel beats: 1) wide eerie location beat, glass mansion glowing under storm clouds beside black water and palms; 2) empty pool deck with one champagne glass trembling, ripples moving against the wind; 3) human reaction beat, adult woman in silk eveningwear staring at her reflection in a glass wall, but the reflection looks terrified and half a second out of sync; 4) macro symbolic clue, a hairline crack spreading through a family portrait behind glass; 5) hallway of mirrored glass panes, multiple reflections of the same adult man appearing at different ages; 6) impact/action beat, a sliding glass wall slams shut by itself as lightning hits and silhouettes scatter; 7) overhead security-camera-like view of guests frozen around a dining table, each reflected twice in impossible positions; 8) symbolic supernatural reveal, red palm smear appearing on the inside of pristine glass while no one stands there, restrained not gory; 9) final title-card image, the mansion seen through fractured glass with elegant large centered chrome serif title text THE GLASS HOUSE, subtle title-slam impact, black negative space, premium ominous finish. Make it feel like a polished sizzle-board for a current youthful but adult thriller series: beautiful wealthy people, secrets, betrayal, Miami storm-night luxury, what-did-I-miss cold-open tension."
+    }
+  }
+]

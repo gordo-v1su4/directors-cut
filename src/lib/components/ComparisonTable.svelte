@@ -1,22 +1,55 @@
 <script lang="ts">
-  import type { ComparisonRow, ComparisonRun } from '$lib/types/comparison';
+  import type { ComparisonRow, ComparisonRun, ComparisonRunDetail, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
   import ModelAnswerCell from './ModelAnswerCell.svelte';
   import VersionedArtifactCell from './VersionedArtifactCell.svelte';
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
 
-  let { run, rows }: { run: ComparisonRun; rows: ComparisonRow[] } = $props();
+  let { run, rows }: { run: ComparisonRun | ComparisonRunDetail; rows: ComparisonRow[] } = $props();
+
+  let promptsMap = $derived(
+    new Map<string, GenerationPrompt>(
+      ('prompts' in run ? run.prompts : []).map((p) => [p.prompt_id, p])
+    )
+  );
+
+  let answersMap = $derived(
+    new Map<string, ModelAnswer>(
+      ('answers' in run ? run.answers : []).map((a) => [a.answer_id, a])
+    )
+  );
+
+  let scrollContainer: HTMLElement | null = $state(null);
+  let showEdgeCue = $state(false);
+
+  $effect(() => {
+    if (!scrollContainer) return;
+    function onScroll() {
+      if (!scrollContainer) return;
+      // Show edge cue when there's more content to the right
+      showEdgeCue = scrollContainer.scrollLeft + scrollContainer.clientWidth < scrollContainer.scrollWidth - 4;
+    }
+    scrollContainer.addEventListener('scroll', onScroll);
+    onScroll();
+    return () => scrollContainer?.removeEventListener('scroll', onScroll);
+  });
+
+  function scrollRight() {
+    scrollContainer?.scrollBy({ left: 300, behavior: 'smooth' });
+  }
 </script>
 
-<div class="dc-comparison-table-wrap">
+<div class="dc-comparison-table-wrap" bind:this={scrollContainer}>
   <table class="dc-comparison-table">
     <thead>
       <tr>
         <th style="min-width: 140px; width: 140px;">Model / Answer</th>
-        <th style="min-width: 120px; width: 120px;">Prompt-only image</th>
-        <th style="min-width: 120px; width: 120px;">Prompt-only video</th>
+        <th style="min-width: 120px; width: 120px;">Shot grid</th>
+        <th style="min-width: 120px; width: 120px;">Prompt-only video (Seedance)</th>
+        <th style="min-width: 120px; width: 120px;">Prompt-only video (Sora)</th>
         <th style="min-width: 120px; width: 120px;">Reference images</th>
         <th style="min-width: 120px; width: 120px;">Reference-assisted image</th>
-        <th style="min-width: 120px; width: 120px;">Reference-assisted video</th>
+        <th style="min-width: 120px; width: 120px;">Ref-assisted video (Seedance)</th>
+        <th style="min-width: 120px; width: 120px;">Ref-assisted video (Sora)</th>
         <th style="min-width: 80px; width: 80px;">Vision Score</th>
         <th style="min-width: 100px; width: 100px;">Notes / Actions</th>
       </tr>
@@ -28,19 +61,25 @@
             <ModelAnswerCell answer={row.answer} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shot grid" />
+            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shot grid" {promptsMap} {answersMap} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.promptOnlyVideoSlot} label="Video" />
+            <VersionedArtifactCell slotData={row.promptOnlyVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.promptOnlyVideoSoraSlot} label="Sora" {promptsMap} {answersMap} />
           </td>
           <td>
             <ReferenceImageStrip images={row.referenceImages} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.referenceAssistedImageSlot} label="Image" />
+            <VersionedArtifactCell slotData={row.referenceAssistedImageSlot} label="Image" {promptsMap} {answersMap} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.referenceAssistedVideoSlot} label="Video" />
+            <VersionedArtifactCell slotData={row.referenceAssistedVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />
+          </td>
+          <td>
+            <VersionedArtifactCell slotData={row.referenceAssistedVideoSoraSlot} label="Sora" {promptsMap} {answersMap} />
           </td>
           <td>
             <div class="dc-vision-score-cell">

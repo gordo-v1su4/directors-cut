@@ -6,6 +6,7 @@ import type {
   ReferenceImageArtifact,
   VersionedArtifactSlot,
   ModelAnswer,
+  GenerationPrompt,
 } from '$lib/types/comparison';
 
 const EXPECTED_MODELS = [
@@ -71,18 +72,72 @@ export async function loadComparisonRun(
   const run = runOverride ?? (await fetchRun(runId));
   const answers = await fetchAnswers(runId);
   const artifacts = await fetchArtifacts(runId);
+  const prompts = await fetchPrompts(runId);
 
-  const rows = buildComparisonRows(run, answers, artifacts);
+  const rows = buildComparisonRows(run, answers, artifacts, prompts);
 
   return {
     ...run,
     answers,
     artifacts,
+    prompts,
     rows,
   };
 }
 
+export type RunGenerationStatus = 'generated' | 'failed' | 'pending' | 'mixed';
+
+export interface GeneratedMediaSummaryItem {
+  artifact_id: string;
+  title: string;
+  artifact_type: string;
+  provider: string;
+  media_url?: string;
+  thumbnail_url?: string;
+  status?: string;
+  created_at: string;
+}
+
+export function getRunGenerationStatus(artifacts: ComparisonArtifact[]): RunGenerationStatus {
+  const statuses = artifacts.map((a) => a.status ?? 'pending');
+  const hasGenerated = statuses.includes('generated');
+  const hasFailed = statuses.includes('failed');
+  const hasPending = statuses.includes('pending');
+  if (hasGenerated && (hasFailed || hasPending)) return 'mixed';
+  if (hasGenerated) return 'generated';
+  if (hasFailed) return 'failed';
+  return 'pending';
+}
+
+export function getGeneratedMediaSummary(artifacts: ComparisonArtifact[]): GeneratedMediaSummaryItem[] {
+  return artifacts
+    .filter((a) => a.media_url || a.thumbnail_url)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map((a) => ({
+      artifact_id: a.artifact_id,
+      title: a.title,
+      artifact_type: a.artifact_type,
+      provider: a.provider,
+      media_url: a.media_url,
+      thumbnail_url: a.thumbnail_url,
+      status: a.status,
+      created_at: a.created_at,
+    }));
+}
+
 async function fetchRun(runId: string): Promise<ComparisonRun> {
+  // Prefer the per-run run.json emitted by the build script (carries the real
+  // brief, question, models_requested, target_models, tags from the run md).
+  try {
+    const res = await fetch(`/data/comparisons/${runId}/run.json`);
+    if (res.ok) {
+      const run = (await res.json()) as ComparisonRun;
+      if (run.run_id) return run;
+    }
+  } catch (e) {
+    console.warn(`run.json fetch failed for ${runId}:`, e);
+  }
+  // Fallback: reconstruct a minimal run from the comparisons index summary.
   try {
     const res = await fetch('/data/comparisons.index.json');
     if (!res.ok) throw new Error('index unavailable');
@@ -92,13 +147,13 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
     return {
       run_id: found.run_id,
       title: found.title,
-      question: PLANNED_QUESTION,
+      question: '',
       created: found.created,
       created_by: 'raycast-script-command',
       status: found.status,
       models_requested: data.expected_models,
-      target_models: ['general_video', 'seedance-2.0'],
-      tags: ['netflix_teaser', 'title_slam', 'raycast'],
+      target_models: ['general_video'],
+      tags: [],
     };
   } catch (e) {
     console.warn('Could not load comparison run from index, using fallback:', e);
@@ -128,6 +183,17 @@ async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {
   }
 }
 
+async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
+  try {
+    const res = await fetch(`/data/comparisons/${runId}/prompts.json`);
+    if (!res.ok) return [];
+    return (await res.json()) as GenerationPrompt[];
+  } catch (e) {
+    console.warn(`Failed to load prompts for ${runId}:`, e);
+    return [];
+  }
+}
+
 function fallbackRun(runId: string): ComparisonRun {
   return {
     run_id: runId || PLANNED_RUN_ID,
@@ -145,30 +211,51 @@ function fallbackRun(runId: string): ComparisonRun {
 export function buildComparisonRows(
   run: ComparisonRun,
   answers: ModelAnswer[],
-  artifacts: ComparisonArtifact[]
+  artifacts: ComparisonArtifact[],
+  prompts: GenerationPrompt[] = []
 ): ComparisonRow[] {
-  const byAnswer = new Map<string, ComparisonArtifact[]>();
-  for (const a of artifacts) {
-    if (!a.answer_id) continue;
-    const list = byAnswer.get(a.answer_id) ?? [];
-    list.push(a);
-    byAnswer.set(a.answer_id, list);
-  }
-
   const answerByModel = new Map<string, ModelAnswer>();
   for (const a of answers) {
     answerByModel.set(a.model_name, a);
   }
 
-  const models = run.models_requested?.length
-    ? run.models_requested
-    : EXPECTED_MODELS;
+  const requestedModels = run.models_requested?.length ? run.models_requested : EXPECTED_MODELS;
+  const answeredModels = new Set(answers.map((a) => a.model_name));
+  const models = [...new Set([...requestedModels, ...answeredModels])];
 
-  return models.map((modelName) => {
+  const rows = models.map((modelName) => {
     const answer = answerByModel.get(modelName) ?? makePendingAnswer(modelName, run.run_id);
-    const answerArtifacts = byAnswer.get(answer.answer_id) ?? [];
 
-    return makeComparisonRow(run.run_id, answer, answerArtifacts);
+    return makeComparisonRow(run.run_id, answer, artifacts, prompts);
+  });
+
+  // Sort rows: rows containing real artifacts first, then rows with real
+  // answer text, then fully-empty pending rows last. This makes generated
+  // media visible immediately on initial load without scrolling past empty
+  // provider placeholders.
+  function rowHasArtifacts(row: ComparisonRow): boolean {
+    return (
+      row.promptOnlyImageSlot.versions.length > 0 ||
+      row.promptOnlyVideoSeedanceSlot.versions.length > 0 ||
+      row.promptOnlyVideoSoraSlot.versions.length > 0 ||
+      row.referenceAssistedImageSlot.versions.length > 0 ||
+      row.referenceAssistedVideoSeedanceSlot.versions.length > 0 ||
+      row.referenceAssistedVideoSoraSlot.versions.length > 0 ||
+      row.referenceImages.length > 0
+    );
+  }
+
+  return rows.sort((a, b) => {
+    const aHas = rowHasArtifacts(a);
+    const bHas = rowHasArtifacts(b);
+    if (aHas && !bHas) return -1;
+    if (!aHas && bHas) return 1;
+    // Within same group, keep rows with real answer text above pending ones
+    const aHasAnswer = !!(a.answer.answer_text && a.answer.answer_text.trim());
+    const bHasAnswer = !!(b.answer.answer_text && b.answer.answer_text.trim());
+    if (aHasAnswer && !bHasAnswer) return -1;
+    if (!aHasAnswer && bHasAnswer) return 1;
+    return 0;
   });
 }
 
@@ -193,41 +280,71 @@ function makePendingAnswer(modelName: string, runId: string): ModelAnswer {
 export function makeComparisonRow(
   runId: string,
   answer: ModelAnswer,
-  artifacts: ComparisonArtifact[] = []
+  artifacts: ComparisonArtifact[] = [],
+  prompts: GenerationPrompt[] = []
 ): ComparisonRow {
   const isPending = answer.ui_status === 'missing' || !answer.answer_text;
 
-  const promptOnlyImages = artifacts.filter(
-    (a) => a.answer_id === answer.answer_id && a.artifact_type === 'image_result' && !a.reference_image_ids?.length
+  const promptsById = new Map<string, GenerationPrompt>();
+  for (const p of prompts) {
+    promptsById.set(p.prompt_id, p);
+  }
+
+  const answerArtifacts = artifacts.filter((a) => a.answer_id === answer.answer_id);
+
+  const promptOnlyImages = answerArtifacts.filter(
+    (a) => a.artifact_type === 'image_result' && !a.reference_image_ids?.length
   );
-  const promptOnlyVideos = artifacts.filter(
-    (a) => a.answer_id === answer.answer_id && (a.artifact_type === 'video_result' || a.artifact_type === 'end_video') && !a.reference_image_ids?.length
+  const promptOnlyVideos = answerArtifacts.filter(
+    (a) => (a.artifact_type === 'video_result' || a.artifact_type === 'end_video') && !a.reference_image_ids?.length
   );
-  const referenceImages = artifacts.filter(
+  const referenceImages = answerArtifacts.filter(
     (a) => a.artifact_type === 'reference_image'
   ) as ReferenceImageArtifact[];
-  const referenceAssistedImages = artifacts.filter(
-    (a) => a.answer_id === answer.answer_id && a.artifact_type === 'image_result' && a.reference_image_ids?.length
+  const referenceAssistedImages = answerArtifacts.filter(
+    (a) => a.artifact_type === 'image_result' && a.reference_image_ids?.length
   );
-  const referenceAssistedVideos = artifacts.filter(
-    (a) => a.answer_id === answer.answer_id && (a.artifact_type === 'video_result' || a.artifact_type === 'end_video') && a.reference_image_ids?.length
+  const referenceAssistedVideos = answerArtifacts.filter(
+    (a) => (a.artifact_type === 'video_result' || a.artifact_type === 'end_video') && a.reference_image_ids?.length
   );
 
-  const shotGrids = artifacts.filter(
-    (a) => a.answer_id === answer.answer_id && a.artifact_type === 'shot_grid'
+  const shotGrids = answerArtifacts.filter(
+    (a) => a.artifact_type === 'shot_grid'
   );
 
   // If no image_result exists but a shot_grid exists, treat the shot grid as the prompt-only image slot.
   const effectivePromptOnlyImages = promptOnlyImages.length ? promptOnlyImages : shotGrids;
 
+  function videoSlotFor(video: ComparisonArtifact): 'seedance' | 'sora' | 'other' {
+    const prompt = video.prompt_id ? promptsById.get(video.prompt_id) : null;
+    const model = video.target_model ?? prompt?.model ?? '';
+    if (model.toLowerCase().includes('seedance')) return 'seedance';
+    if (model.toLowerCase().includes('sora')) return 'sora';
+    return 'other';
+  }
+
+  const promptOnlyVideoSeedance = promptOnlyVideos.filter((v) => videoSlotFor(v) === 'seedance');
+  const promptOnlyVideoSora = promptOnlyVideos.filter((v) => videoSlotFor(v) === 'sora');
+  const promptOnlyVideoOther = promptOnlyVideos.filter((v) => videoSlotFor(v) === 'other');
+
+  // Fallback: if a video has no target model and there is only one video, put it in Seedance slot as the default.
+  const effectivePromptOnlyVideoSeedance = promptOnlyVideoSeedance.length ? promptOnlyVideoSeedance : promptOnlyVideoOther;
+
+  const referenceAssistedVideoSeedance = referenceAssistedVideos.filter((v) => videoSlotFor(v) === 'seedance');
+  const referenceAssistedVideoSora = referenceAssistedVideos.filter((v) => videoSlotFor(v) === 'sora');
+  const referenceAssistedVideoOther = referenceAssistedVideos.filter((v) => videoSlotFor(v) === 'other');
+  const effectiveReferenceAssistedVideoSeedance = referenceAssistedVideoSeedance.length ? referenceAssistedVideoSeedance : referenceAssistedVideoOther;
+
   return {
     run_id: runId,
     answer,
     promptOnlyImageSlot: makeSlot('image_result', effectivePromptOnlyImages),
-    promptOnlyVideoSlot: makeSlot('video_result', promptOnlyVideos),
+    promptOnlyVideoSeedanceSlot: makeSlot('video_result', effectivePromptOnlyVideoSeedance),
+    promptOnlyVideoSoraSlot: makeSlot('video_result', promptOnlyVideoSora),
     referenceImages,
     referenceAssistedImageSlot: makeSlot('image_result', referenceAssistedImages),
-    referenceAssistedVideoSlot: makeSlot('video_result', referenceAssistedVideos),
+    referenceAssistedVideoSeedanceSlot: makeSlot('video_result', effectiveReferenceAssistedVideoSeedance),
+    referenceAssistedVideoSoraSlot: makeSlot('video_result', referenceAssistedVideoSora),
     notes: '',
     reviewStatus: isPending ? 'pending' : 'pending',
     visionScores: [],
@@ -240,6 +357,30 @@ function makeSlot(slotType: VersionedArtifactSlot['slot_type'], artifacts: Compa
     active_artifact_id: artifacts.length ? artifacts[0].artifact_id : null,
     versions: artifacts,
   };
+}
+
+export async function loadLatestArtifacts(limit = 6): Promise<ComparisonArtifact[]> {
+  const index = await loadComparisonsIndex();
+  const items: ComparisonArtifact[] = [];
+
+  for (const run of index.runs) {
+    try {
+      const res = await fetch(`/data/comparisons/${run.run_id}/artifacts.json`);
+      if (!res.ok) continue;
+      const artifacts = (await res.json()) as ComparisonArtifact[];
+      for (const a of artifacts) {
+        if (a.media_url || a.thumbnail_url) {
+          items.push(a);
+        }
+      }
+    } catch (e) {
+      console.error(`Failed to load artifacts for ${run.run_id}:`, e);
+    }
+  }
+
+  return items
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit);
 }
 
 function slugify(label: string): string {

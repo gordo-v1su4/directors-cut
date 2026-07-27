@@ -196,9 +196,61 @@ body {
   background: var(--dc-bg-elev);
 }
 
+/* Explicit horizontal scroller: visible bottom scrollbar, sticky first column */
+.dc-comparison-table-scroll-outer {
+  position: relative;
+  border: 1px solid var(--dc-border);
+  border-radius: var(--dc-radius);
+  background: var(--dc-bg-elev);
+  overflow: hidden;
+}
+.dc-comparison-table-scroll-inner {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none;
+}
+/* Sticky first column (Model / Answer) — stays fixed during horizontal scroll */
+.dc-comparison-table-scroll-inner .dc-comparison-table td:first-child,
+.dc-comparison-table-scroll-inner .dc-comparison-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--dc-bg-elev-2);
+  box-shadow: 2px 0 4px rgba(0,0,0,0.2);
+}
+.dc-comparison-table-scroll-inner .dc-comparison-table th:first-child {
+  z-index: 3;
+}
+.dc-comparison-table-scroll-inner .dc-comparison-table tbody tr:hover td:first-child {
+  background: var(--dc-bg-elev);
+}
+/* Edge cue for horizontal scroll discovery */
+.dc-scroll-edge-cue {
+  position: sticky;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: var(--dc-sora);
+  color: var(--dc-bg);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--dc-radius) 0 0 var(--dc-radius);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+  opacity: 0.9;
+}
+.dc-scroll-edge-cue:hover {
+  opacity: 1;
+}
+
 .dc-comparison-table-wrap {
   width: 100%;
   overflow-x: auto;
+  position: relative;
   border: 1px solid var(--dc-border-subtle);
   border-radius: var(--dc-radius);
 }
@@ -365,6 +417,7 @@ body {
   aspect-ratio: 16 / 9;
 }
 .dc-slot-media {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
@@ -372,11 +425,38 @@ body {
   justify-content: center;
   overflow: hidden;
 }
-.dc-slot-media img {
+.dc-slot-media img,
+.dc-slot-media video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.dc-slot-expand {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: var(--dc-text);
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  padding: 0;
+  z-index: 10;
+}
+.dc-slot-media:hover .dc-slot-expand {
+  opacity: 1;
+}
+.dc-slot-expand:hover {
+  background: rgba(0, 0, 0, 0.85);
 }
 .dc-slot-placeholder {
   display: flex;
@@ -412,6 +492,52 @@ body {
 .dc-artifact-actions {
   display: flex;
   gap: 6px;
+}
+.dc-artifact-prompt-badge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dc-artifact-prompt-badge .dc-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dc-artifact-version-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.dc-artifact-version-thumb {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 20px;
+  background: var(--dc-bg);
+  border: 1px solid var(--dc-border-subtle);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+}
+.dc-artifact-version-thumb.dc-artifact-version-active {
+  border-color: var(--dc-sora);
+}
+.dc-artifact-version-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dc-artifact-version-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dc-text-dim);
+  font-size: 9px;
 }
 .dc-hover-preview {
   position: absolute;
