@@ -10,7 +10,7 @@ This folder is a review area for copied skills. The originals were left untouche
 
 ## Related Local Sources
 
-- `seedance-2.0`: `~/Documents/Github/seedance-2.0` (forked from `https://github.com/Emily2040/seedance-2.0.git`, fast-forwarded to upstream `main`)
+- `seedance-2.0`: vendored in-repo at `related-local/seedance-2.0/` (synced from `https://github.com/Emily2040/seedance-2.0.git`; see `UPSTREAM.md` for commit hash and refresh steps). Not a nested git checkout.
 - `visual-storyline-pipeline-gordo`: `C:\Users\Gordo\Documents\Github\visual-storyline-pipeline-gordo`
 - `super-seed2`: `C:\Users\Gordo\Documents\Github\super-seed2`
 - `wuxia-director`: `C:\Users\Gordo\Documents\Github\mushroomfleet\wuxia-director-skill\wuxia-director`

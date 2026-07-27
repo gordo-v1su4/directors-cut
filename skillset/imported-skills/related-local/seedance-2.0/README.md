@@ -28,7 +28,7 @@ Author: [Iamemily2050 (@iamemily2050)](https://github.com/Emily2040) · [Instagr
 
 Platform context: [ByteDance Seedance 2.0](https://seed.bytedance.com/en/seedance2_0) · Dreamina · Jimeng · Doubao · [Volcengine Ark](https://www.volcengine.com/docs/82379/2291680?lang=zh) · [BytePlus ModelArk](https://docs.byteplus.com/en/docs/ModelArk/2291680) · [Runway Seedance 2](https://docs.dev.runwayml.com/guides/models/) · fal · provider/router surfaces tracked in [`platform-surface-matrix.md`](references/platform-surface-matrix.md)
 
-Updated: **2026-07-06** · **v6.6.0 the loop closes: frame-extraction observation tooling, state lifecycle for long projects, and the worked end-to-end trace** · plus native quickstarts in six languages, a security policy, and an expanded agent-install matrix
+Updated: **2026-07-25** · **v6.6.0 the loop closes: frame-extraction observation tooling, state lifecycle for long projects, and the worked end-to-end trace** · since released: an authority order for when the gates disagree, six named ending profiles, capability claims split into four separately-verified layers, an inspection-honesty rule, a generated masthead, and executable JSON Schemas
 
 ---
 
@@ -368,14 +368,27 @@ Several of these clients share the `.agents/skills/` convention — Codex, Googl
 
 ## Validation
 
-Run these checks before every release:
+Run these checks before every release. The source-registry check runs with
+`--enforce-freshness` here so a stale registry blocks a release; per-pull-request
+validation deliberately omits the flag, because staleness depends on the calendar
+rather than on the change under test.
+
+Every check is offline. Exactly one of them, `schema_check.py`, needs a
+third-party library, so install the hash-pinned lock first — on a clean checkout
+that step otherwise stops the run:
+
+```bash
+python -m pip install --require-hashes --requirement requirements-validation.lock
+```
 
 ```bash
 python scripts/validate_skills.py --strict
 python scripts/content_audit.py --strict
 python scripts/eval_schema_check.py --strict
+python scripts/schema_check.py --strict
 python scripts/design_audit.py --strict
-python scripts/source_registry_check.py --strict
+python scripts/build_hero.py --check
+python scripts/source_registry_check.py --strict --enforce-freshness
 python scripts/vocab_schema_check.py --strict
 python scripts/project_state_check.py --strict
 python scripts/continuity_chain_check.py --strict
@@ -390,7 +403,27 @@ python -m compileall scripts tests
 git diff --check
 ```
 
-The CI workflow runs the same checks on push and pull request. These are deterministic and offline — they prove the package is well-formed.
+The CI workflow runs this same list on push and pull request, with the one deliberate difference noted above: it omits `--enforce-freshness`. These checks are deterministic and offline — they prove the package is well-formed.
+
+### Source freshness
+
+Whether `references/source-registry.md` is stale depends on today's date, not on
+the change being tested, so it is not asked per pull request — that would fail
+unrelated work on a calendar boundary. It is asked in two places instead:
+
+| Where | Behaviour |
+|---|---|
+| Release checklist above | `--enforce-freshness` blocks a release on a registry older than 30 days |
+| `source-freshness-review.yml` | Runs Mondays 09:00 UTC on the default branch and reports clean, drifting (past 14 days), or stale (past 30) |
+
+Drift and staleness are tracked in a single automatically maintained issue. It
+opens when the registry first drifts, is refreshed in place each week rather
+than re-notifying, and closes itself once the registry is back inside the
+window.
+
+The scheduled job never edits the registry. Re-stamping `last_verified` without
+actually re-reading the upstream sources would record a verification that never
+happened, so refreshing it is deliberately a human step.
 
 To prove the package is also *good*, run the model-in-the-loop harness, which sends each eval case through the real skill content and scores the response against the case's assertions using [`eval-rubric.md`](references/eval-rubric.md):
 
@@ -403,9 +436,11 @@ This is the quality gate, not a shape gate, so it lives outside offline CI; the 
 
 ## Design Standard
 
-The front page follows an editorial design system rather than default AI styling: warm ink and paper themes, a serif display face paired with monospace specification labels, a single amber accent, and fine-line film motifs — no gradients, no glow.
+The front page follows an editorial design system rather than default AI styling: warm ink and paper themes, a serif display face paired with monospace specification labels, a single amber accent, and hairline rules — no gradients, no glow. Camera motifs are deliberately retired: no viewfinder marks, timecode, record dots, or aspect badges. They depict the tool rather than the work, and they are the visual cliché of every AI-video product.
 
-The masthead and operating diagram are hand-built theme-aware SVGs (`assets/hero-dark.svg`, `assets/hero-light.svg`, `assets/skill-map.svg`) served through a `prefers-color-scheme` picture element; generated bitmap art lives only in the curated visual gallery, including the text-rich infographics.
+The masthead is generated from one geometry by [`scripts/build_hero.py`](scripts/build_hero.py), so its dark and light variants cannot drift apart; `--check` proves the committed SVGs still match the generator, and it runs in CI.
+
+The masthead and the hand-built operating diagram (`assets/hero-dark.svg`, `assets/hero-light.svg`, `assets/skill-map.svg`) are served through a `prefers-color-scheme` picture element; generated bitmap art lives only in the curated visual gallery, including the text-rich infographics.
 
 The README must stay readable in GitHub mobile, dark mode, and narrow widths. SVG assets must include `<title>` and `<desc>` elements, use internal CSS only, and avoid external fonts, scripts, or resources. Tokens and rules live in [`references/frontend-design-system.md`](references/frontend-design-system.md) and [`docs/frontend-redesign.md`](docs/frontend-redesign.md).
 
