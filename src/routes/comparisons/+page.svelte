@@ -8,10 +8,8 @@
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
 
-  const PLANNED_RUN_ID = '2026-07-netflix-teaser-title-slam-001';
-
   let runList = $state<{ run_id: string; title: string; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
-  let selectedRunId = $state(PLANNED_RUN_ID);
+  let selectedRunId = $state('');
   let run = $state<ComparisonRunDetail | null>(null);
   let loading = $state(true);
   let switching = $state(false);
@@ -69,9 +67,9 @@
     try {
       const idx = await loadComparisonsIndex();
       runList = idx.runs;
-      const startId = urlRun || (runList[0]?.run_id ?? PLANNED_RUN_ID);
+      const startId = urlRun || (runList[0]?.run_id ?? '');
       selectedRunId = startId;
-      await loadRun(startId);
+      if (startId || promptSlug) await loadRun(startId);
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
@@ -81,10 +79,14 @@
 </script>
 
 <svelte:head>
-  <title>Comparison Lab — Directors Cut</title>
+  <title>Projects — Directors Cut</title>
 </svelte:head>
 
 <div class="dc-page" style="height: 100%; overflow-y: auto; padding: 16px;">
+  <div class="dc-projects-intro">
+    <div><p class="dc-eyebrow">Prompt experiments and output review</p><h1>Projects</h1></div>
+    <a class="dc-create-link" href="/create">+ New prompt project</a>
+  </div>
   {#if runList.length > 1}
     <div class="dc-run-switcher" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-border-subtle);">
       {#each runList as r (r.run_id)}
@@ -110,7 +112,7 @@
     {/if}
     <div class="dc-run-header">
       <div class="dc-run-title-line">
-        <h1 style="font-size: 18px; font-weight: 700; margin: 0;">{run.title}</h1>
+        <h2 style="font-size: 18px; font-weight: 700; margin: 0;">{run.title}</h2>
         <div class="dc-run-actions">
           <CopyButton text={run.question} label="Copy prompt" size={11} />
           <button class="dc-action-button" disabled>Edit run</button>

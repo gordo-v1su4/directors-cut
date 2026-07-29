@@ -1,68 +1,75 @@
 <script lang="ts">
   import type { ReferenceImageArtifact } from '$lib/types/comparison';
+  import MediaLightbox from './MediaLightbox.svelte';
 
   let { images }: { images: ReferenceImageArtifact[] } = $props();
 
-  const placeholders = $derived(Math.max(3 - images.length, 0));
-  const displayImages = $derived(images.slice(0, 3));
+  let activeIndex = $state(0);
+  let lightboxOpen = $state(false);
+  let active = $derived(images[activeIndex] ?? null);
 
-  function badgeColor(platform: string): string {
-    switch (platform) {
-      case 'pinterest':
-        return '#e60023';
-      case 'generated':
-        return 'var(--dc-sora)';
-      case 'upload':
-        return 'var(--dc-seedance)';
-      case 'web':
-        return 'var(--dc-cross)';
-      default:
-        return 'var(--dc-general)';
-    }
+  function setActive(index: number) {
+    if (!images.length) return;
+    if (index < 0) index = images.length - 1;
+    if (index >= images.length) index = 0;
+    activeIndex = index;
   }
 </script>
 
-<div class="dc-reference-strip">
-  <div class="dc-slot-frame dc-reference-frame">
-    <div class="dc-reference-segments">
-      {#each displayImages as img, i (img.artifact_id)}
-        <div class="dc-reference-segment" role="img" aria-label={img.title}>
-          {#if img.thumbnail_url || img.media_url}
-            <div class="dc-reference-segment-media">
-              <img src={img.thumbnail_url || img.media_url} alt={img.title} loading="lazy" />
-            </div>
-          {:else}
-            <div class="dc-reference-segment-placeholder">
-              {img.reference_role?.slice(0, 1).toUpperCase() || 'R'}
-            </div>
-          {/if}
-        </div>
-      {/each}
+{#if lightboxOpen}
+  <MediaLightbox artifacts={images} {activeIndex} onClose={() => lightboxOpen = false} />
+{/if}
 
-      {#each Array.from({ length: placeholders }) as _, i (i)}
-        <div class="dc-reference-segment dc-reference-segment-empty" role="img" aria-label="Reference image placeholder">
-          <div class="dc-reference-segment-placeholder">
-            <span class="dc-ref-num">Ref {images.length + i + 1}</span>
-            <button class="dc-ref-add" disabled>+</button>
-          </div>
-        </div>
-      {/each}
-    </div>
+<div class="dc-reference-strip">
+  <div class="dc-artifact-cell-header">
+    <span class="dc-artifact-cell-label">References</span>
+    {#if images.length > 1}
+      <div class="dc-version-controls">
+        <button class="dc-version-arrow" onclick={() => setActive(activeIndex - 1)} aria-label="Previous reference">‹</button>
+        <span class="dc-version-label">{activeIndex + 1} / {images.length}</span>
+        <button class="dc-version-arrow" onclick={() => setActive(activeIndex + 1)} aria-label="Next reference">›</button>
+      </div>
+    {:else}
+      <span class="dc-version-label">{images.length ? '1 / 1' : 'empty'}</span>
+    {/if}
   </div>
 
-  {#if displayImages.length > 0}
-    <div class="dc-reference-badges">
-      {#each displayImages as img (img.artifact_id)}
-        <span class="dc-reference-badge" style:color={badgeColor(img.source_platform)}>
-          {img.source_platform}
-        </span>
+  <div class="dc-slot-frame dc-reference-frame" class:dc-slot-frame-empty={!active}>
+    {#if active && (active.thumbnail_url || active.media_url)}
+      <div class="dc-slot-media">
+        <img src={active.thumbnail_url || active.media_url} alt={active.title} loading="lazy" />
+        <button class="dc-slot-expand" onclick={() => lightboxOpen = true} aria-label="Expand reference">⛶</button>
+      </div>
+    {:else if active}
+      <div class="dc-slot-placeholder">No preview for this reference</div>
+    {:else}
+      <div class="dc-slot-placeholder"><span>No references attached</span><button class="dc-action-button" disabled>Add reference</button></div>
+    {/if}
+  </div>
+
+  {#if images.length > 1}
+    <div class="dc-artifact-version-strip" aria-label="Reference thumbnails">
+      {#each images as image, index (image.artifact_id)}
+        <button
+          class="dc-artifact-version-thumb dc-reference-thumb"
+          class:dc-artifact-version-active={index === activeIndex}
+          onclick={() => setActive(index)}
+          aria-label={`Reference ${index + 1}: ${image.title}`}
+        >
+          {#if image.thumbnail_url || image.media_url}
+            <img src={image.thumbnail_url || image.media_url} alt="" loading="lazy" />
+          {:else}
+            <span>{index + 1}</span>
+          {/if}
+        </button>
       {/each}
-      {#each displayImages as img (img.artifact_id)}
-        <span class="dc-reference-badge">{img.reference_role}</span>
-      {/each}
-      {#each displayImages as img (img.artifact_id)}
-        <span class="dc-reference-badge dc-reference-rights">{img.rights_status}</span>
-      {/each}
+    </div>
+  {/if}
+
+  {#if active}
+    <div class="dc-reference-caption">
+      <span>{active.reference_role}</span>
+      <span>{active.source_platform}</span>
     </div>
   {/if}
 </div>

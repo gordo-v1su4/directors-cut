@@ -118,11 +118,11 @@
                 aria-label={`Version ${i + 1}`}
               >
                 {#if artifact.thumbnail_url || artifact.media_url}
-                  <img
-                    src={artifact.thumbnail_url ?? artifact.media_url}
-                    alt={artifact.title}
-                    loading="lazy"
-                  />
+                  {#if artifact.artifact_type === 'video_result' || artifact.artifact_type === 'end_video'}
+                    <video src={artifact.media_url} poster={artifact.thumbnail_url} preload="metadata" muted playsinline aria-label={artifact.title}></video>
+                  {:else}
+                    <img src={artifact.thumbnail_url ?? artifact.media_url} alt={artifact.title} loading="lazy" />
+                  {/if}
                 {:else}
                   <div class="dc-lightbox-version-placeholder">v{i + 1}</div>
                 {/if}
@@ -314,7 +314,8 @@
     box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.2);
   }
 
-  .dc-lightbox-version-thumb img {
+  .dc-lightbox-version-thumb img,
+  .dc-lightbox-version-thumb video {
     width: 100%;
     aspect-ratio: 16 / 9;
     object-fit: cover;

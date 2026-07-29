@@ -4,28 +4,11 @@ This directory is intentionally empty until Gordo captures real Raycast/model an
 Do not fabricate answers, grades, or model output. A comparison run is valid only
 when every answer is copied from an actual Raycast/model response.
 
-## First run to capture
+## Capturing a run
 
-Run ID suggestion: `2026-07-netflix-teaser-title-slam-001`
-
-Purpose: test whether the current Directors Cut prompt-card library produces useful,
-model-specific video prompts for a Netflix-style teaser/title-slam brief.
-
-## Exact prompt for Gordo to run
-
-Paste the same prompt into each model/Raycast chat being compared:
-
-```text
-You are helping build a prompt-card library for AI video generation.
-
-Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
-
-Task: Write the best video-generation prompt for this brief. Make it practical for an AI video model to follow. Include timing or shot structure if that helps. Include camera, lighting, motion, audio/SFX, and title reveal details. Avoid copyrighted characters, real show names, or protected IP beyond the generic phrase "Netflix-style" as a quality/aesthetic shorthand.
-
-Output only:
-1. A final prompt ready to paste into an AI video generator.
-2. A short note naming which model or style of model this prompt is optimized for, and why.
-```
+Use a project-specific run ID and save only real prompts, answers, references,
+and generated artifacts. Each run should describe its own brief in
+`comparison-run.md`; there is no seeded or canonical sample project.
 
 ## Models to compare
 
@@ -49,7 +32,7 @@ If only three are available, use: Raycast Auto, newest Grok, and newest Kimi/Qwe
 Create a folder:
 
 ```text
-content/comparisons/2026-07-netflix-teaser-title-slam-001/
+content/comparisons/<run-id>/
 ```
 
 Recommended files:
@@ -66,10 +49,10 @@ possible. Minimum fields to preserve during capture:
 ```json
 {
   "answer_id": "raycast-auto-001",
-  "run_id": "2026-07-netflix-teaser-title-slam-001",
+  "run_id": "your-project-run-id",
   "model": "Raycast Auto",
   "captured_at": "2026-07-09T00:00:00Z",
-  "prompt": "<the exact prompt above>",
+  "prompt": "<the exact project prompt>",
   "answer": "<verbatim model output copied from Raycast>",
   "source": "raycast",
   "notes": "Any UI/model-picker details Gordo observed"

@@ -101,8 +101,8 @@ Script Commands in `raycast-pro-bridge/script-commands/`:
 
 - **Bridge Status** — checks `/health` + lists `/tools`
 - **Bridge Call Tool** — POSTs to `/tools/<tool>` with bearer token
-- **Directors Cut Comparison Prompt** — copies the canonical THE GLASS HOUSE
-  comparison prompt to the clipboard (`directors-cut-comparison-prompt.sh`)
+- **Directors Cut Comparison Prompt** — copies the current project comparison
+  prompt to the clipboard (`directors-cut-comparison-prompt.sh`)
 - **Capture Directors Cut Answer** — appends the current clipboard as one
   schema-shaped `answers.jsonl` row under
   `directors-cut/content/comparisons/<run-id>/` and creates `comparison-run.md`

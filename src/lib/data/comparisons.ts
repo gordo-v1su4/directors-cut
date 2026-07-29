@@ -20,17 +20,7 @@ const EXPECTED_MODELS = [
   'DeepSeek',
 ];
 
-const PLANNED_RUN_ID = '2026-07-netflix-teaser-title-slam-001';
-
-const PLANNED_QUESTION = `You are helping build a prompt-card library for AI video generation.
-
-Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance. It should include: one eerie location beat, one human reaction beat, one symbolic impact/action beat, and a final hard title-card/title-slam moment.
-
-Task: Write the best video-generation prompt for this brief. Make it practical for an AI video model to follow. Include timing or shot structure if that helps. Include camera, lighting, motion, audio/SFX, and title reveal details. Avoid copyrighted characters, real show names, or protected IP beyond the generic phrase "Netflix-style" as a quality/aesthetic shorthand.
-
-Output only:
-1. A final prompt ready to paste into an AI video generator.
-2. A short note naming which model or style of model this prompt is optimized for, and why.`;
+const FALLBACK_RUN_ID = 'unavailable-comparison-run';
 
 interface ComparisonsIndex {
   runs: {
@@ -196,9 +186,9 @@ async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
 
 function fallbackRun(runId: string): ComparisonRun {
   return {
-    run_id: runId || PLANNED_RUN_ID,
-    title: 'Netflix Teaser Title Slam — First Raycast Model Comparison',
-    question: PLANNED_QUESTION,
+    run_id: runId || FALLBACK_RUN_ID,
+    title: 'Unavailable comparison run',
+    question: '',
     created: new Date().toISOString(),
     created_by: 'raycast-script-command',
     status: 'running',
@@ -214,19 +204,27 @@ export function buildComparisonRows(
   artifacts: ComparisonArtifact[],
   prompts: GenerationPrompt[] = []
 ): ComparisonRow[] {
+  const isImagePipelineAnswer = (answer: ModelAnswer) =>
+    answer.model_class === 'image_generator' ||
+    answer.target_model.toLowerCase().includes('nano_banana') ||
+    answer.model_name.toLowerCase().includes('nano banana');
+
   const answerByModel = new Map<string, ModelAnswer>();
   for (const a of answers) {
-    answerByModel.set(a.model_name, a);
+    if (!isImagePipelineAnswer(a)) answerByModel.set(a.model_name, a);
   }
 
   const requestedModels = run.models_requested?.length ? run.models_requested : EXPECTED_MODELS;
-  const answeredModels = new Set(answers.map((a) => a.model_name));
+  const answeredModels = new Set(
+    answers.filter((answer) => !isImagePipelineAnswer(answer)).map((answer) => answer.model_name)
+  );
   const models = [...new Set([...requestedModels, ...answeredModels])];
+  const sharedShotGrids = artifacts.filter((artifact) => artifact.artifact_type === 'shot_grid');
 
   const rows = models.map((modelName) => {
     const answer = answerByModel.get(modelName) ?? makePendingAnswer(modelName, run.run_id);
 
-    return makeComparisonRow(run.run_id, answer, artifacts, prompts);
+    return makeComparisonRow(run.run_id, answer, artifacts, prompts, sharedShotGrids);
   });
 
   // Sort rows: rows containing real artifacts first, then rows with real
@@ -281,7 +279,8 @@ export function makeComparisonRow(
   runId: string,
   answer: ModelAnswer,
   artifacts: ComparisonArtifact[] = [],
-  prompts: GenerationPrompt[] = []
+  prompts: GenerationPrompt[] = [],
+  sharedShotGrids: ComparisonArtifact[] = []
 ): ComparisonRow {
   const isPending = answer.ui_status === 'missing' || !answer.answer_text;
 
@@ -312,8 +311,13 @@ export function makeComparisonRow(
     (a) => a.artifact_type === 'shot_grid'
   );
 
-  // If no image_result exists but a shot_grid exists, treat the shot grid as the prompt-only image slot.
-  const effectivePromptOnlyImages = promptOnlyImages.length ? promptOnlyImages : shotGrids;
+  // Shot grids are a shared Nano Banana Pro pipeline stage, not a competing
+  // model answer. Show that common visual plan in every comparison row.
+  const effectivePromptOnlyImages = sharedShotGrids.length
+    ? sharedShotGrids
+    : promptOnlyImages.length
+      ? promptOnlyImages
+      : shotGrids;
 
   function videoSlotFor(video: ComparisonArtifact): 'seedance' | 'sora' | 'other' {
     const prompt = video.prompt_id ? promptsById.get(video.prompt_id) : null;

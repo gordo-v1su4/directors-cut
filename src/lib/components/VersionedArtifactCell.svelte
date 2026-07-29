@@ -20,8 +20,6 @@
   let lightboxOpen = $state(false);
 
   let activeIndex = $state(0);
-  let hovering = $state(false);
-  let hoverPos = $state({ x: 0, y: 0 });
   let active = $derived(
     slotData.versions.length > 0 ? slotData.versions[activeIndex] : null
   );
@@ -85,23 +83,6 @@
     activeIndex = index;
   }
 
-  function onHoverEnter(e: MouseEvent) {
-    hovering = true;
-    updateHoverPos(e);
-  }
-
-  function onHoverMove(e: MouseEvent) {
-    updateHoverPos(e);
-  }
-
-  function onHoverLeave() {
-    hovering = false;
-  }
-
-  function updateHoverPos(e: MouseEvent) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    hoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }
 </script>
 
 {#if lightboxOpen}
@@ -125,9 +106,6 @@
 <div class="dc-artifact-cell"
   role="img"
   aria-label={active ? active.title : `No ${label.toLowerCase()} yet`}
-  onmouseenter={onHoverEnter}
-  onmousemove={onHoverMove}
-  onmouseleave={onHoverLeave}
 >
   <div class="dc-artifact-cell-header">
     <span class="dc-artifact-cell-label">{label}</span>
@@ -215,7 +193,11 @@
           aria-label={`Version ${i + 1}`}
         >
           {#if v.thumbnail_url || v.media_url}
-            <img src={v.thumbnail_url ?? v.media_url} alt={v.title} loading="lazy" />
+            {#if v.artifact_type === 'video_result' || v.artifact_type === 'end_video'}
+              <video src={v.media_url} poster={v.thumbnail_url} preload="metadata" muted playsinline aria-label={v.title}></video>
+            {:else}
+              <img src={v.thumbnail_url ?? v.media_url} alt={v.title} loading="lazy" />
+            {/if}
           {:else}
             <div class="dc-artifact-version-placeholder">{i + 1}</div>
           {/if}
@@ -249,24 +231,4 @@
       </div>
     {/if}
 
-    {#if hovering && previewUrl}
-      <div
-        class="dc-hover-preview"
-        style:left="{Math.min(hoverPos.x + 12, 220)}px"
-        style:top="{Math.min(hoverPos.y + 12, 120)}px"
-      >
-        {#if isVideo}
-          <div class="dc-hover-video">
-            <img src={previewUrl} alt={active.title} />
-            <div class="dc-hover-play">▶ click to play</div>
-          </div>
-        {:else}
-          <img src={previewUrl} alt={active.title} />
-        {/if}
-        <div class="dc-hover-meta">
-          <span>{active.title}</span>
-          <span>{active.provider}</span>
-        </div>
-      </div>
-    {/if}
   {/if}</div>

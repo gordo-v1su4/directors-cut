@@ -268,47 +268,6 @@ function buildComparisonsIndex(): void {
     runs.push({ run, summary });
   }
 
-  // If there are no real runs yet, still seed the planned run id so the UI can render
-  // an empty-state table with the expected model rows.
-  const plannedRunId = '2026-07-netflix-teaser-title-slam-001';
-  const hasPlanned = runs.some((r) => r.run.run_id === plannedRunId);
-  if (!hasPlanned) {
-    const plannedRun: ComparisonRun = {
-      run_id: plannedRunId,
-      title: 'Netflix Teaser Title Slam — First Raycast Model Comparison',
-      question:
-        'You are helping build a prompt-card library for AI video generation.\n\n' +
-        'Creative brief: Create a Netflix-style supernatural thriller teaser called THE GLASS HOUSE. The teaser should feel premium, cinematic, ominous, and suitable for a streaming series proof-of-concept. Target runtime: ~12 seconds for Sora, ~15 seconds for Seedance.\n\n' +
-        'Task: Write the best video-generation prompt for this brief.',
-      created: new Date().toISOString(),
-      created_by: 'raycast-script-command',
-      status: 'running',
-      models_requested: EXPECTED_MODELS,
-      target_models: ['general_video', 'seedance-2.0'],
-      tags: ['netflix_teaser', 'title_slam', 'raycast'],
-    };
-
-    const runOutputDir = join(RUNS_OUTPUT_DIR, plannedRunId);
-    mkdirSync(runOutputDir, { recursive: true });
-    writeFileSync(join(runOutputDir, 'run.json'), JSON.stringify(plannedRun, null, 2));
-    writeFileSync(join(runOutputDir, 'answers.json'), JSON.stringify([], null, 2));
-    writeFileSync(join(runOutputDir, 'artifacts.json'), JSON.stringify([], null, 2));
-    writeFileSync(join(runOutputDir, 'prompts.json'), JSON.stringify([], null, 2));
-
-    runs.push({
-      run: plannedRun,
-      summary: {
-        run_id: plannedRun.run_id,
-        title: plannedRun.title,
-        status: plannedRun.status,
-        answer_count: 0,
-        artifact_count: 0,
-        model_labels: [],
-        created: plannedRun.created,
-      },
-    });
-  }
-
   writeFileSync(
     join(OUTPUT_DIR, 'comparisons.index.json'),
     JSON.stringify(

@@ -42,16 +42,16 @@
   <table class="dc-comparison-table">
     <thead>
       <tr>
-        <th style="min-width: 140px; width: 140px;">Model / Answer</th>
-        <th style="min-width: 120px; width: 120px;">Shot grid</th>
-        <th style="min-width: 120px; width: 120px;">Prompt-only video (Seedance)</th>
-        <th style="min-width: 120px; width: 120px;">Prompt-only video (Sora)</th>
-        <th style="min-width: 120px; width: 120px;">Reference images</th>
-        <th style="min-width: 120px; width: 120px;">Reference-assisted image</th>
-        <th style="min-width: 120px; width: 120px;">Ref-assisted video (Seedance)</th>
-        <th style="min-width: 120px; width: 120px;">Ref-assisted video (Sora)</th>
-        <th style="min-width: 80px; width: 80px;">Vision Score</th>
-        <th style="min-width: 100px; width: 100px;">Notes / Actions</th>
+        <th class="dc-col-prompt"><span class="dc-column-kicker">Input</span><span class="dc-column-title">Prompt source</span></th>
+        <th class="dc-column-shared dc-col-media"><span class="dc-column-kicker">Shared visual plan</span><span class="dc-column-title">Shot grid</span><span class="dc-column-model">Nano Banana Pro</span></th>
+        <th class="dc-col-media"><span class="dc-column-kicker">Prompt only</span><span class="dc-column-title">Video</span><span class="dc-column-model">Seedance</span></th>
+        <th class="dc-col-media"><span class="dc-column-kicker">Prompt only</span><span class="dc-column-title">Video</span><span class="dc-column-model">Sora</span></th>
+        <th class="dc-col-references"><span class="dc-column-kicker">Reference workflow</span><span class="dc-column-title">Visual inputs</span></th>
+        <th class="dc-col-media"><span class="dc-column-kicker">Reference assisted</span><span class="dc-column-title">Image</span><span class="dc-column-model">Nano Banana Pro</span></th>
+        <th class="dc-col-media"><span class="dc-column-kicker">Reference assisted</span><span class="dc-column-title">Video</span><span class="dc-column-model">Seedance</span></th>
+        <th class="dc-col-media"><span class="dc-column-kicker">Reference assisted</span><span class="dc-column-title">Video</span><span class="dc-column-model">Sora</span></th>
+        <th class="dc-col-evaluation"><span class="dc-column-kicker">Evaluation</span><span class="dc-column-title">Vision review</span></th>
+        <th class="dc-col-review"><span class="dc-column-kicker">Review</span><span class="dc-column-title">Notes / actions</span></th>
       </tr>
     </thead>
     <tbody>
@@ -61,7 +61,7 @@
             <ModelAnswerCell answer={row.answer} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shot grid" {promptsMap} {answersMap} />
+            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shared grid" {promptsMap} {answersMap} />
           </td>
           <td>
             <VersionedArtifactCell slotData={row.promptOnlyVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />

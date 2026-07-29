@@ -4,13 +4,14 @@
   import { loadLatestArtifacts } from '$lib/data/comparisons';
   import type { PromptCardIndex } from '$lib/types/prompt-card';
   import type { ComparisonArtifact } from '$lib/types/comparison';
-  import Badge, { FAMILY_COLORS } from '$lib/components/Badge.svelte';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
+  import HoverVideoPreview from '$lib/components/HoverVideoPreview.svelte';
 
   let cards: PromptCardIndex[] = $state.raw([]);
   let latestMedia: ComparisonArtifact[] = $state.raw([]);
   let lightboxArtifacts = $state<ComparisonArtifact[] | null>(null);
   let lightboxIndex = $state(0);
+  let hoverVideo = $state<ComparisonArtifact | null>(null);
 
   const families = $derived(
     Object.entries(
@@ -24,13 +25,14 @@
   const useCases = $derived(
     [...new Set(cards.flatMap((c) => c.use_cases))].sort(),
   );
+  const featuredUseCases = $derived(useCases.slice(0, 8));
 
   const testedCount = $derived(cards.filter((c) => c.tested_by_us).length);
   const sourceCount = $derived(
     cards.reduce((acc, c) => acc + c.source_count, 0),
   );
 
-  const glassHouseMediaCount = $derived(latestMedia.filter((m) => m.run_id === '2026-07-netflix-teaser-title-slam-001').length);
+  const latestVideos = $derived(latestMedia.filter(isVideoType));
 
   function openLightbox(item: ComparisonArtifact, index: number) {
     lightboxArtifacts = latestMedia;
@@ -45,6 +47,18 @@
     return item.artifact_type === 'video_result' || item.artifact_type === 'end_video';
   }
 
+  function playPreview(event: MouseEvent | FocusEvent) {
+    const video = (event.currentTarget as HTMLElement).querySelector('video');
+    if (video) void video.play().catch(() => {});
+  }
+
+  function resetPreview(event: MouseEvent | FocusEvent) {
+    const video = (event.currentTarget as HTMLElement).querySelector('video');
+    if (!video) return;
+    video.pause();
+    video.currentTime = 0;
+  }
+
   onMount(async () => {
     cards = await loadPromptCards();
     latestMedia = await loadLatestArtifacts();
@@ -54,105 +68,80 @@
 {#if lightboxArtifacts}
   <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={closeLightbox} />
 {/if}
+{#if hoverVideo}
+  <HoverVideoPreview artifact={hoverVideo} onClose={() => hoverVideo = null} />
+{/if}
 
-<div style="padding: 24px; overflow-y: auto; height: 100%;">
-  <h1 style="font-size: 18px; font-weight: 600; margin: 0 0 20px; color: var(--dc-text);">Dashboard</h1>
+<div class="dc-dashboard">
+  <div class="dc-dashboard-inner">
+    <header class="dc-dashboard-header">
+      <div><p class="dc-eyebrow">Creative intelligence library</p><h1>Dashboard</h1></div>
+      <p class="dc-dashboard-intro">Prompt research, model comparisons, and generated media in one focused workspace.</p>
+    </header>
+    <section class="dc-stat-grid" aria-label="Library totals">
+      <div class="dc-stat"><span class="dc-stat-value">{cards.length}</span><span class="dc-stat-label">Cards</span></div>
+      <div class="dc-stat"><span class="dc-stat-value">{sourceCount}</span><span class="dc-stat-label">Sources</span></div>
+      <div class="dc-stat"><span class="dc-stat-value">{testedCount}</span><span class="dc-stat-label">Tested</span></div>
+    </section>
 
-  <section style="display: flex; gap: 32px; margin-bottom: 28px;">
-    <div>
-      <div style="font-size: 28px; font-weight: 700; color: var(--dc-sora);">{cards.length}</div>
-      <div style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim);">Cards</div>
-    </div>
-    <div>
-      <div style="font-size: 28px; font-weight: 700; color: var(--dc-text);">{sourceCount}</div>
-      <div style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim);">Sources</div>
-    </div>
-    <div>
-      <div style="font-size: 28px; font-weight: 700; color: var(--dc-conf-medium);">{testedCount}</div>
-      <div style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim);">Tested</div>
-    </div>
-  </section>
-
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px;">
-    <section>
-      <h2 style="font-size: 12px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 10px;">Model Families</h2>
+    <div class="dc-dashboard-grid">
+      <section class="dc-section">
+        <div class="dc-section-heading"><h2 class="dc-section-title">Model families</h2><span class="dc-section-note">{cards.length} cards total</span></div>
       {#each families as [family, count]}
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-          <Badge label={family} color={FAMILY_COLORS[family] ?? 'var(--dc-general)'} active />
-          <div style="flex: 1; min-width: 100px; height: 8px; background: var(--dc-bg-elev-2); border-radius: 4px; overflow: hidden;">
-            <div
-              style:height="100%"
-              style:width="{(count / cards.length) * 100}%"
-              style:background={FAMILY_COLORS[family] ?? 'var(--dc-general)'}
-            ></div>
-          </div>
-          <span style="font-size: 12px; color: var(--dc-text-muted); min-width: 20px; text-align: right;">{count}</span>
+        <div class="dc-family-row">
+          <span class="dc-family-name">{family.replace(/[_-]/g, ' ')}</span>
+          <div class="dc-family-track"><div class="dc-family-fill" style:width="{(count / cards.length) * 100}%"></div></div>
+          <span class="dc-family-count">{count}</span>
         </div>
       {/each}
-    </section>
+      </section>
+      <section class="dc-section">
+        <div class="dc-section-heading"><h2 class="dc-section-title">Use cases</h2><span class="dc-section-note">Top themes</span></div>
+        <div class="dc-use-case-summary"><div class="dc-use-case-list">{#each featuredUseCases as uc}<span class="dc-use-case-chip">{uc.replace(/[_-]/g, ' ')}</span>{/each}</div><span class="dc-use-case-more">+{Math.max(0, useCases.length - featuredUseCases.length)} more across the library</span></div>
+      </section>
+    </div>
 
-    <section>
-      <h2 style="font-size: 12px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 10px;">Use Cases</h2>
-      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-        {#each useCases as uc}
-          <Badge label={uc} />
-        {/each}
-      </div>
-    </section>
-  </div>
-
-  <section style="margin-top: 28px; max-width: 800px;">
-    <h2 style="font-size: 12px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 10px;">Latest Media</h2>
-    {#if latestMedia.length === 0}
-      <p style="font-size: 13px; color: var(--dc-text-muted); margin: 0;">No generated media yet. Generate a grid or video to see it here.</p>
+  <section class="dc-media-section">
+    <div class="dc-section-heading"><h2 class="dc-section-title">Latest media</h2><span class="dc-section-note">Hover videos to preview · click for sound</span></div>
+    {#if latestVideos.length === 0}
+      <p style="font-size: 13px; color: var(--dc-text-muted); margin: 0;">No generated videos yet.</p>
     {:else}
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
-        {#each latestMedia as item, i (item.artifact_id)}
+      <div class="dc-media-grid">
+        {#each latestVideos as item (item.artifact_id)}
           <button
-            class="dc-latest-media-card"
-            onclick={() => openLightbox(item, i)}
-            style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); overflow: hidden; cursor: pointer; text-align: left; padding: 0; position: relative;"
+            class="dc-media-card"
+            onclick={() => hoverVideo = item}
+            onmouseenter={(event) => { playPreview(event); hoverVideo = item; }}
+            onmouseleave={resetPreview}
+            onfocus={playPreview}
+            onblur={resetPreview}
           >
-            <div style="aspect-ratio: 16 / 9; background: var(--dc-bg); overflow: hidden;">
+            <div class="dc-media-frame">
               {#if item.thumbnail_url || item.media_url}
-                <img
-                  src={item.thumbnail_url ?? item.media_url}
-                  alt={item.title}
-                  loading="lazy"
-                  style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                />
+                {#if isVideoType(item)}
+                  <video src={item.media_url} poster={item.thumbnail_url} preload="metadata" muted playsinline aria-label={item.title}></video>
+                {:else}
+                  <img src={item.thumbnail_url ?? item.media_url} alt={item.title} loading="lazy" />
+                {/if}
               {:else}
                 <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--dc-text-dim); font-size: 11px;">No preview</div>
               {/if}
+              <span class="dc-media-overlay">▶ Preview</span>
             </div>
-            <div style="padding: 8px;">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <span
-                  style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 5px; border-radius: 4px; color: var(--dc-bg); font-weight: 600;"
-                  style:background={isVideoType(item) ? 'var(--dc-seedance)' : 'var(--dc-sora)'}
-                >
-                  {isVideoType(item) ? 'Video' : 'Image'}
-                </span>
-              </div>
-              <div style="font-size: 12px; color: var(--dc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{item.title}</div>
-              <div style="font-size: 10px; color: var(--dc-text-dim); margin-top: 2px;">{item.provider} · {item.artifact_type}</div>
-            </div>
+            <div class="dc-media-copy"><div class="dc-media-title">{item.title}</div><div class="dc-media-meta">{item.provider.replace(/_/g, ' ')} · {item.artifact_type.replace(/_/g, ' ')}</div></div>
           </button>
         {/each}
       </div>
     {/if}
   </section>
 
-  <section style="margin-top: 28px; max-width: 800px;">
-    <h2 style="font-size: 12px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 10px;">Needs Attention</h2>
-    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px;">
-      <li style="font-size: 13px; color: var(--dc-text-muted);">○ Untested cards: {cards.length - testedCount}</li>
-      <li style="font-size: 13px; color: {glassHouseMediaCount > 0 ? 'var(--dc-sora)' : 'var(--dc-text-muted)'};">
-        ○ THE GLASS HOUSE: {glassHouseMediaCount > 0 ? `${glassHouseMediaCount} generated media artifact${glassHouseMediaCount === 1 ? '' : 's'} (generation complete)` : 'waiting for generation'}
-      </li>
-      <li style="font-size: 13px; color: var(--dc-text-muted);">○ Sora Vice: generation failed (billing_hard_limit_reached) — 2 prompts filed, no media</li>
-      <li style="font-size: 13px; color: var(--dc-text-muted);">○ Pink Room: Sora 2 media ingested (2 takes); Seedance Enhanced Fast still needs correct download</li>
-      <li style="font-size: 13px; color: var(--dc-text-muted);">○ Dashboard feed shows latest Hermes-generated media</li>
+  <section class="dc-attention">
+    <div class="dc-section-heading"><h2 class="dc-section-title">Needs attention</h2></div>
+    <ul class="dc-attention-list">
+      <li>Untested cards: {cards.length - testedCount}</li>
+      <li>Sora Vice: generation blocked by billing limit</li>
+      <li>Pink Room: two Sora takes ingested; Seedance download pending</li>
     </ul>
   </section>
+  </div>
 </div>
