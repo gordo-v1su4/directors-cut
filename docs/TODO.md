@@ -1,6 +1,10 @@
 # Directors Cut — TODO / Tomorrow Pickup
 
-Last updated: 2026-07-09 by omp.
+Last updated: 2026-07-29 by Codex.
+
+## Future experiments
+
+- [ ] **Angle Lab / CrossView pilot — revisit when the model is more mature (target: late August 2026).** Upload one image or short shot, generate a fast contact sheet of alternate viewpoints, select an angle, and optionally define a camera path. Evaluate LTX-2.3 CrossView Prompt / CrossView Warp IC-LoRAs and fast hosted compute before implementation. Keep this separate from the current static Techniques placeholders; do not begin Gaussian-splat or character-reconstruction work yet.
 
 ## Milestone status (2026-07-09)
 

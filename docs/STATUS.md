@@ -3,6 +3,17 @@
 > **Last updated:** 2026-07-03 by Hermes
 > **Purpose:** Prevent duplicated agent work and make the Phase 0 handoff explicit.
 
+## Current reality — 2026-07-29
+
+- The Svelte app is built and running at `http://127.0.0.1:5190`; the older Phase 0 notes below are retained as historical context.
+- Main navigation: Create, Home, Library, Projects, Techniques, Sources.
+- Create accepts an idea, format, duration, model targets, audio direction, and a local image reference. It can produce a copyable prompt-agent request, but no AI prompt service is connected and nothing is persisted as a new project yet.
+- Projects currently indexes two real comparison runs. THE PINK ROOM has two ingested Sora videos and a pending Seedance artifact; the older Sora Vice run contains prompt candidates but its attempted media generation was blocked by the configured account's billing limit.
+- Project media previews, version UI, reference strips, and the lightbox exist. Vision scoring and keep/remix/reject/resend remain UI-only placeholders.
+- The experimental Techniques page lives on `codex/camera-moves-pilot` at `/pilots/camera-moves`. It contains 12 foundational camera-move placeholders and 12 static specialty-shot placeholders, with Seedance and LTX-2.3 positioned as its prompt targets.
+- Deferred: Angle Lab / LTX-2.3 CrossView contact-sheet generation. Revisit in late August 2026 after the IC-LoRA workflow matures; see `docs/TODO.md`.
+- Best next product milestone: connect Create to a real prompt-generation endpoint, persist its output as a project/run, and make that new run appear in Projects without manual JSONL editing.
+
 ## Current state
 
 ### Repos created (both private on GitHub)

@@ -9,6 +9,7 @@
     <a href="/" class:active={$page.url.pathname === '/'}>Home</a>
     <a href="/prompts" class:active={$page.url.pathname.startsWith('/prompts')}>Library</a>
     <a href="/comparisons" class:active={$page.url.pathname.startsWith('/comparisons')}>Projects</a>
+    <a href="/pilots/camera-moves" class:active={$page.url.pathname.startsWith('/pilots/camera-moves')}>Techniques</a>
     <a href="/sources" class:active={$page.url.pathname === '/sources'}>Sources</a>
   </div>
 </nav>
