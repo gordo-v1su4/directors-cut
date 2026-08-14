@@ -1,8 +1,8 @@
 <script lang="ts">
+  let projectTitle = $state('');
   let idea = $state('');
   let format = $state('trailer');
   let duration = $state('12');
-  let targetSeedance = $state(true);
   let targetSora = $state(true);
   let includeAudio = $state(true);
   let referenceName = $state('');
@@ -51,7 +51,7 @@
   ];
 
   function useSamplePrompt() {
-    const family = targetSeedance && targetSora ? 'both' : targetSeedance ? 'seedance' : targetSora ? 'sora' : 'both';
+    const family = targetSora ? 'sora' : 'both';
     const eligible = SAMPLE_PROMPTS.filter((sample) => sample.family === family);
     const pool = eligible.length ? eligible : SAMPLE_PROMPTS;
     const sample = pool[sampleIndex % pool.length];
@@ -72,24 +72,24 @@
   }
 
   function prepareRequest() {
-    const targets = [targetSeedance && 'Seedance', targetSora && 'Sora'].filter(Boolean).join(' and ');
-    request = `Create a production-ready ${format} prompt pack for ${targets || 'a video-generation model'}.
+    request = `PROJECT TITLE
+${projectTitle.trim()}
 
-IDEA
+CREATIVE BRIEF
+Develop two independent premium ${format} concepts from this idea for a young-adult audience. ChatGPT and Claude will each receive the same brief through Raycast.
+
 ${idea.trim()}
 
 DELIVERY
-- Duration: approximately ${duration} seconds
-- Return one model-specific prompt per selected target
-- Include: shot timing, camera, subject action, environment, lighting, motion, edit cadence${includeAudio ? ', audio/SFX, and music direction' : ''}
-- Keep the prompts ready to paste into the generation model
-- Do not generate the videos
-${referenceName ? `- A visual reference is attached in the UI: ${referenceName}. Describe how it should guide composition, character, product, or style without inventing unseen details.` : '- No reference image supplied.'}
+- Exactly one open-ended, high-paced ${duration}-second Sora sizzler prompt per model
+- The writing, imagery, action, sound, music, rhythm, and title impact are one integrated video prompt
+- World-building may be slightly futuristic, fantasy, period, or pre-AI 2000s when it serves the concept
+- Prioritize an immediate hook, emotional discovery, and a sharp plot-turn payoff${includeAudio ? '\n- Include intentional audio, music, ambience, dialogue, and SFX direction inside the prompt' : ''}
+- Do not return a shot list, multiple prompt options, or claim a video was generated
+${referenceName ? `- Visual reference selected locally: ${referenceName}. Use only its visible composition, character, product, or style cues; do not invent unseen details.` : '- No visual reference supplied.'}
 
-OUTPUT
-1. A concise creative interpretation of the idea
-2. The final prompt for each selected video model
-3. Any model-specific constraints or recommended settings`;
+RAYCAST WORKFLOW
+Run “Start Directors Cut Concept Run.” Enter the project title as argument 1 and leave argument 2 blank to use this copied brief. The command saves the project, rebuilds the Projects index, and copies the canonical prompt for ChatGPT; capture ChatGPT, then repeat with Claude.`;
     copied = false;
   }
 
@@ -109,6 +109,11 @@ OUTPUT
     </header>
 
     <section class="dc-create-form">
+        <label class="dc-field">
+          <span>Project title</span>
+          <input class="dc-text-input" bind:value={projectTitle} placeholder="Festival After Midnight" />
+        </label>
+
         <div class="dc-field dc-field-idea">
           <div class="dc-field-heading"><label for="creative-idea">Creative idea</label><button class="dc-wand" type="button" onclick={useSamplePrompt} aria-label="Use a sample prompt from the library" title="Use a library sample"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5L8.5 20.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L15 4Zm-1 3 3 3M6 3v3M4.5 4.5h3M19 15v4M17 17h4M18 2v2M17 3h2"/></svg><span>Try an example</span></button></div>
           <div class="dc-idea-wrap"><textarea id="creative-idea" bind:value={idea} rows="8" placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal..."></textarea></div>
@@ -117,14 +122,13 @@ OUTPUT
 
         <div class="dc-create-options">
           <label class="dc-field"><span>Output</span><select bind:value={format}><option value="trailer">Trailer / teaser</option><option value="music video">Music video</option><option value="commercial">Commercial</option><option value="short film scene">Short film scene</option><option value="visual concept">Visual concept</option></select></label>
-          <label class="dc-field"><span>Duration</span><select bind:value={duration}><option value="8">8 seconds</option><option value="10">10 seconds</option><option value="12">12 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>
+          <label class="dc-field"><span>Duration</span><select bind:value={duration} disabled><option value="12">12 seconds</option></select></label>
         </div>
 
         <fieldset class="dc-targets">
-          <legend>Prompt targets</legend>
-          <label><input type="checkbox" bind:checked={targetSeedance} /> <span><strong>Seedance</strong><small>Structured motion and timing</small></span></label>
-          <label><input type="checkbox" bind:checked={targetSora} /> <span><strong>Sora</strong><small>Natural-language cinematic direction</small></span></label>
-          <label><input type="checkbox" bind:checked={includeAudio} /> <span><strong>Audio direction</strong><small>Music, ambience, dialogue, and SFX</small></span></label>
+          <legend>First vertical slice</legend>
+          <label><input type="checkbox" bind:checked={targetSora} disabled /> <span><strong>Sora · 12 seconds</strong><small>ChatGPT and Claude each develop one independent concept through Raycast</small></span></label>
+          <label><input type="checkbox" bind:checked={includeAudio} /> <span><strong>Integrated sound</strong><small>Music, ambience, dialogue, rhythm, and SFX stay inside the video prompt</small></span></label>
         </fieldset>
 
         <label class="dc-reference-drop">
@@ -132,12 +136,12 @@ OUTPUT
           {#if referenceUrl}<img src={referenceUrl} alt="Selected visual reference" /><div><strong>{referenceName}</strong><span>Reference stays local until a prompt-agent connection is added.</span></div>{:else}<div class="dc-reference-icon">+</div><div><strong>Add a visual reference</strong><span>Character, product, location, frame, or mood image</span></div>{/if}
         </label>
 
-        <div class="dc-submit-row"><button class="dc-prepare-button" disabled={!idea.trim() || (!targetSeedance && !targetSora)} onclick={prepareRequest}>Prepare prompt request</button><div class="dc-connection-note"><span class="dc-status-dot"></span><span>AI prompt generation is not connected yet. This prepares a request for the existing Raycast/Kimi/Hermes workflow.</span></div></div>
+        <div class="dc-submit-row"><button class="dc-prepare-button" disabled={!projectTitle.trim() || !idea.trim()} onclick={prepareRequest}>Prepare Raycast concept run</button><div class="dc-connection-note"><span class="dc-status-dot"></span><span>Next: copy the brief and run “Start Directors Cut Concept Run” in Raycast. It saves the project and rebuilds the Projects index before either model answer is captured.</span></div></div>
     </section>
 
     {#if request}
       <section class="dc-request-panel">
-        <div class="dc-request-header"><div><span class="dc-column-kicker">Ready for the prompt agent</span><h2>Prompt request</h2></div><button onclick={copyRequest}>{copied ? 'Copied' : 'Copy request'}</button></div>
+        <div class="dc-request-header"><div><span class="dc-column-kicker">Ready for Raycast</span><h2>Canonical concept brief</h2></div><button onclick={copyRequest}>{copied ? 'Copied' : 'Copy for Raycast'}</button></div>
         <pre>{request}</pre>
       </section>
     {/if}
@@ -157,10 +161,11 @@ OUTPUT
   .dc-wand { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--dc-border); border-radius: 999px; background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
   .dc-wand:hover { border-color: #52525b; color: var(--dc-text); }
   .dc-wand svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
-  .dc-field textarea, .dc-field select { width: 100%; box-sizing: border-box; border: 1px solid var(--dc-border); border-radius: 7px; background: var(--dc-bg-elev); color: var(--dc-text); outline: none; }
+  .dc-field textarea, .dc-field select, .dc-text-input { width: 100%; box-sizing: border-box; border: 1px solid var(--dc-border); border-radius: 7px; background: var(--dc-bg-elev); color: var(--dc-text); outline: none; }
+  .dc-text-input { padding: 11px 12px; font-size: 13px; }
   .dc-field textarea { min-height: 190px; padding: 16px; resize: vertical; font-size: 15px; line-height: 1.55; }
   .dc-field select { padding: 9px 10px; font-size: 11px; }
-  .dc-field textarea:focus, .dc-field select:focus { border-color: #52525b; }
+  .dc-field textarea:focus, .dc-field select:focus, .dc-text-input:focus { border-color: #52525b; }
   .dc-sample-source { color: var(--dc-text-dim); font-size: 9px; letter-spacing: 0; text-transform: none; }
   .dc-sample-source strong { color: var(--dc-text-muted); font-weight: 600; }
   .dc-create-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

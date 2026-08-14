@@ -12,12 +12,39 @@ export interface ComparisonRun {
   question: string;
   created: string;
   created_by: string;
-  status: 'draft' | 'running' | 'answers_collected' | 'graded' | 'promoted';
+  status:
+    | 'draft'
+    | 'running'
+    | 'answers_partial'
+    | 'answers_collected'
+    | 'generation_partial'
+    | 'partially_generated'
+    | 'ready_for_review'
+    | 'graded'
+    | 'promoted';
   models_requested?: string[];
   target_models?: string[];
   source_refs?: Record<string, unknown>[];
   tags?: string[];
 }
+
+export interface CreativeConceptPackage {
+  package_type: 'creative_concept_v1';
+  title: string;
+  logline: string;
+  summary: string;
+  sora_prompt: string;
+  runtime_seconds: 12;
+  prompt_count: 1;
+}
+
+export type LegacyStructuredPrompt =
+  | string
+  | number
+  | boolean
+  | null
+  | LegacyStructuredPrompt[]
+  | { [key: string]: LegacyStructuredPrompt };
 
 export interface ModelAnswer {
   answer_id: string;
@@ -28,7 +55,8 @@ export interface ModelAnswer {
   target_model: string;
   prompt_mode: string | null;
   answer_text: string;
-  structured_prompt?: unknown;
+  structured_prompt?: CreativeConceptPackage | LegacyStructuredPrompt;
+  structure_status?: 'valid' | 'invalid' | 'unparsed';
   created_at: string;
   tokens_estimated?: number | null;
   source: string;

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/gordo-v1su4/directors-cut/schemas/model-answer.schema.json",
   "title": "Directors Cut Model Answer JSONL Row",
-  "description": "Permissive v1 schema for comparisons/<run-id>/answers.jsonl entries.",
+  "description": "Permissive v1 schema for comparisons/<run-id>/answers.jsonl entries, with strict validation for status-bearing creative concept packages.",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -15,59 +15,96 @@
     "created_at",
     "source"
   ],
-  "properties": {
-    "answer_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "run_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "agent_name": {
-      "type": "string",
-      "minLength": 1
-    },
-    "model_name": {
-      "type": "string",
-      "minLength": 1
-    },
-    "model_class": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "target_model": {
-      "type": "string",
-      "minLength": 1
-    },
-    "prompt_mode": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "answer_text": {
-      "type": "string",
-      "minLength": 1
-    },
-    "structured_prompt": {},
-    "created_at": {
-      "type": "string",
-      "minLength": 1
-    },
-    "tokens_estimated": {
-      "type": [
-        "integer",
-        "number",
-        "null"
+  "$defs": {
+    "creativeConceptPackage": {
+      "type": "object",
+      "required": [
+        "package_type",
+        "title",
+        "logline",
+        "summary",
+        "sora_prompt",
+        "runtime_seconds",
+        "prompt_count"
       ],
+      "properties": {
+        "package_type": { "const": "creative_concept_v1" },
+        "title": { "type": "string", "pattern": ".*\\S.*" },
+        "logline": { "type": "string", "pattern": ".*\\S.*" },
+        "summary": { "type": "string", "pattern": ".*\\S.*" },
+        "sora_prompt": { "type": "string", "pattern": ".*\\S.*" },
+        "runtime_seconds": { "const": 12 },
+        "prompt_count": { "const": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "properties": {
+    "answer_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "agent_name": { "type": "string", "minLength": 1 },
+    "model_name": { "type": "string", "minLength": 1 },
+    "model_class": { "type": ["string", "null"] },
+    "target_model": { "type": "string", "minLength": 1 },
+    "prompt_mode": { "type": ["string", "null"] },
+    "answer_text": { "type": "string", "minLength": 1 },
+    "structured_prompt": {},
+    "structure_status": {
+      "type": "string",
+      "enum": ["valid", "invalid", "unparsed"]
+    },
+    "created_at": { "type": "string", "minLength": 1 },
+    "tokens_estimated": {
+      "type": ["integer", "number", "null"],
       "minimum": 0
     },
-    "source": {
-      "type": "string",
-      "minLength": 1
+    "source": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["structure_status"],
+        "properties": { "structure_status": { "const": "valid" } }
+      },
+      "then": {
+        "required": ["structured_prompt"],
+        "properties": {
+          "structured_prompt": { "$ref": "#/$defs/creativeConceptPackage" }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["structure_status"],
+        "properties": {
+          "structure_status": { "enum": ["invalid", "unparsed"] }
+        }
+      },
+      "then": {
+        "required": ["structured_prompt"],
+        "properties": { "structured_prompt": { "type": "null" } }
+      }
+    },
+    {
+      "if": {
+        "required": ["structured_prompt"],
+        "properties": {
+          "structured_prompt": {
+            "type": "object",
+            "required": ["package_type"],
+            "properties": {
+              "package_type": { "const": "creative_concept_v1" }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["structure_status"],
+        "properties": {
+          "structure_status": { "const": "valid" },
+          "structured_prompt": { "$ref": "#/$defs/creativeConceptPackage" }
+        }
+      }
     }
-  }
+  ]
 }

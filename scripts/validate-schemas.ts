@@ -6,12 +6,14 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import * as yaml from "js-yaml";
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = process.env.DIRECTORS_CUT_ROOT
+  ? resolve(process.env.DIRECTORS_CUT_ROOT)
+  : join(import.meta.dir, "..");
 const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true });
 addFormats(ajv);
 
@@ -41,6 +43,21 @@ function findMarkdownFiles(dir: string): string[] {
     if (stat.isDirectory()) {
       results.push(...findMarkdownFiles(fullPath));
     } else if (entry.endsWith(".md") && entry.toLowerCase() !== "readme.md") {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+function findFilesNamed(dir: string, fileName: string): string[] {
+  if (!existsSync(dir)) return [];
+  const results: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      results.push(...findFilesNamed(fullPath, fileName));
+    } else if (entry === fileName) {
       results.push(fullPath);
     }
   }
@@ -78,6 +95,38 @@ for (const filePath of findMarkdownFiles(join(ROOT, "content", "comparisons"))) 
       console.log(`     ${err.instancePath || "/"}: ${err.message}`);
     }
     errors++;
+  }
+}
+
+// Validate every persisted model-answer JSONL row. Raw model output remains in
+// answer_text even when structured_prompt is null or structure_status is invalid.
+for (const filePath of findFilesNamed(join(ROOT, "content", "comparisons"), "answers.jsonl")) {
+  const relativePath = filePath.replace(`${ROOT}/`, "");
+  const lines = readFileSync(filePath, "utf-8").split("\n");
+  for (const [index, line] of lines.entries()) {
+    if (!line.trim()) continue;
+
+    let value: unknown;
+    try {
+      value = JSON.parse(line);
+    } catch (error) {
+      console.log(`FAIL answer: ${relativePath}:${index + 1}`);
+      console.log(`     /: invalid JSON — ${error instanceof Error ? error.message : String(error)}`);
+      errors++;
+      continue;
+    }
+
+    const valid = validateModelAnswer(value);
+    if (valid) {
+      console.log(`OK   answer: ${relativePath}:${index + 1}`);
+      ok++;
+    } else {
+      console.log(`FAIL answer: ${relativePath}:${index + 1}`);
+      for (const err of validateModelAnswer.errors || []) {
+        console.log(`     ${err.instancePath || "/"}: ${err.message}`);
+      }
+      errors++;
+    }
   }
 }
 

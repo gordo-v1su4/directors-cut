@@ -39,7 +39,11 @@
       "enum": [
         "draft",
         "running",
+        "answers_partial",
         "answers_collected",
+        "generation_partial",
+        "partially_generated",
+        "ready_for_review",
         "graded",
         "promoted"
       ]
