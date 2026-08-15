@@ -1,12 +1,15 @@
 <script lang="ts">
   import type { ModelAnswer } from '$lib/types/comparison';
   import CopyButton from './CopyButton.svelte';
+  import { isCreativeConcept } from '$lib/data/comparisons';
 
   let { answer }: { answer: ModelAnswer } = $props();
 
   let expanded = $state(false);
 
   let isMissing = $derived(answer.ui_status === 'missing' || !answer.answer_text);
+  let concept = $derived(isCreativeConcept(answer) ? answer.structured_prompt : null);
+  let displayTitle = $derived(concept?.title.trim().replace(/^(?:\*\*|__)([\s\S]*?)(?:\*\*|__)$/, '$1') ?? '');
   let excerpt = $derived(
     isMissing
       ? 'No answer captured yet. Use Capture Directors Cut Answer in Raycast after running the prompt.'
@@ -28,14 +31,23 @@
     {/if}
   </div>
 
+  {#if concept}
+    <div class="dc-concept-package">
+      <h3>{displayTitle}</h3>
+      <p class="dc-concept-logline">{concept.logline}</p>
+      <p class="dc-concept-summary">{concept.summary}</p>
+      <div class="dc-concept-specs"><span>12 seconds</span><span>16:9 video</span></div>
+    </div>
+  {/if}
+
   <div class="dc-answer-body" class:dc-answer-missing={isMissing}>
     {#if expanded && !isMissing}
       <pre>{answer.answer_text}</pre>
       <button class="dc-text-toggle" onclick={toggleExpanded}>Show less</button>
     {:else}
-      <p>{excerpt}</p>
-      {#if !isMissing && answer.answer_text.length > 220}
-        <button class="dc-text-toggle" onclick={toggleExpanded}>Show more</button>
+      {#if !concept}<p>{excerpt}</p>{/if}
+      {#if !isMissing}
+        <button class="dc-text-toggle" onclick={toggleExpanded}>Show raw capture</button>
       {/if}
     {/if}
   </div>

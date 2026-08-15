@@ -10,3 +10,6 @@ build/
 .env
 .env.*
 !.env.example
+
+# Local workflow coordination
+content/comparisons/**/.capture.lock

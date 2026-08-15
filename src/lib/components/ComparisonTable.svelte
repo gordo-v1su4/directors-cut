@@ -3,8 +3,16 @@
   import ModelAnswerCell from './ModelAnswerCell.svelte';
   import VersionedArtifactCell from './VersionedArtifactCell.svelte';
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
+  import { callBridgeTool } from '$lib/bridge/types';
+  import type { RecordConceptDecisionInput, RecordConceptDecisionOutput } from '$lib/bridge/types';
 
-  let { run, rows }: { run: ComparisonRun | ComparisonRunDetail; rows: ComparisonRow[] } = $props();
+  let { run, rows, ondecision }: { run: ComparisonRun | ComparisonRunDetail; rows: ComparisonRow[]; ondecision?: () => Promise<void> | void } = $props();
+
+  const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
+  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
+  let decisionNotes = $state<Record<string, string>>({});
+  let savingAnswerId = $state('');
+  let decisionError = $state<Record<string, string>>({});
 
   let promptsMap = $derived(
     new Map<string, GenerationPrompt>(
@@ -36,6 +44,32 @@
   function scrollRight() {
     scrollContainer?.scrollBy({ left: 300, behavior: 'smooth' });
   }
+
+  async function recordDecision(row: ComparisonRow, decision: 'approved' | 'rejected') {
+    if (!BRIDGE_TOKEN) {
+      decisionError = { ...decisionError, [row.answer.answer_id]: 'Bridge token is not configured for this local UI session.' };
+      return;
+    }
+    savingAnswerId = row.answer.answer_id;
+    decisionError = { ...decisionError, [row.answer.answer_id]: '' };
+    try {
+      await callBridgeTool<RecordConceptDecisionInput, RecordConceptDecisionOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'record_concept_decision',
+        {
+          run_id: run.run_id,
+          answer_id: row.answer.answer_id,
+          decision,
+          note: decisionNotes[row.answer.answer_id]?.trim() || undefined,
+        },
+      );
+      await ondecision?.();
+    } catch (error) {
+      decisionError = { ...decisionError, [row.answer.answer_id]: error instanceof Error ? error.message : String(error) };
+    } finally {
+      savingAnswerId = '';
+    }
+  }
 </script>
 
 <div class="dc-comparison-table-wrap" bind:this={scrollContainer}>
@@ -51,7 +85,7 @@
         <th class="dc-col-media"><span class="dc-column-kicker">Reference assisted</span><span class="dc-column-title">Video</span><span class="dc-column-model">Seedance</span></th>
         <th class="dc-col-media"><span class="dc-column-kicker">Reference assisted</span><span class="dc-column-title">Video</span><span class="dc-column-model">Sora</span></th>
         <th class="dc-col-evaluation"><span class="dc-column-kicker">Evaluation</span><span class="dc-column-title">Vision review</span></th>
-        <th class="dc-col-review"><span class="dc-column-kicker">Review</span><span class="dc-column-title">Notes / actions</span></th>
+        <th class="dc-col-review"><span class="dc-column-kicker">Concept gate</span><span class="dc-column-title">Approval</span></th>
       </tr>
     </thead>
     <tbody>
@@ -112,19 +146,29 @@
           </td>
           <td>
             <div class="dc-row-actions">
+              <div class="dc-decision-status" data-status={row.reviewStatus ?? 'pending'}>
+                {row.reviewStatus === 'approved' ? 'Approved' : row.reviewStatus === 'rejected' ? 'Rejected' : 'Pending'}
+              </div>
               <textarea
                 class="dc-notes-input"
-                placeholder="Notes..."
-                value={row.notes}
-                readonly
+                placeholder="Optional decision note"
+                value={decisionNotes[row.answer.answer_id] ?? row.conceptDecision?.note ?? ''}
+                oninput={(event) => decisionNotes = { ...decisionNotes, [row.answer.answer_id]: event.currentTarget.value }}
                 rows={3}
               ></textarea>
               <div class="dc-action-group">
-                <button class="dc-action-button" disabled>Keep</button>
-                <button class="dc-action-button" disabled>Remix</button>
-                <button class="dc-action-button" disabled>Reject</button>
-                <button class="dc-action-button" disabled>Resend</button>
+                <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve</button>
+                <button class="dc-action-button dc-reject-button" disabled={row.answer.ui_status === 'missing' || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
               </div>
+              {#if !row.canApprove && row.answer.ui_status !== 'missing'}
+                <p class="dc-decision-help">Only a valid creative_concept_v1 package can be approved.</p>
+              {:else if row.reviewStatus === 'rejected'}
+                <p class="dc-decision-help">Recapture this model to create a new pending answer.</p>
+              {:else if row.canGenerate}
+                <p class="dc-decision-help">Eligible for a 12-second, 16:9 generation quote.</p>
+              {/if}
+              {#if savingAnswerId === row.answer.answer_id}<p class="dc-decision-help">Saving decision…</p>{/if}
+              {#if decisionError[row.answer.answer_id]}<p class="dc-decision-error">{decisionError[row.answer.answer_id]}</p>{/if}
             </div>
           </td>
         </tr>

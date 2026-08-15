@@ -20,10 +20,12 @@ addFormats(ajv);
 const promptCardSchema = JSON.parse(readFileSync(join(ROOT, "schemas", "prompt-card.schema.json"), "utf-8"));
 const comparisonRunSchema = JSON.parse(readFileSync(join(ROOT, "schemas", "comparison-run.schema.json"), "utf-8"));
 const modelAnswerSchema = JSON.parse(readFileSync(join(ROOT, "schemas", "model-answer.schema.json"), "utf-8"));
+const conceptDecisionSchema = JSON.parse(readFileSync(join(ROOT, "schemas", "concept-decision.schema.json"), "utf-8"));
 
 const validatePromptCard = ajv.compile(promptCardSchema);
 const validateComparisonRun = ajv.compile(comparisonRunSchema);
 const validateModelAnswer = ajv.compile(modelAnswerSchema);
+const validateConceptDecision = ajv.compile(conceptDecisionSchema);
 
 let errors = 0;
 let ok = 0;
@@ -123,6 +125,34 @@ for (const filePath of findFilesNamed(join(ROOT, "content", "comparisons"), "ans
     } else {
       console.log(`FAIL answer: ${relativePath}:${index + 1}`);
       for (const err of validateModelAnswer.errors || []) {
+        console.log(`     ${err.instancePath || "/"}: ${err.message}`);
+      }
+      errors++;
+    }
+  }
+}
+
+for (const filePath of findFilesNamed(join(ROOT, "content", "comparisons"), "concept-decisions.jsonl")) {
+  const relativePath = filePath.replace(`${ROOT}/`, "");
+  const lines = readFileSync(filePath, "utf-8").split("\n");
+  for (const [index, line] of lines.entries()) {
+    if (!line.trim()) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(line);
+    } catch (error) {
+      console.log(`FAIL decision: ${relativePath}:${index + 1}`);
+      console.log(`     /: invalid JSON — ${error instanceof Error ? error.message : String(error)}`);
+      errors++;
+      continue;
+    }
+    const valid = validateConceptDecision(value);
+    if (valid) {
+      console.log(`OK   decision: ${relativePath}:${index + 1}`);
+      ok++;
+    } else {
+      console.log(`FAIL decision: ${relativePath}:${index + 1}`);
+      for (const err of validateConceptDecision.errors || []) {
         console.log(`     ${err.instancePath || "/"}: ${err.message}`);
       }
       errors++;

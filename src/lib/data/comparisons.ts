@@ -7,6 +7,8 @@ import type {
   VersionedArtifactSlot,
   ModelAnswer,
   GenerationPrompt,
+  ConceptDecision,
+  CreativeConceptPackage,
 } from '$lib/types/comparison';
 
 const EXPECTED_MODELS = [
@@ -63,14 +65,16 @@ export async function loadComparisonRun(
   const answers = await fetchAnswers(runId);
   const artifacts = await fetchArtifacts(runId);
   const prompts = await fetchPrompts(runId);
+  const decisions = await fetchDecisions(runId);
 
-  const rows = buildComparisonRows(run, answers, artifacts, prompts);
+  const rows = buildComparisonRows(run, answers, artifacts, prompts, decisions);
 
   return {
     ...run,
     answers,
     artifacts,
     prompts,
+    decisions,
     rows,
   };
 }
@@ -184,6 +188,24 @@ async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
   }
 }
 
+async function fetchDecisions(runId: string): Promise<ConceptDecision[]> {
+  try {
+    const res = await fetch(`/data/comparisons/${runId}/decisions.json`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return (await res.json()) as ConceptDecision[];
+  } catch (e) {
+    console.warn(`Failed to load concept decisions for ${runId}:`, e);
+    return [];
+  }
+}
+
+export function isCreativeConcept(answer: ModelAnswer): answer is ModelAnswer & { structured_prompt: CreativeConceptPackage } {
+  const value = answer.structured_prompt;
+  return answer.structure_status === 'valid' && !!value && typeof value === 'object' && !Array.isArray(value) &&
+    value.package_type === 'creative_concept_v1' && value.runtime_seconds === 12 && value.prompt_count === 1 &&
+    [value.title, value.logline, value.summary, value.sora_prompt].every((field) => typeof field === 'string' && field.trim().length > 0);
+}
+
 function fallbackRun(runId: string): ComparisonRun {
   return {
     run_id: runId || FALLBACK_RUN_ID,
@@ -202,7 +224,8 @@ export function buildComparisonRows(
   run: ComparisonRun,
   answers: ModelAnswer[],
   artifacts: ComparisonArtifact[],
-  prompts: GenerationPrompt[] = []
+  prompts: GenerationPrompt[] = [],
+  decisions: ConceptDecision[] = []
 ): ComparisonRow[] {
   const isImagePipelineAnswer = (answer: ModelAnswer) =>
     answer.model_class === 'image_generator' ||
@@ -220,11 +243,13 @@ export function buildComparisonRows(
   );
   const models = [...new Set([...requestedModels, ...answeredModels])];
   const sharedShotGrids = artifacts.filter((artifact) => artifact.artifact_type === 'shot_grid');
+  const latestDecisionByAnswer = new Map<string, ConceptDecision>();
+  for (const decision of decisions) latestDecisionByAnswer.set(decision.answer_id, decision);
 
   const rows = models.map((modelName) => {
     const answer = answerByModel.get(modelName) ?? makePendingAnswer(modelName, run.run_id);
 
-    return makeComparisonRow(run.run_id, answer, artifacts, prompts, sharedShotGrids);
+    return makeComparisonRow(run.run_id, answer, artifacts, prompts, sharedShotGrids, latestDecisionByAnswer.get(answer.answer_id));
   });
 
   // Sort rows: rows containing real artifacts first, then rows with real
@@ -280,7 +305,8 @@ export function makeComparisonRow(
   answer: ModelAnswer,
   artifacts: ComparisonArtifact[] = [],
   prompts: GenerationPrompt[] = [],
-  sharedShotGrids: ComparisonArtifact[] = []
+  sharedShotGrids: ComparisonArtifact[] = [],
+  conceptDecision?: ConceptDecision
 ): ComparisonRow {
   const isPending = answer.ui_status === 'missing' || !answer.answer_text;
 
@@ -350,7 +376,10 @@ export function makeComparisonRow(
     referenceAssistedVideoSeedanceSlot: makeSlot('video_result', effectiveReferenceAssistedVideoSeedance),
     referenceAssistedVideoSoraSlot: makeSlot('video_result', referenceAssistedVideoSora),
     notes: '',
-    reviewStatus: isPending ? 'pending' : 'pending',
+    conceptDecision,
+    reviewStatus: conceptDecision?.decision ?? 'pending',
+    canApprove: !isPending && isCreativeConcept(answer),
+    canGenerate: !isPending && isCreativeConcept(answer) && conceptDecision?.decision === 'approved',
     visionScores: [],
   };
 }

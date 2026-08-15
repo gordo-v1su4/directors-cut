@@ -20,10 +20,14 @@
   let gridLoading = $state(false);
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
-  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? 'test-local-001';
+  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
 
   async function generateGrid() {
     if (!card) return;
+    if (!BRIDGE_TOKEN) {
+      gridError = 'Bridge token is not configured for this local UI session.';
+      return;
+    }
     gridLoading = true;
     gridError = '';
     gridJob = null;

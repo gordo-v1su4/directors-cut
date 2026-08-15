@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/gordo-v1su4/directors-cut/schemas/concept-decision.schema.json",
+  "title": "Directors Cut Concept Decision JSONL Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_id", "run_id", "answer_id", "decision", "decided_at", "source"],
+  "properties": {
+    "decision_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "answer_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "decision": { "type": "string", "enum": ["approved", "rejected"] },
+    "note": { "type": "string", "maxLength": 1000 },
+    "decided_at": { "type": "string", "format": "date-time" },
+    "source": { "type": "string", "minLength": 1, "maxLength": 80 }
+  }
+}

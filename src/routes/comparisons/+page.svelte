@@ -7,6 +7,11 @@
   import ComparisonTable from '$lib/components/ComparisonTable.svelte';
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
+  import { callBridgeTool } from '$lib/bridge/types';
+  import type { QuoteVideoGenerationInput, QuoteVideoGenerationOutput, SubmitVideoGenerationInput, SubmitVideoGenerationOutput, GetVideoGenerationStatusInput, GetVideoGenerationStatusOutput, VideoProvider } from '$lib/bridge/types';
+
+  const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
+  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
 
   let runList = $state<{ run_id: string; title: string; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
   let selectedRunId = $state('');
@@ -15,11 +20,18 @@
   let switching = $state(false);
   let error = $state('');
   let promptSlug = $state('');
+  let generationProvider = $state<VideoProvider>('higgsfield');
+  let generationQuote = $state<QuoteVideoGenerationOutput | null>(null);
+  let generationSubmission = $state<SubmitVideoGenerationOutput | GetVideoGenerationStatusOutput | null>(null);
+  let generationBusy = $state(false);
+  let generationError = $state('');
 
   let genStatus = $derived(run ? getRunGenerationStatus(run.artifacts) : 'pending');
   let mediaSummary = $derived<GeneratedMediaSummaryItem[]>(run ? getGeneratedMediaSummary(run.artifacts) : []);
   let displayQuestion = $derived(run?.question?.trim() ? run.question : 'No run-level prompt captured.');
   let hasRealArtifacts = $derived(mediaSummary.length > 0);
+  let approvedRows = $derived(run?.rows.filter((row) => row.canGenerate) ?? []);
+  let conceptsReady = $derived(approvedRows.length === 2);
 
   async function loadRun(id: string) {
     switching = true;
@@ -59,6 +71,64 @@
     selectedRunId = id;
     promptSlug = '';
     loadRun(id);
+  }
+
+  async function refreshSelectedRun() {
+    if (selectedRunId) await loadRun(selectedRunId);
+  }
+
+  function resetQuote() {
+    generationQuote = null;
+    generationSubmission = null;
+    generationError = '';
+  }
+
+  async function requestGenerationQuote() {
+    if (!run || !conceptsReady || approvedRows.length !== 2) return;
+    if (!BRIDGE_TOKEN) { generationError = 'Bridge token is not configured for this local UI session.'; return; }
+    generationBusy = true;
+    generationError = '';
+    generationQuote = null;
+    try {
+      generationQuote = await callBridgeTool<QuoteVideoGenerationInput, QuoteVideoGenerationOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'quote_video_generation',
+        { run_id: run.run_id, answer_ids: [approvedRows[0]!.answer.answer_id, approvedRows[1]!.answer.answer_id], provider: generationProvider },
+      );
+    } catch (error) {
+      generationError = error instanceof Error ? error.message : String(error);
+    } finally { generationBusy = false; }
+  }
+
+  async function confirmGeneration() {
+    if (!generationQuote || generationQuote.quote_status !== 'quoted') return;
+    generationBusy = true;
+    generationError = '';
+    try {
+      generationSubmission = await callBridgeTool<SubmitVideoGenerationInput, SubmitVideoGenerationOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'submit_video_generation',
+        { quote_id: generationQuote.quote_id, confirmed: true },
+      );
+    } catch (error) {
+      generationError = error instanceof Error ? error.message : String(error);
+    } finally { generationBusy = false; }
+  }
+
+  async function refreshGeneration() {
+    if (!generationSubmission) return;
+    generationBusy = true;
+    generationError = '';
+    try {
+      generationSubmission = await callBridgeTool<GetVideoGenerationStatusInput, GetVideoGenerationStatusOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'get_video_generation_status',
+        { generation_id: generationSubmission.generation_id },
+      );
+      await refreshSelectedRun();
+    } catch (error) {
+      generationError = error instanceof Error ? error.message : String(error);
+    } finally { generationBusy = false; }
   }
 
   onMount(async () => {
@@ -154,6 +224,50 @@
 
     <GenerationStatusBanner status={genStatus} artifacts={run.artifacts} />
 
+    <section class="dc-generation-gate" aria-labelledby="generation-gate-title">
+      <div class="dc-generation-gate-heading">
+        <div>
+          <p class="dc-eyebrow">Billable generation gate</p>
+          <h3 id="generation-gate-title">Generate both approved concepts</h3>
+        </div>
+        <span class="dc-decision-status" data-status={conceptsReady ? 'approved' : 'pending'}>{approvedRows.length}/2 approved</span>
+      </div>
+      <p class="dc-generation-gate-copy">Both clips use the same provider, Sora 2 model family, 12-second duration, and 16:9 aspect ratio. A live quote expires and must be explicitly confirmed before either paid job is submitted.</p>
+      <div class="dc-generation-controls">
+        <label>
+          <span>Provider</span>
+          <select bind:value={generationProvider} onchange={resetQuote} disabled={generationBusy}>
+            <option value="higgsfield">Higgsfield CLI (preferred)</option>
+            <option value="direct_sora">Direct Sora agent / MCP</option>
+          </select>
+        </label>
+        <button class="dc-action-button" onclick={requestGenerationQuote} disabled={!conceptsReady || generationBusy}>Get live quote</button>
+      </div>
+      {#if !conceptsReady}<p class="dc-decision-help">Approve the current valid ChatGPT and Claude concepts to enable quoting.</p>{/if}
+      {#if generationQuote}
+        <div class="dc-quote-panel">
+          <div><span>Provider</span><strong>{generationQuote.provider}</strong></div>
+          <div><span>Model</span><strong>{generationQuote.model}</strong></div>
+          <div><span>Each clip</span><strong>{generationQuote.credit_cost_each === null ? 'Agent quote required' : `${generationQuote.credit_cost_each} credits`}</strong></div>
+          <div><span>Total</span><strong>{generationQuote.credit_cost_total === null ? 'Not quoted' : `${generationQuote.credit_cost_total} credits`}</strong></div>
+        </div>
+        {#if generationQuote.message}<p class="dc-decision-help">{generationQuote.message}</p>{/if}
+        {#if generationQuote.quote_status === 'quoted' && !generationSubmission}
+          <button class="dc-action-button dc-confirm-generation" onclick={confirmGeneration} disabled={generationBusy}>Confirm {generationQuote.credit_cost_total} credits and generate both</button>
+        {/if}
+      {/if}
+      {#if generationSubmission}
+        <div class="dc-generation-status-list">
+          <strong>Status: {generationSubmission.status.replaceAll('_', ' ')}</strong>
+          {#each generationSubmission.jobs as job (job.answer_id)}<span>{job.answer_id}: {job.status}{job.message ? ` — ${job.message}` : ''}</span>{/each}
+        </div>
+        {#if generationSubmission.status !== 'ready_for_review' && generationSubmission.status !== 'failed'}
+          <button class="dc-action-button" onclick={refreshGeneration} disabled={generationBusy}>Refresh generation status</button>
+        {/if}
+      {/if}
+      {#if generationError}<p class="dc-decision-error">{generationError}</p>{/if}
+    </section>
+
     {#if hasRealArtifacts}
       <div class="dc-gen-media-summary" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--dc-border-subtle); border-radius: var(--dc-radius); background: var(--dc-bg-elev);">
         <div class="dc-brief-label" style="margin-bottom: 8px;">Generated Media ({mediaSummary.length} artifact{mediaSummary.length === 1 ? '' : 's'})</div>
@@ -183,7 +297,7 @@
 
     <div class="dc-comparison-table-scroll-outer">
       <div class="dc-comparison-table-scroll-inner">
-        <ComparisonTable {run} rows={run.rows} />
+        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} />
       </div>
       <!-- Edge cue overlay: visible when table is wider than viewport -->
       <div class="dc-table-edge-cue" style="position: absolute; right: 0; top: 0; bottom: 0; width: 32px; pointer-events: none; background: linear-gradient(to left, var(--dc-bg-elev), transparent); display: flex; align-items: center; justify-content: flex-end; padding-right: 4px;">

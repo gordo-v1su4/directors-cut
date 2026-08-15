@@ -17,6 +17,7 @@ export interface ComparisonRun {
     | 'running'
     | 'answers_partial'
     | 'answers_collected'
+    | 'concepts_approved'
     | 'generation_partial'
     | 'partially_generated'
     | 'ready_for_review'
@@ -64,6 +65,18 @@ export interface ModelAnswer {
   ui_status?: 'captured' | 'pending' | 'missing';
 }
 
+export type ConceptDecisionValue = 'approved' | 'rejected';
+
+export interface ConceptDecision {
+  decision_id: string;
+  run_id: string;
+  answer_id: string;
+  decision: ConceptDecisionValue;
+  note?: string;
+  decided_at: string;
+  source: 'directors_cut_ui' | 'bridge' | string;
+}
+
 export type ArtifactType =
   | 'shot_grid'
   | 'image_result'
@@ -78,6 +91,8 @@ export type ArtifactProvider =
   | 'seedance'
   | 'manual_upload'
   | 'raycast'
+  | 'higgsfield'
+  | 'direct_sora'
   | 'unknown';
 
 export type ArtifactSource = 'generated' | 'uploaded' | 'captured' | 'manual';
@@ -119,6 +134,16 @@ export interface ComparisonArtifact {
   created_at: string;
   source: ArtifactSource;
   status?: ArtifactStatus;
+  model?: string;
+  job_id?: string;
+  result_url?: string;
+  width?: number;
+  height?: number;
+  duration_seconds?: 12;
+  aspect_ratio?: '16:9';
+  credit_cost?: number;
+  submitted_at?: string;
+  completed_at?: string;
   notes?: string;
 }
 
@@ -146,7 +171,10 @@ export interface ComparisonRow {
   referenceAssistedVideoSeedanceSlot: VersionedArtifactSlot;
   referenceAssistedVideoSoraSlot: VersionedArtifactSlot;
   notes?: string;
-  reviewStatus?: 'keep' | 'remix' | 'reject' | 'pending';
+  conceptDecision?: ConceptDecision;
+  reviewStatus?: 'approved' | 'rejected' | 'pending';
+  canApprove?: boolean;
+  canGenerate?: boolean;
   visionScores?: { model: string; score: number | null; note?: string }[];
 }
 
@@ -161,6 +189,7 @@ export interface ComparisonRunDetail extends ComparisonRun {
   answers: ModelAnswer[];
   artifacts: ComparisonArtifact[];
   prompts: GenerationPrompt[];
+  decisions: ConceptDecision[];
   rows: ComparisonRow[];
 }
 
@@ -170,6 +199,7 @@ export interface ComparisonRunSummary {
   status: ComparisonRun['status'];
   answer_count: number;
   artifact_count: number;
+  approved_concept_count?: number;
   model_labels: string[];
   created: string;
 }

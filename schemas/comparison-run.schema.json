@@ -41,6 +41,7 @@
         "running",
         "answers_partial",
         "answers_collected",
+        "concepts_approved",
         "generation_partial",
         "partially_generated",
         "ready_for_review",

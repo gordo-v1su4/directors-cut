@@ -20,9 +20,10 @@ import {
   existsSync,
   mkdirSync,
   cpSync,
+  renameSync,
 } from 'fs';
 import { join } from 'path';
-import type { ComparisonRun, ModelAnswer, ComparisonArtifact, GenerationPrompt } from '../src/lib/types/comparison';
+import type { ComparisonRun, ModelAnswer, ComparisonArtifact, GenerationPrompt, ConceptDecision } from '../src/lib/types/comparison';
 
 const ROOT = join(import.meta.dir, '..');
 const COMPARISONS_DIR = join(ROOT, 'content', 'comparisons');
@@ -52,6 +53,18 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
   let inList = false;
   let listItems: string[] = [];
 
+  function parseScalar(raw: string): string {
+    const value = raw.trim();
+    if (value.startsWith('"') && value.endsWith('"')) {
+      try {
+        return JSON.parse(value) as string;
+      } catch {
+        return value.slice(1, -1);
+      }
+    }
+    return value;
+  }
+
   const lines = yamlText.split('\n');
   let i = 0;
   while (i < lines.length) {
@@ -59,7 +72,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
     const trimmed = line.trim();
 
     if (trimmed.startsWith('- ') && currentKey) {
-      const value = trimmed.replace(/^- /, '').replace(/^"(.*)"$/, '$1').trim();
+      const value = parseScalar(trimmed.replace(/^- /, ''));
       listItems.push(value);
       i++;
       continue;
@@ -74,7 +87,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
     const kvMatch = trimmed.match(/^(\w[\w_]*):\s*(.*)$/);
     if (kvMatch) {
       currentKey = kvMatch[1];
-      const value = kvMatch[2].replace(/^"(.*)"$/, '$1').trim();
+      const value = parseScalar(kvMatch[2]);
 
       // YAML block scalar indicators: > (folded), |- (literal strip), >- (folded strip), >+, |+
       if (value === '>' || value === '|' || value === '>-' || value === '|-' || value === '>+' || value === '|+') {
@@ -136,11 +149,33 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
   return { frontmatter, body };
 }
 
-function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[]; artifacts: ComparisonArtifact[]; prompts: GenerationPrompt[] } {
+function writeJsonAtomic(path: string, value: unknown): void {
+  const temporary = `${path}.tmp-${process.pid}`;
+  writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`);
+  renameSync(temporary, path);
+}
+
+function readJsonLines<T>(path: string, label: string): T[] {
+  if (!existsSync(path)) return [];
+  const values: T[] = [];
+  const text = readFileSync(path, 'utf-8');
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      values.push(JSON.parse(line) as T);
+    } catch (error) {
+      console.error(`Failed to parse ${label} line in ${path}:`, error);
+    }
+  }
+  return values;
+}
+
+function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[]; artifacts: ComparisonArtifact[]; prompts: GenerationPrompt[]; decisions: ConceptDecision[] } {
   const runFile = join(runDir, 'comparison-run.md');
   const answersFile = join(runDir, 'answers.jsonl');
   const artifactsFile = join(runDir, 'artifacts.jsonl');
   const promptsFile = join(runDir, 'prompts.jsonl');
+  const decisionsFile = join(runDir, 'concept-decisions.jsonl');
 
   let run: ComparisonRun = {
     run_id: '',
@@ -163,58 +198,21 @@ function readRunDir(runDir: string): { run: ComparisonRun; answers: ModelAnswer[
     } as ComparisonRun;
   }
 
-  const answers: ModelAnswer[] = [];
-  if (existsSync(answersFile)) {
-    const text = readFileSync(answersFile, 'utf-8');
-    for (const line of text.split('\n')) {
-      if (line.trim()) {
-        try {
-          answers.push(JSON.parse(line) as ModelAnswer);
-        } catch (e) {
-          console.error(`Failed to parse answer line in ${answersFile}:`, e);
-        }
-      }
-    }
-  }
+  const answers = readJsonLines<ModelAnswer>(answersFile, 'answer');
+  const artifacts = readJsonLines<ComparisonArtifact>(artifactsFile, 'artifact');
+  const prompts = readJsonLines<GenerationPrompt>(promptsFile, 'prompt');
+  const decisions = readJsonLines<ConceptDecision>(decisionsFile, 'decision');
 
-  const artifacts: ComparisonArtifact[] = [];
-  if (existsSync(artifactsFile)) {
-    const text = readFileSync(artifactsFile, 'utf-8');
-    for (const line of text.split('\n')) {
-      if (line.trim()) {
-        try {
-          artifacts.push(JSON.parse(line) as ComparisonArtifact);
-        } catch (e) {
-          console.error(`Failed to parse artifact line in ${artifactsFile}:`, e);
-        }
-      }
-    }
-  }
-
-  const prompts: GenerationPrompt[] = [];
-  if (existsSync(promptsFile)) {
-    const text = readFileSync(promptsFile, 'utf-8');
-    for (const line of text.split('\n')) {
-      if (line.trim()) {
-        try {
-          prompts.push(JSON.parse(line) as GenerationPrompt);
-        } catch (e) {
-          console.error(`Failed to parse prompt line in ${promptsFile}:`, e);
-        }
-      }
-    }
-  }
-
-  return { run, answers, artifacts, prompts };
+  return { run, answers, artifacts, prompts, decisions };
 }
 
 function buildComparisonsIndex(): void {
   if (!existsSync(COMPARISONS_DIR)) {
     console.log('No comparisons directory yet; nothing to index.');
     mkdirSync(RUNS_OUTPUT_DIR, { recursive: true });
-    writeFileSync(
+    writeJsonAtomic(
       join(OUTPUT_DIR, 'comparisons.index.json'),
-      JSON.stringify({ runs: [], expected_models: EXPECTED_MODELS }, null, 2)
+      { runs: [], expected_models: EXPECTED_MODELS }
     );
     return;
   }
@@ -224,22 +222,23 @@ function buildComparisonsIndex(): void {
   const entries = readdirSync(COMPARISONS_DIR).filter((name) => {
     const full = join(COMPARISONS_DIR, name);
     return statSync(full).isDirectory();
-  });
+  }).sort();
 
   const runs: { run: ComparisonRun; summary: unknown }[] = [];
 
   for (const runId of entries) {
     const runDir = join(COMPARISONS_DIR, runId);
-    const { run, answers, artifacts, prompts } = readRunDir(runDir);
+    const { run, answers, artifacts, prompts, decisions } = readRunDir(runDir);
 
     if (!run.run_id) run.run_id = runId;
 
     const runOutputDir = join(RUNS_OUTPUT_DIR, runId);
     mkdirSync(runOutputDir, { recursive: true });
-    writeFileSync(join(runOutputDir, 'run.json'), JSON.stringify(run, null, 2));
-    writeFileSync(join(runOutputDir, 'answers.json'), JSON.stringify(answers, null, 2));
-    writeFileSync(join(runOutputDir, 'artifacts.json'), JSON.stringify(artifacts, null, 2));
-    writeFileSync(join(runOutputDir, 'prompts.json'), JSON.stringify(prompts, null, 2));
+    writeJsonAtomic(join(runOutputDir, 'run.json'), run);
+    writeJsonAtomic(join(runOutputDir, 'answers.json'), answers);
+    writeJsonAtomic(join(runOutputDir, 'artifacts.json'), artifacts);
+    writeJsonAtomic(join(runOutputDir, 'prompts.json'), prompts);
+    writeJsonAtomic(join(runOutputDir, 'decisions.json'), decisions);
 
     // Copy media files into the public data dir so static URLs resolve.
     const mediaDir = join(runDir, 'media');
@@ -255,12 +254,28 @@ function buildComparisonsIndex(): void {
       }
     }
 
+    const latestDecisionByAnswer = new Map<string, ConceptDecision>();
+    for (const decision of decisions) latestDecisionByAnswer.set(decision.answer_id, decision);
+    const currentAnswerByModel = new Map<string, ModelAnswer>();
+    for (const answer of answers) {
+      const isImagePipeline = answer.model_class === 'image_generator' ||
+        answer.target_model.toLowerCase().includes('nano_banana') ||
+        answer.model_name.toLowerCase().includes('nano banana');
+      if (!isImagePipeline) currentAnswerByModel.set(answer.model_name, answer);
+    }
+    const approvedConceptCount = [...currentAnswerByModel.values()].filter((answer) => {
+      const concept = answer.structured_prompt;
+      const eligible = answer.structure_status === 'valid' && concept?.package_type === 'creative_concept_v1';
+      return eligible && latestDecisionByAnswer.get(answer.answer_id)?.decision === 'approved';
+    }).length;
+
     const summary = {
       run_id: run.run_id,
       title: run.title,
       status: run.status,
       answer_count: answers.length,
       artifact_count: artifacts.length,
+      approved_concept_count: approvedConceptCount,
       model_labels: answers.map((a) => a.model_name),
       created: run.created,
     };
@@ -268,16 +283,12 @@ function buildComparisonsIndex(): void {
     runs.push({ run, summary });
   }
 
-  writeFileSync(
+  writeJsonAtomic(
     join(OUTPUT_DIR, 'comparisons.index.json'),
-    JSON.stringify(
-      {
-        runs: runs.map((r) => r.summary),
-        expected_models: EXPECTED_MODELS,
-      },
-      null,
-      2
-    )
+    {
+      runs: runs.map((r) => r.summary),
+      expected_models: EXPECTED_MODELS,
+    }
   );
 
   console.log(`Indexed ${runs.length} comparison run(s).`);

@@ -194,6 +194,47 @@ export interface GenerateCinematicGridOutput {
   artifact_names?: string[];
 }
 
+export type ConceptDecisionValue = 'approved' | 'rejected';
+
+export interface RecordConceptDecisionInput {
+  run_id: string;
+  answer_id: string;
+  decision: ConceptDecisionValue;
+  note?: string;
+}
+
+export interface RecordConceptDecisionOutput {
+  decision_id: string;
+  run_id: string;
+  answer_id: string;
+  decision: ConceptDecisionValue;
+  decided_at: string;
+  run_status: string;
+  approved_current_concepts: number;
+  required_current_concepts: number;
+  index_rebuilt: boolean;
+  idempotent: boolean;
+}
+
+export type VideoProvider = 'higgsfield' | 'direct_sora';
+export interface QuoteVideoGenerationInput { run_id: string; answer_ids: [string, string]; provider: VideoProvider }
+export interface QuoteVideoGenerationOutput {
+  quote_id: string; run_id: string; answer_ids: [string, string]; provider: VideoProvider; model: string;
+  quote_status: 'quoted' | 'agent_handoff_required' | 'unavailable';
+  credit_cost_each: number | null; credit_cost_total: number | null;
+  duration_seconds: 12; aspect_ratio: '16:9'; quoted_at: string; expires_at: string;
+  capability_verified: boolean; message?: string;
+}
+export interface SubmitVideoGenerationInput { quote_id: string; confirmed: true }
+export interface VideoGenerationJob { answer_id: string; prompt_id: string; job_id?: string; status: 'submitting' | 'running' | 'completed' | 'failed'; message?: string }
+export interface SubmitVideoGenerationOutput {
+  generation_id: string; quote_id: string; run_id: string; provider: VideoProvider; model: string;
+  status: 'submitting' | 'running' | 'generation_partial' | 'ready_for_review' | 'failed';
+  jobs: [VideoGenerationJob, VideoGenerationJob]; submitted_at: string; automatic_fallback: false;
+}
+export interface GetVideoGenerationStatusInput { generation_id: string }
+export interface GetVideoGenerationStatusOutput extends SubmitVideoGenerationOutput { updated_at: string }
+
 // --- Tool registry ---------------------------------------------------------
 
 export type ToolName =
@@ -202,7 +243,11 @@ export type ToolName =
   | 'read_research_artifact'
   | 'search_prompt_library'
   | 'save_prompt_pack'
-  | 'generate_cinematic_grid';
+  | 'generate_cinematic_grid'
+  | 'record_concept_decision'
+  | 'quote_video_generation'
+  | 'submit_video_generation'
+  | 'get_video_generation_status';
 
 export const ALLOWED_TOOLS: readonly ToolName[] = [
   'start_prompt_research',
@@ -211,6 +256,10 @@ export const ALLOWED_TOOLS: readonly ToolName[] = [
   'search_prompt_library',
   'save_prompt_pack',
   'generate_cinematic_grid',
+  'record_concept_decision',
+  'quote_video_generation',
+  'submit_video_generation',
+  'get_video_generation_status',
 ];
 
 // --- Artifact handshake shapes ---------------------------------------------
