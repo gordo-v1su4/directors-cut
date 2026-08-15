@@ -7,8 +7,8 @@
 
   let allCards: PromptCardIndex[] = $state.raw([]);
   let selectedId = $state<string | null>(null);
+  let drawerOpen = $state(false);
 
-  // Filters
   let searchQuery = $state('');
   let familyFilter = $state('');
   let confidenceFilter = $state('');
@@ -38,45 +38,61 @@
     selectedId ? allCards.find((c) => c.id === selectedId) ?? null : null,
   );
 
+  function selectCard(id: string) {
+    selectedId = id;
+    drawerOpen = true;
+  }
+
+  function closeDrawer() {
+    drawerOpen = false;
+  }
+
   onMount(async () => {
     allCards = await loadPromptCards();
   });
 </script>
 
-<div style="display: flex; height: 100%; overflow: hidden;">
-  <!-- Table + filters -->
-  <div style="flex: 1; overflow: auto; padding: 12px;">
-    <!-- Filter bar -->
-    <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
+<div class="dc-library-page">
+  <div class="dc-library-main">
+    <div class="dc-library-filters">
       <input
-        type="text"
+        type="search"
+        class="dc-library-search"
         placeholder="Search cards..."
         bind:value={searchQuery}
-        style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 5px 10px; color: var(--dc-text); font-size: 12px; width: 220px;"
       />
-      <select bind:value={familyFilter} style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 5px 8px; color: var(--dc-text); font-size: 12px;">
+      <select class="dc-library-select" bind:value={familyFilter}>
         <option value="">All Families</option>
         {#each families as f}
           <option value={f}>{f}</option>
         {/each}
       </select>
-      <select bind:value={confidenceFilter} style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 5px 8px; color: var(--dc-text); font-size: 12px;">
+      <select class="dc-library-select" bind:value={confidenceFilter}>
         <option value="">Any Confidence</option>
         <option value="high">High</option>
         <option value="medium">Medium</option>
         <option value="low">Low</option>
       </select>
-      <select bind:value={testedFilter} style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 5px 8px; color: var(--dc-text); font-size: 12px;">
+      <select class="dc-library-select" bind:value={testedFilter}>
         <option value="">All</option>
         <option value="tested">Tested</option>
         <option value="untested">Untested</option>
       </select>
-      <span style="font-size: 11px; color: var(--dc-text-dim); margin-left: auto;">{filtered.length} / {allCards.length} cards</span>
+      <span class="dc-library-count">{filtered.length} / {allCards.length} cards</span>
     </div>
 
-    <DenseTable data={filtered} {selectedId} onselect={(id) => (selectedId = id)} />
+    <DenseTable data={filtered} {selectedId} onselect={selectCard} />
   </div>
 
-  <!-- Detail drawer -->
-  <CardDrawer card={selectedCard} />
+  {#if drawerOpen}
+    <button type="button" class="dc-drawer-backdrop" aria-label="Close details" onclick={closeDrawer}></button>
+  {/if}
+
+  <CardDrawer card={selectedCard} open={drawerOpen} onclose={closeDrawer} />
+
+  {#if selectedCard && !drawerOpen}
+    <button type="button" class="dc-drawer-fab" onclick={() => (drawerOpen = true)}>
+      View card
+    </button>
+  {/if}
 </div>

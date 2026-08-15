@@ -82,7 +82,7 @@
   <title>Projects — Directors Cut</title>
 </svelte:head>
 
-<div class="dc-page" style="height: 100%; overflow-y: auto; padding: 16px;">
+<div class="dc-page dc-page-shell">
   <div class="dc-projects-intro">
     <div><p class="dc-eyebrow">Prompt experiments and output review</p><h1>Projects</h1></div>
     <a class="dc-create-link" href="/create">+ New prompt project</a>
@@ -178,6 +178,8 @@
         </div>
       </div>
     {/if}
+
+    <p class="dc-table-scroll-hint">Swipe horizontally to compare all model columns.</p>
 
     <div class="dc-comparison-table-scroll-outer">
       <div class="dc-comparison-table-scroll-inner">

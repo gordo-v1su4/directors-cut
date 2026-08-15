@@ -436,4 +436,29 @@
     overflow-wrap: anywhere;
     word-break: break-all;
   }
+
+  @media (max-width: 640px) {
+    .dc-lightbox-backdrop {
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      align-items: flex-end;
+    }
+
+    .dc-lightbox-panel {
+      max-height: calc(100dvh - 20px);
+      border-radius: var(--dc-radius) var(--dc-radius) 0 0;
+    }
+
+    .dc-lightbox-close {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .dc-lightbox-stage {
+      max-height: 42vh;
+    }
+
+    .dc-lightbox-version-thumb {
+      width: 68px;
+    }
+  }
 </style>

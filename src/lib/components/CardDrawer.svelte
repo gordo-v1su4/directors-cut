@@ -5,7 +5,15 @@
   import { callBridgeTool } from '$lib/bridge/types';
   import type { GenerateCinematicGridInput, GenerateCinematicGridOutput } from '$lib/bridge/types';
 
-  let { card }: { card: PromptCardIndex | null } = $props();
+  let {
+    card,
+    open = true,
+    onclose,
+  }: {
+    card: PromptCardIndex | null;
+    open?: boolean;
+    onclose?: () => void;
+  } = $props();
 
   let gridJob = $state<GenerateCinematicGridOutput | null>(null);
   let gridError = $state('');
@@ -39,88 +47,276 @@
   }
 </script>
 
-{#if card}
-  <aside class="dc-drawer" style="padding: 16px; min-width: 340px; max-width: 420px;">
-    <div style="display:flex; align-items:start; justify-content:space-between; margin-bottom: 12px;">
-      <div style="display: flex; flex-direction: column; gap: 6px;">
-        <h2 style="font-size: 15px; font-weight: 600; margin: 0; color: var(--dc-text);">{card.title}</h2>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <a
-            href="/comparisons?prompt={card.slug}"
-            class="dc-badge"
-            style="color: var(--dc-text-muted); border-color: var(--dc-border); text-decoration: none; align-self: flex-start;"
-          >
-            Compare →
-          </a>
-          <button
-            onclick={generateGrid}
-            disabled={gridLoading}
-            style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); color: var(--dc-text); font-size: 12px; padding: 4px 10px; cursor: pointer; align-self: flex-start;"
-          >
-            {gridLoading ? 'Generating…' : 'Generate Grid'}
-          </button>
+<aside class="dc-drawer" class:open={open}>
+  {#if card}
+    <div class="dc-drawer-inner">
+      <div class="dc-drawer-header">
+        <div class="dc-drawer-heading">
+          <h2>{card.title}</h2>
+          <div class="dc-drawer-actions">
+            <a href="/comparisons?prompt={card.slug}" class="dc-drawer-link-badge">Compare →</a>
+            <button class="dc-drawer-button" onclick={generateGrid} disabled={gridLoading}>
+              {gridLoading ? 'Generating…' : 'Generate Grid'}
+            </button>
+          </div>
+        </div>
+        <div class="dc-drawer-toolbar">
+          <CopyButton text={card.file_path} label="Path" />
+          {#if onclose}
+            <button type="button" class="dc-drawer-close" aria-label="Close details" onclick={onclose}>×</button>
+          {/if}
         </div>
       </div>
-      <CopyButton text={card.file_path} label="Path" />
-    </div>
 
-    <p style="color: var(--dc-text-muted); font-size: 12px; margin: 0 0 12px;">{card.summary}</p>
+      <p class="dc-drawer-summary">{card.summary}</p>
 
-    {#if gridJob}
-      <div style="background: var(--dc-bg-elev); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); padding: 10px; margin-bottom: 12px;">
-        <p style="font-size: 12px; margin: 0 0 4px; color: var(--dc-text);">Grid job started: <code style="font-family: var(--dc-font-mono);">{gridJob.job_id}</code></p>
-        <p style="font-size: 12px; margin: 0; color: var(--dc-text-muted);">Status: {gridJob.status}</p>
-      </div>
-    {/if}
-    {#if gridError}
-      <p style="color: #f87171; font-size: 12px; margin: 0 0 12px;">{gridError}</p>
-    {/if}
-
-    <div style="display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
-      <Badge label={card.model_family} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} active />
-      {#each card.model_targets as target}
-        <Badge label={target} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} />
-      {/each}
-      <Badge label={`${card.aspect_ratio}${card.runtime_seconds ? ` ${card.runtime_seconds}s` : ''}`} />
-      <Badge label={card.evidence_type} color={EVIDENCE_COLORS[card.evidence_type] ?? 'var(--dc-evidence-unknown)'} />
-      <Badge label={card.confidence} color={CONFIDENCE_COLORS[card.confidence] ?? 'var(--dc-text-dim)'} />
-      {#if card.tested_by_us}
-        <Badge label="tested" color="var(--dc-conf-high)" />
+      {#if gridJob}
+        <div class="dc-drawer-panel">
+          <p>Grid job started: <code>{gridJob.job_id}</code></p>
+          <p>Status: {gridJob.status}</p>
+        </div>
       {/if}
-    </div>
+      {#if gridError}
+        <p class="dc-drawer-error">{gridError}</p>
+      {/if}
 
-    <section style="margin-bottom: 14px;">
-      <h3 style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 6px;">Prompt Anatomy</h3>
-      <dl style="display:grid; grid-template-columns: 100px 1fr; gap: 4px 8px; font-size: 12px; margin: 0;">
-        <dt style="color: var(--dc-text-muted)">Mode</dt><dd style="margin:0">{card.prompt_mode}</dd>
-        <dt style="color: var(--dc-text-muted)">Shape</dt><dd style="margin:0">{card.output_shape}</dd>
-        <dt style="color: var(--dc-text-muted)">Use cases</dt><dd style="margin:0">{card.use_cases.join(', ')}</dd>
-        <dt style="color: var(--dc-text-muted)">Tags</dt><dd style="margin:0">{card.tags.join(', ') || '—'}</dd>
-        <dt style="color: var(--dc-text-muted)">Status</dt><dd style="margin:0">{card.library_status}</dd>
-      </dl>
-    </section>
-
-    <section style="margin-bottom: 14px;">
-      <h3 style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 6px;">Sources ({card.source_count})</h3>
-      <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px;">
-        {#each card.source_urls as url}
-          <li>
-            <a href={url} target="_blank" rel="noopener" style="color: var(--dc-sora); font-size: 12px; text-decoration: none;">{url}</a>
-          </li>
+      <div class="dc-drawer-badges">
+        <Badge label={card.model_family} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} active />
+        {#each card.model_targets as target}
+          <Badge label={target} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} />
         {/each}
-      </ul>
-      {#if card.source_notes.length > 0}
-        <p style="font-size: 11px; color: var(--dc-text-dim); margin: 6px 0 0;">{card.source_notes.join(' · ')}</p>
-      {/if}
-    </section>
+        <Badge label={`${card.aspect_ratio}${card.runtime_seconds ? ` ${card.runtime_seconds}s` : ''}`} />
+        <Badge label={card.evidence_type} color={EVIDENCE_COLORS[card.evidence_type] ?? 'var(--dc-evidence-unknown)'} />
+        <Badge label={card.confidence} color={CONFIDENCE_COLORS[card.confidence] ?? 'var(--dc-text-dim)'} />
+        {#if card.tested_by_us}
+          <Badge label="tested" color="var(--dc-conf-high)" />
+        {/if}
+      </div>
 
-    <section>
-      <h3 style="font-size: 11px; text-transform: uppercase; color: var(--dc-text-dim); margin: 0 0 6px;">Body Excerpt</h3>
-      <pre style="font-size: 11px; line-height: 1.5; color: var(--dc-text-muted); white-space: pre-wrap; max-height: 260px; overflow-y: auto; margin: 0; font-family: var(--dc-font-mono);">{card.body_excerpt}</pre>
-    </section>
-  </aside>
-{:else}
-  <aside class="dc-drawer" style="padding: 24px; min-width: 260px; display: flex; align-items: center; justify-content: center; color: var(--dc-text-dim); font-size: 12px;">
-    Select a card to view details
-  </aside>
-{/if}
+      <section class="dc-drawer-section">
+        <h3>Prompt Anatomy</h3>
+        <dl class="dc-drawer-dl">
+          <dt>Mode</dt><dd>{card.prompt_mode}</dd>
+          <dt>Shape</dt><dd>{card.output_shape}</dd>
+          <dt>Use cases</dt><dd>{card.use_cases.join(', ')}</dd>
+          <dt>Tags</dt><dd>{card.tags.join(', ') || '—'}</dd>
+          <dt>Status</dt><dd>{card.library_status}</dd>
+        </dl>
+      </section>
+
+      <section class="dc-drawer-section">
+        <h3>Sources ({card.source_count})</h3>
+        <ul class="dc-drawer-sources">
+          {#each card.source_urls as url}
+            <li><a href={url} target="_blank" rel="noopener">{url}</a></li>
+          {/each}
+        </ul>
+        {#if card.source_notes.length > 0}
+          <p class="dc-drawer-note">{card.source_notes.join(' · ')}</p>
+        {/if}
+      </section>
+
+      <section class="dc-drawer-section">
+        <h3>Body Excerpt</h3>
+        <pre class="dc-drawer-pre">{card.body_excerpt}</pre>
+      </section>
+    </div>
+  {:else}
+    <div class="dc-drawer-empty">Select a card to view details</div>
+  {/if}
+</aside>
+
+<style>
+  .dc-drawer {
+    width: min(100%, 420px);
+    min-width: 280px;
+  }
+
+  @media (max-width: 960px) {
+    .dc-drawer {
+      width: 50vw;
+      min-width: 0;
+    }
+  }
+
+  .dc-drawer-inner {
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .dc-drawer-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .dc-drawer-heading h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--dc-text);
+    line-height: 1.25;
+  }
+
+  .dc-drawer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .dc-drawer-link-badge,
+  .dc-drawer-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--dc-border);
+    border-radius: var(--dc-radius);
+    background: var(--dc-bg);
+    color: var(--dc-text);
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .dc-drawer-link-badge {
+    color: var(--dc-text-muted);
+  }
+
+  .dc-drawer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .dc-drawer-close {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--dc-border);
+    border-radius: var(--dc-radius);
+    background: var(--dc-bg);
+    color: var(--dc-text-muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .dc-drawer-summary {
+    margin: 0 0 12px;
+    color: var(--dc-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .dc-drawer-panel {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--dc-border);
+    border-radius: var(--dc-radius);
+    background: var(--dc-bg);
+    font-size: 12px;
+  }
+
+  .dc-drawer-panel p {
+    margin: 0 0 4px;
+  }
+
+  .dc-drawer-panel code {
+    font-family: var(--dc-font-mono);
+  }
+
+  .dc-drawer-error {
+    margin: 0 0 12px;
+    color: #f87171;
+    font-size: 12px;
+  }
+
+  .dc-drawer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .dc-drawer-section {
+    margin-bottom: 16px;
+  }
+
+  .dc-drawer-section h3 {
+    margin: 0 0 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--dc-text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .dc-drawer-dl {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 6px 10px;
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .dc-drawer-dl dt {
+    color: var(--dc-text-muted);
+  }
+
+  .dc-drawer-dl dd {
+    margin: 0;
+  }
+
+  .dc-drawer-sources {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dc-drawer-sources a {
+    color: var(--dc-sora);
+    font-size: 12px;
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  .dc-drawer-note {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--dc-text-dim);
+  }
+
+  .dc-drawer-pre {
+    margin: 0;
+    max-height: 260px;
+    overflow-y: auto;
+    font-family: var(--dc-font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--dc-text-muted);
+    white-space: pre-wrap;
+  }
+
+  .dc-drawer-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: 24px;
+    color: var(--dc-text-dim);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  @media (min-width: 961px) {
+    .dc-drawer-close {
+      display: none;
+    }
+  }
+</style>

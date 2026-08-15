@@ -8,6 +8,8 @@
   let playing = $state(false);
   let muted = $state(true);
 
+  const progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
+
   function formatTime(value: number) {
     if (!Number.isFinite(value)) return '0:00';
     const minutes = Math.floor(value / 60);
@@ -50,10 +52,23 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="dc-hover-player-backdrop" role="presentation" onclick={handleBackdrop}>
-  <div class="dc-hover-player" role="dialog" aria-modal="true" aria-label={`Video preview: ${artifact.title}`}>
-    <header>
-      <div><span>Video preview</span><h2>{artifact.title}</h2><p>{artifact.provider.replace(/_/g, ' ')} · {artifact.artifact_type.replace(/_/g, ' ')}</p></div>
-      <button class="dc-hover-player-close" onclick={onClose} aria-label="Close preview">×</button>
+  <div
+    class="dc-hover-player"
+    role="dialog"
+    aria-modal="true"
+    aria-label={`Video preview: ${artifact.title}`}
+  >
+    <header class="dc-hover-player-header">
+      <div class="dc-hover-player-copy">
+        <p class="dc-hover-player-kicker">Video preview</p>
+        <h2>{artifact.title}</h2>
+        <p class="dc-hover-player-meta">
+          {artifact.provider.replace(/_/g, ' ')} · {artifact.artifact_type.replace(/_/g, ' ')}
+        </p>
+      </div>
+      <button class="dc-hover-player-close" onclick={onClose} aria-label="Close preview">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
     </header>
 
     <div class="dc-hover-player-stage">
@@ -64,48 +79,355 @@
         autoplay
         muted
         playsinline
-        onloadedmetadata={() => { if (video) duration = video.duration; }}
-        ontimeupdate={() => { if (video) currentTime = video.currentTime; }}
-        onplay={() => playing = true}
-        onpause={() => playing = false}
+        onclick={togglePlayback}
+        onloadedmetadata={() => {
+          if (video) duration = video.duration;
+        }}
+        ontimeupdate={() => {
+          if (video) currentTime = video.currentTime;
+        }}
+        onplay={() => (playing = true)}
+        onpause={() => (playing = false)}
       ><track kind="captions" /></video>
-      <button class="dc-stage-toggle" onclick={togglePlayback} aria-label={playing ? 'Pause video' : 'Play video'}>{playing ? 'Ⅱ' : '▶'}</button>
+
+      {#if !playing}
+        <button class="dc-stage-play" onclick={togglePlayback} aria-label="Play video">
+          <span class="dc-stage-play-bar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5-8-4.5Z" /></svg>
+          </span>
+        </button>
+      {/if}
     </div>
 
     <div class="dc-hover-player-controls">
-      <button class="dc-play-control" onclick={togglePlayback}>{playing ? 'Pause' : 'Play'}</button>
-      <div class="dc-scrubber-wrap">
-        <div class="dc-scrubber-keyframes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-        <input class="dc-scrubber" type="range" min="0" max={duration || 0} step="0.01" value={currentTime} oninput={scrub} aria-label="Video timeline" />
-        <div class="dc-timecode"><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div>
+      <button
+        class="dc-transport"
+        onclick={togglePlayback}
+        aria-label={playing ? 'Pause video' : 'Play video'}
+      >
+        {#if playing}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6h3v12H7V6Zm7 0h3v12h-3V6Z" /></svg>
+        {:else}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5-8-4.5Z" /></svg>
+        {/if}
+      </button>
+
+      <div class="dc-scrubber-wrap" style={`--progress: ${progress}%`}>
+        <div class="dc-scrubber-row">
+          <span class="dc-timecode">{formatTime(currentTime)}</span>
+          <input
+            class="dc-scrubber"
+            type="range"
+            min="0"
+            max={duration || 0}
+            step="0.01"
+            value={currentTime}
+            oninput={scrub}
+            aria-label="Video timeline"
+          />
+          <span class="dc-timecode">{formatTime(duration)}</span>
+        </div>
       </div>
-      <button class="dc-audio-control" onclick={toggleMute}>{muted ? 'Sound on' : 'Mute'}</button>
+
+      <button class="dc-audio-control" onclick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+        {#if muted}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Zm11.5 3a4.5 4.5 0 0 0-2.1-3.8v7.6a4.5 4.5 0 0 0 2.1-3.8ZM16 7.5v9a7 7 0 0 1 0-9Z" /></svg>
+        {:else}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Z" /></svg>
+        {/if}
+      </button>
     </div>
   </div>
 </div>
 
 <style>
-  .dc-hover-player-backdrop { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 28px; background: rgba(0,0,0,.52); backdrop-filter: blur(9px) saturate(.75); animation: backdrop-in .16s ease-out; }
-  .dc-hover-player { width: min(900px,92vw); overflow: hidden; border: 1px solid #3f3f46; border-radius: 10px; background: #0c0c0e; box-shadow: 0 28px 90px rgba(0,0,0,.68); animation: player-in .18s ease-out; }
-  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 15px 17px; border-bottom: 1px solid var(--dc-border); }
-  header span { color: var(--dc-text-dim); font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-  header h2 { margin: 3px 0 0; color: var(--dc-text); font-size: 14px; font-weight: 650; }
-  header p { margin: 3px 0 0; color: var(--dc-text-dim); font-size: 9px; text-transform: capitalize; }
-  .dc-hover-player-close { width: 28px; height: 28px; padding: 0; border: 1px solid var(--dc-border); border-radius: 50%; background: transparent; color: var(--dc-text-muted); font-size: 18px; cursor: pointer; }
-  .dc-hover-player-stage { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
-  video { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .dc-stage-toggle { position: absolute; inset: 0; width: 100%; border: 0; background: transparent; color: transparent; cursor: pointer; }
-  .dc-stage-toggle:focus-visible { outline: 1px solid #fafafa; outline-offset: -3px; }
-  .dc-hover-player-controls { display: grid; grid-template-columns: 70px minmax(0,1fr) 72px; align-items: start; gap: 14px; padding: 14px 16px 13px; border-top: 1px solid var(--dc-border); }
-  .dc-play-control, .dc-audio-control { height: 30px; border: 1px solid var(--dc-border); border-radius: 5px; background: var(--dc-bg-elev-2); color: var(--dc-text); font-size: 9px; cursor: pointer; }
-  .dc-scrubber-wrap { position: relative; padding-top: 1px; }
-  .dc-scrubber { width: 100%; height: 20px; margin: 0; appearance: none; background: transparent; cursor: ew-resize; }
-  .dc-scrubber::-webkit-slider-runnable-track { height: 2px; background: #3f3f46; }
-  .dc-scrubber::-webkit-slider-thumb { width: 2px; height: 18px; margin-top: -8px; appearance: none; border: 0; border-radius: 0; background: #fafafa; box-shadow: 0 0 0 3px rgba(250,250,250,.08); }
-  .dc-scrubber-keyframes { position: absolute; inset: 6px 1px auto; display: flex; justify-content: space-between; pointer-events: none; }
-  .dc-scrubber-keyframes i { width: 1px; height: 7px; background: #52525b; }
-  .dc-timecode { display: flex; justify-content: space-between; margin-top: -2px; color: var(--dc-text-dim); font-family: var(--dc-font-mono); font-size: 8px; }
-  @keyframes backdrop-in { from { opacity: 0; } }
-  @keyframes player-in { from { opacity: 0; transform: translateY(8px) scale(.985); } }
-  @media(max-width:620px){.dc-hover-player-backdrop{padding:12px}.dc-hover-player-controls{grid-template-columns:55px minmax(0,1fr);}.dc-audio-control{display:none}}
+  .dc-hover-player-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(12px) saturate(0.85);
+    animation: backdrop-in 0.16s ease-out;
+  }
+
+  .dc-hover-player {
+    width: min(900px, 100%);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--dc-radius);
+    background: #0a0a0c;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    animation: player-in 0.18s ease-out;
+  }
+
+  .dc-hover-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--dc-border-subtle);
+  }
+
+  .dc-hover-player-copy {
+    min-width: 0;
+  }
+
+  .dc-hover-player-kicker {
+    margin: 0;
+    color: var(--dc-text-dim);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .dc-hover-player-header h2 {
+    margin: 4px 0 0;
+    color: var(--dc-text);
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dc-hover-player-meta {
+    margin: 2px 0 0;
+    color: var(--dc-text-dim);
+    font-size: 10px;
+    line-height: 1.2;
+    text-transform: capitalize;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dc-hover-player-close {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--dc-border);
+    border-radius: var(--dc-radius);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--dc-text-muted);
+    cursor: pointer;
+  }
+
+  .dc-hover-player-close svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .dc-hover-player-stage {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #000;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    cursor: pointer;
+  }
+
+  .dc-stage-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  .dc-stage-play-bar {
+    display: grid;
+    place-items: center;
+    height: 22px;
+    min-width: 52px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--dc-radius);
+    background: rgba(0, 0, 0, 0.72);
+  }
+
+  .dc-stage-play-bar svg {
+    width: 10px;
+    height: 10px;
+    fill: rgba(255, 255, 255, 0.92);
+  }
+
+  .dc-hover-player-controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--dc-border-subtle);
+  }
+
+  .dc-transport,
+  .dc-audio-control {
+    display: grid;
+    place-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid var(--dc-border);
+    border-radius: var(--dc-radius);
+    background: var(--dc-bg-elev);
+    color: var(--dc-text);
+    cursor: pointer;
+  }
+
+  .dc-transport {
+    min-width: 36px;
+  }
+
+  .dc-audio-control {
+    width: 36px;
+    padding: 0;
+  }
+
+  .dc-transport svg,
+  .dc-audio-control svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+  }
+
+  .dc-scrubber-wrap {
+    min-width: 0;
+  }
+
+  .dc-scrubber-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dc-timecode {
+    min-width: 34px;
+    color: var(--dc-text-dim);
+    font-family: var(--dc-font-mono);
+    font-size: 10px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dc-scrubber-row .dc-timecode:last-child {
+    text-align: right;
+  }
+
+  .dc-scrubber {
+    width: 100%;
+    height: 28px;
+    margin: 0;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .dc-scrubber::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: var(--dc-radius);
+    background: linear-gradient(
+      to right,
+      #fafafa 0%,
+      #fafafa var(--progress, 0%),
+      rgba(255, 255, 255, 0.14) var(--progress, 0%),
+      rgba(255, 255, 255, 0.14) 100%
+    );
+  }
+
+  .dc-scrubber::-moz-range-track {
+    height: 3px;
+    border-radius: var(--dc-radius);
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .dc-scrubber::-moz-range-progress {
+    height: 3px;
+    border-radius: var(--dc-radius);
+    background: #fafafa;
+  }
+
+  .dc-scrubber::-webkit-slider-thumb {
+    width: 8px;
+    height: 12px;
+    margin-top: -4.5px;
+    appearance: none;
+    border: 0;
+    border-radius: var(--dc-radius);
+    background: #fafafa;
+    box-shadow: none;
+  }
+
+  .dc-scrubber::-moz-range-thumb {
+    width: 8px;
+    height: 12px;
+    border: 0;
+    border-radius: var(--dc-radius);
+    background: #fafafa;
+    box-shadow: none;
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes player-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.99);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .dc-hover-player-backdrop {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .dc-hover-player {
+      width: 100%;
+      border-radius: var(--dc-radius) var(--dc-radius) 0 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+    }
+
+    .dc-hover-player-header h2 {
+      font-size: 12px;
+    }
+
+    .dc-audio-control {
+      display: none;
+    }
+
+    .dc-hover-player-controls {
+      grid-template-columns: auto minmax(0, 1fr);
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+  }
 </style>

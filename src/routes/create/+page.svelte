@@ -158,10 +158,10 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   .dc-field { display: flex; flex-direction: column; gap: 7px; }
   .dc-field > span, .dc-targets legend, .dc-field-heading label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
   .dc-field-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .dc-wand { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--dc-border); border-radius: 999px; background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
+  .dc-wand { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
   .dc-wand:hover { border-color: #52525b; color: var(--dc-text); }
   .dc-wand svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
-  .dc-field textarea, .dc-field select, .dc-text-input { width: 100%; box-sizing: border-box; border: 1px solid var(--dc-border); border-radius: 7px; background: var(--dc-bg-elev); color: var(--dc-text); outline: none; }
+  .dc-field textarea, .dc-field select, .dc-text-input { width: 100%; box-sizing: border-box; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: var(--dc-text); outline: none; }
   .dc-text-input { padding: 11px 12px; font-size: 13px; }
   .dc-field textarea { min-height: 190px; padding: 16px; resize: vertical; font-size: 15px; line-height: 1.55; }
   .dc-field select { padding: 9px 10px; font-size: 11px; }
@@ -171,20 +171,20 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   .dc-create-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .dc-targets { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0; padding: 0; border: 0; }
   .dc-targets legend { margin-bottom: 8px; }
-  .dc-targets label { display: flex; gap: 9px; padding: 11px; border: 1px solid var(--dc-border); border-radius: 7px; background: var(--dc-bg-elev); cursor: pointer; }
+  .dc-targets label { display: flex; gap: 9px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); cursor: pointer; min-height: 44px; }
   .dc-targets input { accent-color: #fafafa; }
   .dc-targets span { display: flex; flex-direction: column; gap: 3px; }
   .dc-targets strong { color: var(--dc-text); font-size: 11px; }
   .dc-targets small { color: var(--dc-text-dim); font-size: 9px; line-height: 1.3; }
-  .dc-reference-drop { display: flex; align-items: center; gap: 12px; min-height: 74px; padding: 10px; border: 1px dashed #3f3f46; border-radius: 7px; background: #0d0d0f; cursor: pointer; }
+  .dc-reference-drop { display: flex; align-items: center; gap: 12px; min-height: 74px; padding: 10px; border: 1px dashed #3f3f46; border-radius: var(--dc-radius); background: #0d0d0f; cursor: pointer; }
   .dc-reference-drop input { display: none; }
-  .dc-reference-drop img { width: 88px; height: 58px; border-radius: 4px; object-fit: cover; }
+  .dc-reference-drop img { width: 88px; height: 58px; border-radius: var(--dc-radius); object-fit: cover; }
   .dc-reference-drop > div:not(.dc-reference-icon) { display: flex; flex-direction: column; gap: 3px; }
   .dc-reference-drop strong { color: var(--dc-text); font-size: 11px; }
   .dc-reference-drop span { color: var(--dc-text-dim); font-size: 9px; }
   .dc-reference-icon { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--dc-border); border-radius: 50%; color: var(--dc-text-muted); font-size: 20px; }
   .dc-submit-row { display: grid; grid-template-columns: 220px 1fr; align-items: center; gap: 14px; padding-top: 2px; }
-  .dc-prepare-button { min-height: 40px; padding: 11px 14px; border: 0; border-radius: 6px; background: var(--dc-text); color: var(--dc-bg); font-size: 11px; font-weight: 750; cursor: pointer; }
+  .dc-prepare-button { min-height: 44px; padding: 12px 16px; border: 0; border-radius: var(--dc-radius); background: var(--dc-text); color: var(--dc-bg); font-size: 12px; font-weight: 750; cursor: pointer; }
   .dc-prepare-button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
   .dc-connection-note { display: flex; align-items: flex-start; gap: 8px; color: var(--dc-text-dim); font-size: 9px; line-height: 1.5; }
   .dc-status-dot { flex: 0 0 auto; width: 6px; height: 6px; margin-top: 4px; border-radius: 50%; background: #f59e0b; }

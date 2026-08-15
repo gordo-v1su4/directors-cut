@@ -6,6 +6,6 @@
 </script>
 
 <TopNav />
-<main style="height: calc(100vh - 41px); overflow: hidden;">
+<main class="dc-app-main">
   {@render children?.()}
 </main>
