@@ -1,6 +1,6 @@
 # Seedance 2.0 Skill OS — Quickstart
 
-> Version 6.6.0 · A 5-minute path from install to your first directed prompt.
+> Version 6.7.0 · A 5-minute path from install to your first directed prompt.
 > Full documentation: [README](../README.md).
 
 ## What this is
@@ -11,13 +11,61 @@ Seedance 2.0 Skill OS is an agent skill that directs Seedance 2.0 like a filmmak
 
 Install this repository as **one** root skill named `seedance-20`; its sub-skills and references load by relative path.
 
-**Codex (has a one-command installer):**
+**First, get the files.** Every command below runs from inside a local copy:
 
 ```bash
-python scripts/install_codex_skill.py --force
+git clone https://github.com/Emily2040/seedance-2.0.git
+cd seedance-2.0
 ```
 
-This copies the repo to `~/.codex/skills/seedance-20` (or `$CODEX_HOME/skills/seedance-20`). Restart Codex, then call `$seedance-20`.
+No `git`? Use **Code → Download ZIP** on the repository page, unzip, and `cd` into the folder.
+
+**Then install it.** One command works for any client that reads a skills directory — `--dest` picks which one:
+
+```bash
+# Codex (default: ~/.codex/skills)
+python scripts/install_codex_skill.py
+
+# Claude Code (personal install, every project)
+python scripts/install_codex_skill.py --dest ~/.claude/skills
+
+# Install into another project — run from that project
+python /path/to/seedance-2.0/scripts/install_codex_skill.py --dest .claude/skills
+```
+
+It prints where the skill landed. Restart your client, then call `seedance-20`.
+Installs are staged and validated, and concurrent installers sharing one
+destination are serialized. Add `--force` only when replacing a complete
+existing install. Automatic retry applies only when every authority record
+required by the phase reached exists and validates: an exact empty stage before
+provenance; after complete provenance, exact final payload files plus the one
+transaction-derived in-progress copy sibling; exact torn prefixes of expected
+stage markers; and externally journaled deletion workspaces can be recovered.
+Payload bytes are synced and digest-checked under that sibling name before an
+atomic rename, so an expected final stage pathname is absent or complete, never
+partially written. The copy-sibling basename is capped at 34 ASCII bytes and
+shortens further on POSIX when the stage reports a smaller component limit; a
+shortened transaction/path digest is accepted only when it is unique within the
+authenticated payload namespace. This is a bound on copy siblings, not a claim
+that the installer's longer stage and authority names fit unusually small
+component limits. The exact empty
+terminal workspace left after journal removal is also recoverable. A truncated
+expected final file, an unbound temp-like file, malformed or swapped records,
+unexpected bytes, an unmarked
+quarantine, and a nonempty unjournaled deletion workspace are preserved fail
+closed. Windows handles exclude writable/deletion sharing through the consuming
+action. On POSIX, a mode-`0700` workspace excludes other OS accounts, but
+advisory `flock` and owner permissions cannot exclude a hostile same-account
+process from existing or new writable opens or namespace mutation. See the
+[README install notes](../README.md#install)
+for the full recovery boundary. The previous complete copy is retained for
+rollback until promotion succeeds.
+On POSIX, authority files and transaction namespace changes are directory-
+`fsync`ed. Each payload file is `fsync`ed before its atomic rename and its stage
+directory is `fsync`ed afterward. The supplied skills-directory ancestry is
+assumed durable rather than recursively flushed.
+A destination inside this repository is refused, since copying the tree into
+itself would recurse until the path length fails.
 
 **Install from GitHub (if your client supports repo-URL install):**
 
@@ -58,8 +106,12 @@ epic cinematic shot of a woman reading a letter, emotional, beautiful lighting, 
 **Directed (strong):**
 
 ```
-Medium close-up, eye-level; she lowers the letter and her hands go still as a slow push-in arrives; soft window light keeps her face plain; near-silence with one chair scrape.
+A woman in a wool cardigan sits at a kitchen table and reads a single sheet of paper. Her eyes track one line twice, then her hands lower the page to the table and go still. Camera holds a medium close-up at eye level and pushes in slowly, settling when her hands stop. Overcast window light from frame left keeps her face plain. Sound: room tone, one chair scrape, then near-silence.
 ```
+
+Read the order, not just the words. The subject and what she is doing come **first**, and the camera, light, and sound follow — because the opening of a prompt is where the model locks in who the shot is about. Leading with `Medium close-up, eye-level` spends that opening on framing metadata and makes the model infer the subject afterwards. Same craft, weaker hierarchy.
+
+Length matters the same way: this is 71 words. Aim for roughly **40–110 words** for a single clip. Much shorter and the model fills the gaps for you; much longer and the later clauses stop landing.
 
 ## 5. Two rules that save takes
 
@@ -69,7 +121,7 @@ Medium close-up, eye-level; she lowers the letter and her hands go still as a sl
 ## 6. Safety
 
 - **Content safety:** if your idea uses a protected character, celebrity, brand, logo, song, or a real person's face or voice, don't hide it in another language — rewrite it into an original, licensed, or post-production equivalent with `seedance-copyright`.
-- **Agent safety:** this package makes **no network calls and ships no telemetry**; its scripts are deterministic and offline. Never paste API keys, account cookies, or private footage into an agent you don't trust. See [SECURITY.md](../SECURITY.md).
+- **Agent safety:** the **installed payload** makes no network calls and ships no telemetry; its installed scripts run locally without contacting external services. A repository checkout also contains the development-only `scripts/eval_run.py`, which can contact a model provider and is excluded by the installer. Never paste API keys, account cookies, or private footage into an agent you don't trust. See [SECURITY.md](../SECURITY.md).
 
 ## 7. Go deeper
 

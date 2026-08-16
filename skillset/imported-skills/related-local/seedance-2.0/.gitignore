@@ -8,13 +8,13 @@ __pycache__/
 *.swp
 *.swo
 
+# Local agent-client state (running Claude Code in this repository creates it;
+# it is per-machine configuration, never part of the skill)
+.claude/
+
 # Local audit outputs
 *.tmp
 *.log
-
-# Local agent tooling — not part of the vendored skill bundle
-.codegraph
-.omx/
 
 # Model-in-the-loop evaluator output. Ledgers record prompts, model responses,
 # and judgments, so they are treated as sensitive and never committed.

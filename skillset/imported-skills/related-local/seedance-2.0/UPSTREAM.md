@@ -5,8 +5,9 @@ This directory is a **vendored copy** of [Emily2040/seedance-2.0](https://github
 | Field | Value |
 |-------|-------|
 | Upstream | `https://github.com/Emily2040/seedance-2.0.git` |
-| Synced commit | `6c51262` |
-| Synced from | `upstream/main` on 2026-07-26 |
+| Synced commit | `44b5149` |
+| Upstream release | v6.7.0 |
+| Synced from | `upstream/main` on 2026-08-16 |
 
 ## Refresh
 

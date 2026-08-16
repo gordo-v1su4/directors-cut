@@ -8,8 +8,8 @@ tags:
   - vocabulary
   - seedance-20
 metadata:
-  version: "6.6.0"
-  updated: "2026-07-04"
+  version: "6.7.0"
+  updated: "2026-08-01"
   parent: "seedance-20"
   author: "Iamemily2050 (@iamemily2050)"
   repository: "https://github.com/Emily2040/seedance-2.0"
@@ -20,11 +20,13 @@ metadata:
 
 # seedance-vocab-es
 
+Before producing prompt text, a prompt-ready block, a rewrite, an example, or a compiled clip, load the [Director's Read](../../references/directors-read.md), classify the brief, and complete its canonical narrative or non-narrative record. Translate that record into visible or audible carriers and keep its internal labels out of final generation prose.
+
 Use Spanish cinematic vocabulary when the user asks for Spanish prompts, bilingual delivery, or compact translation of camera, lighting, action, VFX, audio, and production constraints. Preserve reference tags exactly: `@Image1`, `@Video1`, `@Audio1` must never be translated.
 
 ## Intent
 
-Spanish carries rhythm even in technical direction. Serve users who think in Spanish with vocabulary that keeps its musicality while staying camera-precise - they should never feel that directing in their language is a downgrade.
+Spanish prompt direction should preserve production meaning and clause clarity before stylistic cadence. Keep the subject, visible action, camera endpoint, light, sound, and constraint unambiguous. The shipped independent review artifact is empty, so treat these choices as working production wording pending locale-specialist review.
 
 ## Usage Rule
 
@@ -44,7 +46,7 @@ Translate production meaning, not word-for-word English. Keep the prompt concret
 
 ## De-Slop Rule
 
-When the prompt leans on `cinematográfico`, `épico`, `impresionante`, `mágico`, or `de alta calidad`, load the Slop Traps table in `references/vocab/es.md` and decompose each into the physical elements that produce it - movimiento de cámara, fuente de luz, material, sonido.
+When the prompt leans on `cinematográfico`, `épico`, `impresionante`, `mágico`, or `de alta calidad`, load the Slop Traps table in [Spanish vocabulary](../../references/vocab/es.md) and decompose each into the physical elements that produce it - movimiento de cámara, fuente de luz, material, sonido.
 
 ## Output Contract
 

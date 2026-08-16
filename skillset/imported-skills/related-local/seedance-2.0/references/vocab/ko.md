@@ -25,6 +25,14 @@ Use this reference for Korean Seedance prompt wording, role binding, and compact
 | Shot | `미디엄 클로즈업` | medium close-up |
 | Shot | `넓은 설정 샷` | wide establishing shot |
 | Shot | `3/4 측면 얼굴` | three-quarter profile |
+| Shot | `삼분할 구도` | rule-of-thirds composition |
+| Shot | `여백의 미, 고독감` | negative space, isolation |
+| Shot | `전경을 흐리게 처리한 프레임` | frame seen past foreground blur |
+| Shot | `시선을 끄는 유도선` | leading lines pulling the eye |
+| Shot | `전경, 중경, 원경의 깊이` | layered foreground, midground, background depth |
+| Camera | `원테이크 롱테이크` | one continuous long take |
+| Camera | `드론 부감샷` | drone bird's-eye view |
+| Lighting | `나뭇잎 사이로 비치는 빛` | sunlight dappled through leaves |
 | Lens | `24mm 광각으로 공간감 강조` | 24mm wide spatial feel |
 | Lens | `50mm 자연스러운 인물감` | 50mm natural portrait feel |
 | Lens | `매크로 렌즈로 재질 디테일 강조` | macro lens for material detail |
@@ -67,6 +75,17 @@ Use this reference for Korean Seedance prompt wording, role binding, and compact
 
 `@Image1은 오리지널 인물을 고정한다. @Video1은 카메라 움직임만 참고하고 인물, 장소, 브랜드는 복사하지 않는다. @Audio1은 템포와 분위기만 참고한다.`
 
+## Timeline Template
+
+The bracket-timeline skeleton is the Chinese community's long-prompt pattern (`vocab/zh` Timeline Template, field-observed on 即梦/Dreamina). Below is the same structure in Korean: the *structure* is what is field-observed, a Korean-specific version is not independently reported, so treat it as a starting scaffold rather than a community guarantee.
+
+```
+[스타일] [매체·질감·색조를 한 문장으로]
+[타임라인] 0-3s: [화면+카메라+사운드]; 3-6s: [화면+카메라+사운드]; 6-10s: [화면+카메라+사운드]
+[사운드] [대사/환경음/효과음/음악 없음]
+[참조] @Image1 로 인물 동일성 고정; @Video1 은 카메라 움직임만 참조; @Audio1 은 템포만 참조
+```
+
 ## Sequence and Continuation Phrases
 
 Use these when the Korean prompt is part of a v6 sequence project, continuation, or localized delivery workflow.
@@ -95,13 +114,15 @@ Use these when the Korean prompt is part of a v6 sequence project, continuation,
 Field-observed and under-tested as of 2026; test per surface, never promise results. Korean dialogue is supported but quantitatively under-reported - do not assume parity with Mandarin or English.
 
 - Keep to one short line, about one breath; treat Korean as the weaker tier until tested on the active surface.
+- 대사 형식: 화자 이름 + 동작 + 큰따옴표 대사, with the speech level already decided (see below). Example: `남자: 고개를 들며 "다시 한 번만요."` (해요체). Quotation marks separate the words to be spoken from the performance direction.
+- Reference tags stay Latin inside a Korean prompt: `@Image1`, never `@이미지1`. No surface documents translated Korean tags; the localized `@图片1` family belongs to Chinese-UI surfaces only.
 - For reliable Korean voice, prefer a voice reference (attach the spoken line so the model lip-syncs to it) or plan a post-dub.
 
 ## Speech Level (말투)
 
 Korean has no neutral register. Every spoken line commits to a speech level, so leaving it unstated does not avoid the decision - it hands it to the model. Declare one.
 
-This is a budget decision as well as a characterization one. The reliable-sync budget in `[ref:audio-guide]` is counted in syllables, and the same sentence costs a different number of them at each level:
+This is a budget decision as well as a characterization one. The reliable-sync budget in [audio-guide](../audio-guide.md) is counted in syllables, and the same sentence costs a different number of them at each level:
 
 | 같은 뜻 (same meaning) | 반말 → 해요체 → 합니다체, 음절 수 (syllable count) |
 |---|---|
@@ -121,6 +142,18 @@ Choosing:
 With two speakers, the pair of levels *is* the relationship: senior to junior in 반말 answered in 해요체 reads as a hierarchy, both in 해요체 reads as peers or strangers. Keep each character's level consistent across a sequence - drifting between levels mid-project reads as a translation error, not a character choice, and it is the kind of continuity that no frame-level QC catches.
 
 If the user has not stated a level and the relationship does not imply one, ask once rather than defaulting silently; it is one question and it changes both the performance and the syllable budget.
+
+## Aesthetic Registers (미학)
+
+Korean carries aesthetic concepts with no one-word English equivalent. They are legitimate intent words — but they are intent, not instruction: alone in a prompt they behave like any feel-word and destabilize the output. Name the register, then spend the words on the physical elements that produce it, exactly as the Slop Traps table repairs feel-words.
+
+| Register | Decompose into |
+|---|---|
+| 한 (han — grief that stays) | stillness and weight, not tears: `움직임을 멈춘 인물, 긴 그림자, 식은 밥상, 빗소리만` |
+| 정 (jeong — accumulated closeness) | small physical care between people: `말없이 반찬을 옮겨 주는 손, 어깨에 걸쳐 주는 외투` |
+| 여백의 미 (beauty of empty space) | already physical — compose it: `대칭 구도, 화면 대부분이 빈 벽, 인물은 구석에 작게` |
+| 신명 (exuberant collective spirit) | rhythm made visible: `북 장단에 맞춘 발 구름, 원을 그리며 도는 군무, 손에서 손으로 넘어가는 술잔` |
+| 사극 (historical-drama register) | period material, not the label: `한복의 겹쳐진 옷감, 궁궐 처마 아래의 그림자, 촛불 조명` |
 
 ## Slop Traps
 
