@@ -6,6 +6,8 @@
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
   import { callBridgeTool } from '$lib/bridge/types';
   import type {
+    GenerateCinematicGridInput,
+    GenerateCinematicGridOutput,
     GetVideoGenerationStatusInput,
     GetVideoGenerationStatusOutput,
     QuoteVideoGenerationInput,
@@ -44,6 +46,9 @@
   }
 
   let generationByAnswer = $state<Record<string, RowGenerationState>>({});
+  let gridBusyAnswerId = $state('');
+  let gridError = $state('');
+  let gridJobByAnswer = $state<Record<string, GenerateCinematicGridOutput>>({});
   const pollTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   let promptsMap = $derived(
@@ -131,6 +136,47 @@
     return `directors-cut:generation:${run.run_id}:${answerId}`;
   }
 
+  function soraPromptForRow(row: ComparisonRow): string | null {
+    const pkg = row.answer.structured_prompt;
+    if (pkg && typeof pkg === 'object' && 'sora_prompt' in pkg && typeof pkg.sora_prompt === 'string' && pkg.sora_prompt.trim()) {
+      return pkg.sora_prompt.trim();
+    }
+    return null;
+  }
+
+  async function requestShotGrid(row: ComparisonRow) {
+    const prompt = soraPromptForRow(row);
+    if (!prompt) {
+      gridError = 'This row needs a valid Sora prompt before generating a shot grid.';
+      return;
+    }
+    if (!BRIDGE_TOKEN) {
+      gridError = 'Bridge token is not configured for this local UI session.';
+      return;
+    }
+    gridBusyAnswerId = row.answer.answer_id;
+    gridError = '';
+    try {
+      const title = row.answer.structured_prompt?.title ?? row.answer.model_name;
+      const gridJob = await callBridgeTool<GenerateCinematicGridInput, GenerateCinematicGridOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'generate_cinematic_grid',
+        {
+          brief: `Create a cinematic 3x3 semantic shot grid for this 12-second teaser concept.\nTitle: ${title}\n\n${prompt}`,
+          grid_layout: '3x3',
+          aspect_ratio: '16:9',
+          resolution: '2k',
+          model: 'nano_banana_2',
+        },
+      );
+      gridJobByAnswer = { ...gridJobByAnswer, [row.answer.answer_id]: gridJob };
+    } catch (error) {
+      gridError = error instanceof Error ? error.message : String(error);
+    } finally {
+      gridBusyAnswerId = '';
+    }
+  }
+
   async function requestQuote(row: ComparisonRow) {
     if (!row.canGenerate || !BRIDGE_TOKEN) {
       updateGeneration(row.answer.answer_id, { error: BRIDGE_TOKEN ? 'Approve this exact idea before requesting a quote.' : 'Bridge token is not configured for this local UI session.' });
@@ -205,6 +251,42 @@
   });
 </script>
 
+{#if rows.some((row) => row.answer.ui_status !== 'missing')}
+  <div class="dc-concept-gate-strip">
+    <div class="dc-brief-label">Step 1 — Approve one concept to generate Sora video</div>
+    <div class="dc-concept-gate-cards">
+      {#each rows as row (row.answer.answer_id)}
+        {#if row.answer.ui_status !== 'missing'}
+          {@const generation = generationByAnswer[row.answer.answer_id]}
+          {@const generationStatus = rowGenerationStatus(row)}
+          {@const title = row.answer.structured_prompt && typeof row.answer.structured_prompt === 'object' && 'title' in row.answer.structured_prompt
+            ? String(row.answer.structured_prompt.title)
+            : row.answer.model_name}
+          <div class="dc-concept-gate-card">
+            <div class="dc-concept-gate-card-head">
+              <strong>{row.answer.model_name}</strong>
+              <span class="dc-decision-status" data-status={generationStatus.toLowerCase()}>{generationStatus}</span>
+            </div>
+            <div class="dc-concept-gate-card-title">{title}</div>
+            <div class="dc-action-group">
+              <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
+              <button class="dc-action-button dc-reject-button" disabled={row.answer.ui_status === 'missing' || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
+            </div>
+            {#if row.canGenerate && generationStatus !== 'Ready'}
+              <button class="dc-action-button dc-row-quote-button" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Get live quote → Sora</button>
+            {/if}
+            {#if generation?.quote?.quote_status === 'quoted' && !generation.submission}
+              <button class="dc-action-button dc-confirm-generation" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>
+            {/if}
+            {#if decisionError[row.answer.answer_id]}<p class="dc-decision-error">{decisionError[row.answer.answer_id]}</p>{/if}
+            {#if generation?.error}<p class="dc-decision-error">{generation.error}</p>{/if}
+          </div>
+        {/if}
+      {/each}
+    </div>
+  </div>
+{/if}
+
 <div class="dc-comparison-table-wrap" bind:this={scrollContainer}>
   <table class="dc-comparison-table">
     <thead>
@@ -230,7 +312,21 @@
             <ModelAnswerCell answer={row.answer} />
           </td>
           <td>
-            <VersionedArtifactCell slotData={row.promptOnlyImageSlot} label="Shared grid" {promptsMap} {answersMap} />
+            <VersionedArtifactCell
+              slotData={row.promptOnlyImageSlot}
+              label="Shared grid"
+              {promptsMap}
+              {answersMap}
+              onGenerate={() => requestShotGrid(row)}
+              generateDisabled={!soraPromptForRow(row) || !BRIDGE_TOKEN}
+              generateBusy={gridBusyAnswerId === row.answer.answer_id}
+              generateLabel="Generate grid"
+            />
+            {#if gridJobByAnswer[row.answer.answer_id]}
+              <p class="dc-decision-help" style="margin-top: 6px;">
+                Grid job {gridJobByAnswer[row.answer.answer_id].job_id} · {gridJobByAnswer[row.answer.answer_id].status}
+              </p>
+            {/if}
           </td>
           <td>
             <VersionedArtifactCell slotData={row.promptOnlyVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />
@@ -333,4 +429,7 @@
       {/each}
     </tbody>
   </table>
+  {#if gridError}
+    <p class="dc-decision-error" style="margin-top: 8px;">{gridError}</p>
+  {/if}
 </div>

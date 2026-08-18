@@ -351,7 +351,21 @@ button, select, textarea { font: inherit; }
 .dc-comparison-table .dc-col-media { width: 190px; }
 .dc-comparison-table .dc-col-references { width: 230px; }
 .dc-comparison-table .dc-col-evaluation { width: 190px; }
-.dc-comparison-table .dc-col-review { width: 210px; }
+.dc-comparison-table .dc-col-review {
+  width: 210px;
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--dc-bg-elev);
+  box-shadow: -8px 0 16px rgba(0, 0, 0, 0.35);
+}
+.dc-comparison-table th.dc-col-review {
+  z-index: 3;
+  background: var(--dc-bg-elev-2);
+}
+.dc-comparison-table tbody tr:hover td.dc-col-review {
+  background: var(--dc-bg-elev);
+}
 .dc-comparison-table th,
 .dc-comparison-table td {
   padding: 8px;
@@ -861,6 +875,74 @@ button, select, textarea { font: inherit; }
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+}
+.dc-next-steps {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--dc-border-subtle);
+  border-radius: var(--dc-radius);
+  background: rgba(45, 212, 191, 0.04);
+}
+.dc-next-steps ol {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--dc-text-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.dc-concept-gate-strip {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--dc-sora);
+  border-radius: var(--dc-radius);
+  background: rgba(45, 212, 191, 0.06);
+}
+.dc-concept-gate-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.dc-concept-gate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--dc-border-subtle);
+  border-radius: var(--dc-radius);
+  background: var(--dc-bg);
+}
+.dc-concept-gate-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+.dc-concept-gate-card-title {
+  color: var(--dc-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.dc-sora-prompt-primary {
+  margin: 8px 0 0;
+  padding: 8px;
+  border: 1px solid var(--dc-border-subtle);
+  border-radius: var(--dc-radius);
+  background: var(--dc-bg-elev);
+  color: var(--dc-text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.dc-concept-meta summary {
+  cursor: pointer;
+  color: var(--dc-text-dim);
+  font-size: 10px;
+  margin-top: 6px;
 }
 .dc-notes-input {
   width: 100%;

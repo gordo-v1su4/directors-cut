@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "decision_id": "decision_9f9040ac-dcb2-4723-a171-c82028f669d8",
+    "run_id": "20260818-180320-checkout-teaser",
+    "answer_id": "chatgpt-eed01c2b",
+    "decision": "approved",
+    "decided_at": "2026-08-18T19:37:44.851Z",
+    "prompt_sha256": "83712c35eca5ced7ce7ab21bb34e8a39126e34a1892bd8b7c2256271592741da",
+    "source": "directors_cut_ui"
+  }
+]

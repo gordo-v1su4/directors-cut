@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import type { ComparisonRunDetail, ComparisonRun, ComparisonArtifact } from '$lib/types/comparison';
   import { loadComparisonRun, loadComparisonsIndex, getRunGenerationStatus, getGeneratedMediaSummary, type GeneratedMediaSummaryItem } from '$lib/data/comparisons';
+  import { parseRunQuestion } from '$lib/data/run-brief';
   import { loadPromptCardBySlug } from '$lib/data/loader';
   import ComparisonTable from '$lib/components/ComparisonTable.svelte';
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
@@ -18,7 +19,9 @@
 
   let genStatus = $derived(run ? getRunGenerationStatus(run.artifacts) : 'pending');
   let mediaSummary = $derived<GeneratedMediaSummaryItem[]>(run ? getGeneratedMediaSummary(run.artifacts) : []);
-  let displayQuestion = $derived(run?.question?.trim() ? run.question : 'No run-level prompt captured.');
+  let displayQuestion = $derived(run?.question?.trim() ? run.question : '');
+  let parsedRun = $derived(parseRunQuestion(displayQuestion));
+  let displayBrief = $derived(run?.brief?.trim() || parsedRun.creativeBrief || 'No creative brief saved for this run.');
   let hasRealArtifacts = $derived(mediaSummary.length > 0);
   let currentModelRows = $derived(run?.rows.filter((row) => {
     const label = row.answer.model_name.toLowerCase();
@@ -155,15 +158,28 @@
       </div>
 
       <div class="dc-brief-panel">
-        <div class="dc-brief-label">Brief</div>
-        <p style="margin: 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.5;">{run.brief || 'No brief.'}</p>
+        <div class="dc-brief-label">Creative brief</div>
+        <p style="margin: 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.5; white-space: pre-wrap;">{displayBrief}</p>
       </div>
 
-      <div class="dc-brief-panel">
-        <div class="dc-brief-label">Prompt</div>
-        <pre>{displayQuestion}</pre>
-      </div>
+      {#if displayQuestion}
+        <details class="dc-brief-panel">
+          <summary class="dc-brief-label" style="cursor: pointer;">Raycast input package (what ChatGPT/Claude received)</summary>
+          <pre style="margin-top: 8px;">{displayQuestion}</pre>
+        </details>
+      {/if}
     </div>
+
+    {#if currentModelRows.length > 0}
+      <div class="dc-next-steps">
+        <div class="dc-brief-label">What to do next</div>
+        <ol>
+          <li><strong>Pick a concept</strong> — scroll to the table below and click <strong>Approve idea</strong> on ChatGPT or Claude (pinned right column).</li>
+          <li><strong>Generate grid</strong> (optional) — click <strong>Generate grid</strong> in the Shot grid column for a Nano Banana storyboard.</li>
+          <li><strong>Generate Sora video</strong> — after approve: use <strong>Get live quote → Sora</strong> in the green box, <em>or</em> ask a Cursor agent with the Higgsfield plugin to generate and save the video to this run.</li>
+        </ol>
+      </div>
+    {/if}
 
     <GenerationStatusBanner status={genStatus} artifacts={run.artifacts} />
 
@@ -197,7 +213,7 @@
       </div>
     {/if}
 
-    <p class="dc-table-scroll-hint">Swipe horizontally to compare all model columns.</p>
+    <p class="dc-table-scroll-hint">↓ Comparison table — first column is each model’s <strong>Sora prompt</strong>. Approve is pinned on the right.</p>
 
     <div class="dc-comparison-table-scroll-outer">
       <div class="dc-comparison-table-scroll-inner">

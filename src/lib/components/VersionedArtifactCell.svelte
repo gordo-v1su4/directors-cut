@@ -9,11 +9,19 @@
     label = 'Artifact',
     promptsMap = new Map(),
     answersMap = new Map(),
+    onGenerate,
+    generateDisabled = false,
+    generateBusy = false,
+    generateLabel = 'Generate',
   }: {
     slotData: VersionedArtifactSlot;
     label?: string;
     promptsMap?: Map<string, GenerationPrompt>;
     answersMap?: Map<string, ModelAnswer>;
+    onGenerate?: () => void | Promise<void>;
+    generateDisabled?: boolean;
+    generateBusy?: boolean;
+    generateLabel?: string;
   } = $props();
 
   let activePrompt = $state<GenerationPrompt | null>(null);
@@ -178,7 +186,17 @@
     {:else}
       <div class="dc-slot-placeholder">
         <span>No {label.toLowerCase()} yet</span>
-        <button class="dc-action-button" disabled>Generate</button>
+        {#if onGenerate}
+          <button
+            class="dc-action-button"
+            disabled={generateDisabled || generateBusy}
+            onclick={() => void onGenerate()}
+          >
+            {generateBusy ? 'Generating…' : generateLabel}
+          </button>
+        {:else}
+          <button class="dc-action-button" disabled>Generate</button>
+        {/if}
       </div>
     {/if}
   </div>

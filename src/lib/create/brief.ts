@@ -150,11 +150,11 @@ Develop two independent premium ${input.format} concepts from this idea for a yo
 ${input.idea.trim()}
 
 DELIVERY
-- Exactly one open-ended, high-paced ${input.duration}-second Sora sizzler prompt per model
-- The writing, imagery, action, sound, music, rhythm, and title impact are one integrated video prompt
-- World-building may be slightly futuristic, fantasy, period, or pre-AI 2000s when it serves the concept
-- Prioritize an immediate hook, emotional discovery, and a sharp plot-turn payoff${audioRule}
-- Do not return a shot list, multiple prompt options, or claim a video was generated
+- Exactly one ${input.duration}-second timestamp sizzler prompt per model (opening paragraph + bracketed act blocks + Style closing)
+- Brutal pacing: 0.3–0.7s cuts, 0.2s flash-frames at peak, one silence beat before title, one impact on title
+- Integrate aesthetic palette, needle-drop/audio bed, camera modes, and negative rules inside the SORA PROMPT block
+- Prioritize immediate hook, emotional discovery, and sharp plot-turn payoff${audioRule}
+- Do not return multiple prompt options or claim a video was generated
 ${referenceRule}
 
 RAYCAST WORKFLOW
