@@ -1,18 +1,50 @@
 <script lang="ts">
+  import { onDestroy, onMount } from 'svelte';
   import type { ComparisonRow, ComparisonRun, ComparisonRunDetail, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
   import ModelAnswerCell from './ModelAnswerCell.svelte';
   import VersionedArtifactCell from './VersionedArtifactCell.svelte';
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
   import { callBridgeTool } from '$lib/bridge/types';
-  import type { RecordConceptDecisionInput, RecordConceptDecisionOutput } from '$lib/bridge/types';
+  import type {
+    GetVideoGenerationStatusInput,
+    GetVideoGenerationStatusOutput,
+    QuoteVideoGenerationInput,
+    QuoteVideoGenerationOutput,
+    RecordConceptDecisionInput,
+    RecordConceptDecisionOutput,
+    SubmitVideoGenerationInput,
+    SubmitVideoGenerationOutput,
+  } from '$lib/bridge/types';
 
-  let { run, rows, ondecision }: { run: ComparisonRun | ComparisonRunDetail; rows: ComparisonRow[]; ondecision?: () => Promise<void> | void } = $props();
+  let {
+    run,
+    rows,
+    ondecision,
+    onrefresh,
+    judgingUnlocked = false,
+  }: {
+    run: ComparisonRun | ComparisonRunDetail;
+    rows: ComparisonRow[];
+    ondecision?: () => Promise<void> | void;
+    onrefresh?: () => Promise<void> | void;
+    judgingUnlocked?: boolean;
+  } = $props();
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
   let decisionNotes = $state<Record<string, string>>({});
   let savingAnswerId = $state('');
   let decisionError = $state<Record<string, string>>({});
+
+  interface RowGenerationState {
+    quote?: QuoteVideoGenerationOutput;
+    submission?: SubmitVideoGenerationOutput | GetVideoGenerationStatusOutput;
+    busy?: boolean;
+    error?: string;
+  }
+
+  let generationByAnswer = $state<Record<string, RowGenerationState>>({});
+  const pollTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   let promptsMap = $derived(
     new Map<string, GenerationPrompt>(
@@ -63,6 +95,7 @@
           note: decisionNotes[row.answer.answer_id]?.trim() || undefined,
         },
       );
+      generationByAnswer = { ...generationByAnswer, [row.answer.answer_id]: {} };
       await ondecision?.();
     } catch (error) {
       decisionError = { ...decisionError, [row.answer.answer_id]: error instanceof Error ? error.message : String(error) };
@@ -70,6 +103,106 @@
       savingAnswerId = '';
     }
   }
+
+  function updateGeneration(answerId: string, patch: Partial<RowGenerationState>) {
+    generationByAnswer = {
+      ...generationByAnswer,
+      [answerId]: { ...generationByAnswer[answerId], ...patch },
+    };
+  }
+
+  function hasReadyVideo(row: ComparisonRow): boolean {
+    return row.promptOnlyVideoSoraSlot.versions.some((artifact) => artifact.status === 'generated' && !!artifact.media_url);
+  }
+
+  function rowGenerationStatus(row: ComparisonRow): 'Pending' | 'Approved' | 'Quoted' | 'Generating' | 'Ready' | 'Failed' {
+    if (hasReadyVideo(row)) return 'Ready';
+    const state = generationByAnswer[row.answer.answer_id];
+    const job = state?.submission?.jobs.find((candidate) => candidate.answer_id === row.answer.answer_id);
+    if (job?.status === 'completed') return 'Ready';
+    if (job?.status === 'failed' || state?.submission?.status === 'failed') return 'Failed';
+    if (state?.submission) return 'Generating';
+    if (state?.quote) return 'Quoted';
+    if (row.canGenerate) return 'Approved';
+    return 'Pending';
+  }
+
+  function storageKey(answerId: string): string {
+    return `directors-cut:generation:${run.run_id}:${answerId}`;
+  }
+
+  async function requestQuote(row: ComparisonRow) {
+    if (!row.canGenerate || !BRIDGE_TOKEN) {
+      updateGeneration(row.answer.answer_id, { error: BRIDGE_TOKEN ? 'Approve this exact idea before requesting a quote.' : 'Bridge token is not configured for this local UI session.' });
+      return;
+    }
+    updateGeneration(row.answer.answer_id, { busy: true, error: '', quote: undefined, submission: undefined });
+    try {
+      const quote = await callBridgeTool<QuoteVideoGenerationInput, QuoteVideoGenerationOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'quote_video_generation',
+        { run_id: run.run_id, answer_ids: [row.answer.answer_id], provider: 'higgsfield' },
+      );
+      updateGeneration(row.answer.answer_id, { quote });
+    } catch (error) {
+      updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      updateGeneration(row.answer.answer_id, { busy: false });
+    }
+  }
+
+  async function confirmGeneration(row: ComparisonRow) {
+    const quote = generationByAnswer[row.answer.answer_id]?.quote;
+    if (!quote || quote.quote_status !== 'quoted') return;
+    updateGeneration(row.answer.answer_id, { busy: true, error: '' });
+    try {
+      const submission = await callBridgeTool<SubmitVideoGenerationInput, SubmitVideoGenerationOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'submit_video_generation',
+        { quote_id: quote.quote_id, confirmed: true },
+      );
+      updateGeneration(row.answer.answer_id, { submission });
+      localStorage.setItem(storageKey(row.answer.answer_id), submission.generation_id);
+      schedulePoll(row, submission.generation_id, 1200);
+    } catch (error) {
+      updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      updateGeneration(row.answer.answer_id, { busy: false });
+    }
+  }
+
+  function schedulePoll(row: ComparisonRow, generationId: string, delay = 5000) {
+    const existing = pollTimers.get(row.answer.answer_id);
+    if (existing) clearTimeout(existing);
+    pollTimers.set(row.answer.answer_id, setTimeout(() => pollGeneration(row, generationId), delay));
+  }
+
+  async function pollGeneration(row: ComparisonRow, generationId: string) {
+    try {
+      const submission = await callBridgeTool<GetVideoGenerationStatusInput, GetVideoGenerationStatusOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'get_video_generation_status',
+        { generation_id: generationId },
+      );
+      updateGeneration(row.answer.answer_id, { submission, error: '' });
+      await onrefresh?.();
+      if (!['ready_for_review', 'failed'].includes(submission.status)) schedulePoll(row, generationId);
+    } catch (error) {
+      updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  onMount(() => {
+    if (!BRIDGE_TOKEN) return;
+    for (const row of rows) {
+      const generationId = localStorage.getItem(storageKey(row.answer.answer_id));
+      if (generationId) schedulePoll(row, generationId, 50);
+    }
+  });
+
+  onDestroy(() => {
+    for (const timer of pollTimers.values()) clearTimeout(timer);
+  });
 </script>
 
 <div class="dc-comparison-table-wrap" bind:this={scrollContainer}>
@@ -90,6 +223,8 @@
     </thead>
     <tbody>
       {#each rows as row (row.answer.answer_id)}
+        {@const generation = generationByAnswer[row.answer.answer_id]}
+        {@const generationStatus = rowGenerationStatus(row)}
         <tr>
           <td>
             <ModelAnswerCell answer={row.answer} />
@@ -139,36 +274,59 @@
                 <div class="dc-empty-vision-score">
                   <span>No vision scores yet</span>
                   <span class="dc-vision-score-hint">Gemini Pro / Qwen VL can judge the final videos.</span>
-                  <button class="dc-action-button" disabled>Score with vision model</button>
+                  <button class="dc-action-button" disabled={!judgingUnlocked || !hasReadyVideo(row)}>Score with vision model</button>
+                  {#if !judgingUnlocked}<span class="dc-vision-score-hint">Judging unlocks when both model videos are ready.</span>{/if}
                 </div>
               {/if}
             </div>
           </td>
           <td>
             <div class="dc-row-actions">
-              <div class="dc-decision-status" data-status={row.reviewStatus ?? 'pending'}>
-                {row.reviewStatus === 'approved' ? 'Approved' : row.reviewStatus === 'rejected' ? 'Rejected' : 'Pending'}
+              <div class="dc-row-status-line">
+                <div class="dc-decision-status" data-status={generationStatus.toLowerCase()}>{generationStatus}</div>
+                {#if row.reviewStatus === 'rejected'}<span class="dc-rejected-label">Rejected</span>{/if}
               </div>
               <textarea
                 class="dc-notes-input"
+                name={`decision-note-${row.answer.answer_id}`}
+                aria-label={`Optional decision note for ${row.answer.model_name}`}
                 placeholder="Optional decision note"
                 value={decisionNotes[row.answer.answer_id] ?? row.conceptDecision?.note ?? ''}
                 oninput={(event) => decisionNotes = { ...decisionNotes, [row.answer.answer_id]: event.currentTarget.value }}
                 rows={3}
               ></textarea>
               <div class="dc-action-group">
-                <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve</button>
+                <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
                 <button class="dc-action-button dc-reject-button" disabled={row.answer.ui_status === 'missing' || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
               </div>
               {#if !row.canApprove && row.answer.ui_status !== 'missing'}
                 <p class="dc-decision-help">Only a valid creative_concept_v1 package can be approved.</p>
               {:else if row.reviewStatus === 'rejected'}
                 <p class="dc-decision-help">Recapture this model to create a new pending answer.</p>
-              {:else if row.canGenerate}
-                <p class="dc-decision-help">Eligible for a 12-second, 16:9 generation quote.</p>
+              {:else if row.canGenerate && generationStatus !== 'Ready'}
+                <button class="dc-action-button dc-row-quote-button" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Get live quote</button>
               {/if}
+              {#if generation?.quote}
+                <div class="dc-row-quote">
+                  <span>{generation.quote.model} · 12s · 16:9</span>
+                  <strong>{generation.quote.credit_cost_total ?? 'No'} credits</strong>
+                  <span>Expires {new Date(generation.quote.expires_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                </div>
+                {#if generation.quote.quote_status === 'quoted' && !generation.submission}
+                  <button class="dc-action-button dc-confirm-generation" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>
+                {/if}
+              {/if}
+              {#if generation?.submission}
+                <div class="dc-generation-status-list">
+                  {#each generation.submission.jobs as job (job.answer_id)}
+                    <span>{job.status}{job.message ? ` · ${job.message}` : ''}</span>
+                  {/each}
+                </div>
+              {/if}
+              {#if generation?.busy}<p class="dc-decision-help">Working…</p>{/if}
               {#if savingAnswerId === row.answer.answer_id}<p class="dc-decision-help">Saving decision…</p>{/if}
               {#if decisionError[row.answer.answer_id]}<p class="dc-decision-error">{decisionError[row.answer.answer_id]}</p>{/if}
+              {#if generation?.error}<p class="dc-decision-error">{generation.error}</p>{/if}
             </div>
           </td>
         </tr>

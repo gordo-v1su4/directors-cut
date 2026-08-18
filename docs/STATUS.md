@@ -36,26 +36,45 @@ The generated video is the deliverable in the comparison slice. The **library sp
 
 ## System map
 
-```
-hype-slate (slate → pick → package)
-        │
-        ▼
-/create ──copy brief──► Raycast (ChatGPT + Claude)
-        │                      │
-        │                      ▼
-        │              content/comparisons/<run-id>/
-        │              answers.jsonl · artifacts.jsonl · media/
-        │                      │
-        ▼                      ▼
-public/data/comparisons.index.json ──► /comparisons (Projects UI)
-                                              │
-                                              ▼ approve + generate (bridge)
-                                              │
-                                              ▼ promote winner
-content/cards/sora/ ◄──────────────── Sora library video specs
-        │
-        ▼
-public/data/prompt-cards.index.jsonl ──► /prompts (Library UI)
+Step-by-step Create workflow (with diagram): [`README.md`](../README.md#create--raycast--projects-workflow)
+
+```mermaid
+flowchart TB
+  subgraph ideation["Early workflow"]
+    HS[hype-slate / teaser-series skill]
+  end
+
+  subgraph create["Create (/create)"]
+    UI["Project title + creative idea"]
+    BRIEF["Canonical concept brief → Copy for Raycast"]
+    UI --> BRIEF
+  end
+
+  subgraph raycast["Raycast"]
+    RC["Start Concept Run · Capture Answer"]
+    GPT["ChatGPT"]
+    CLA["Claude"]
+    RC --> GPT
+    RC --> CLA
+  end
+
+  subgraph data["Canonical data"]
+    RUNS["content/comparisons/&lt;run-id&gt;/"]
+    IDX["public/data/comparisons.index.json"]
+    CARDS["content/cards/sora/"]
+    PROMPTS["public/data/prompt-cards.index.jsonl"]
+    RUNS --> IDX
+    CARDS --> PROMPTS
+  end
+
+  HS --> UI
+  BRIEF --> RC
+  GPT --> RUNS
+  CLA --> RUNS
+  IDX --> PROJ["/comparisons Projects UI"]
+  PROJ -->|Approve| CARDS
+  PROJ -->|quote + generate| SORA["Sora via bridge :8787"]
+  PROMPTS --> LIB["/prompts Library UI"]
 ```
 
 **Dev app:** `http://localhost:5190` · `bun run dev`  

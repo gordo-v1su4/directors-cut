@@ -1,16 +1,50 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { onDestroy } from 'svelte';
+  import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions, type CaptureHandoffMode } from '$lib/create/brief';
+  import { callBridgeTool } from '$lib/bridge/types';
+  import type {
+    CreateComparisonRunInput,
+    CreateComparisonRunOutput,
+    GetConceptCaptureStatusOutput,
+    PrepareConceptCaptureOutput,
+    RunConceptCaptureOutput,
+  } from '$lib/bridge/types';
+
   let projectTitle = $state('');
   let idea = $state('');
   let format = $state('trailer');
   let duration = $state('12');
   let targetSora = $state(true);
   let includeAudio = $state(true);
+  let handoffMode = $state<CaptureHandoffMode>('automated');
   let referenceName = $state('');
   let referenceUrl = $state('');
   let request = $state('');
   let copied = $state(false);
   let sampleIndex = $state(0);
   let sampleSource = $state('');
+  let titleManuallyEdited = $state(false);
+  let busy = $state(false);
+  let error = $state('');
+  let automatedRun = $state<CreateComparisonRunOutput | null>(null);
+  let capturePrepared = $state<PrepareConceptCaptureOutput | null>(null);
+  let captureRunning = $state(false);
+  let captureStatus = $state<GetConceptCaptureStatusOutput | null>(null);
+  let pollTimer: ReturnType<typeof setInterval> | undefined;
+
+  const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
+  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
+
+  let titleOptions = $derived(suggestTitleOptions(idea, format, sampleSource));
+  let effectiveTitle = $derived(resolveProjectTitle(projectTitle, idea, format, sampleSource));
+  let canSubmit = $derived(!!idea.trim() && !busy);
+
+  $effect(() => {
+    if (!idea.trim() || titleManuallyEdited) return;
+    const next = titleOptions[0] ?? '';
+    if (next && next !== projectTitle) projectTitle = next;
+  });
 
   const SAMPLE_PROMPTS = [
     {
@@ -50,6 +84,26 @@
     }
   ];
 
+  function applyPreset(preset: (typeof QUICK_START_PRESETS)[number]) {
+    idea = preset.idea;
+    format = preset.format;
+    duration = preset.duration;
+    projectTitle = preset.title;
+    titleManuallyEdited = false;
+    sampleSource = preset.label;
+    request = '';
+    automatedRun = null;
+    capturePrepared = null;
+    captureRunning = false;
+    captureStatus = null;
+    error = '';
+  }
+
+  function selectTitle(option: string) {
+    projectTitle = option;
+    titleManuallyEdited = true;
+  }
+
   function useSamplePrompt() {
     const family = targetSora ? 'sora' : 'both';
     const eligible = SAMPLE_PROMPTS.filter((sample) => sample.family === family);
@@ -59,8 +113,15 @@
     sampleSource = sample.source;
     format = sample.format;
     duration = sample.duration;
+    titleManuallyEdited = false;
+    projectTitle = suggestTitleOptions(sample.text, sample.format, sample.source)[0] ?? '';
     sampleIndex += 1;
     request = '';
+    automatedRun = null;
+    capturePrepared = null;
+    captureRunning = false;
+    captureStatus = null;
+    error = '';
   }
 
   function handleReference(event: Event) {
@@ -71,32 +132,117 @@
     referenceUrl = URL.createObjectURL(file);
   }
 
+  function briefInput() {
+    return buildCanonicalConceptBrief({
+      projectTitle: effectiveTitle,
+      idea,
+      format,
+      duration,
+      includeAudio,
+      referenceName: referenceName || undefined,
+    });
+  }
+
   function prepareRequest() {
-    request = `PROJECT TITLE
-${projectTitle.trim()}
-
-CREATIVE BRIEF
-Develop two independent premium ${format} concepts from this idea for a young-adult audience. ChatGPT and Claude will each receive the same brief through Raycast.
-
-${idea.trim()}
-
-DELIVERY
-- Exactly one open-ended, high-paced ${duration}-second Sora sizzler prompt per model
-- The writing, imagery, action, sound, music, rhythm, and title impact are one integrated video prompt
-- World-building may be slightly futuristic, fantasy, period, or pre-AI 2000s when it serves the concept
-- Prioritize an immediate hook, emotional discovery, and a sharp plot-turn payoff${includeAudio ? '\n- Include intentional audio, music, ambience, dialogue, and SFX direction inside the prompt' : ''}
-- Do not return a shot list, multiple prompt options, or claim a video was generated
-${referenceName ? `- Visual reference selected locally: ${referenceName}. Use only its visible composition, character, product, or style cues; do not invent unseen details.` : '- No visual reference supplied.'}
-
-RAYCAST WORKFLOW
-Run “Start Directors Cut Concept Run.” Enter the project title as argument 1 and leave argument 2 blank to use this copied brief. The command saves the project, rebuilds the Projects index, and copies the canonical prompt for ChatGPT; capture ChatGPT, then repeat with Claude.`;
+    request = briefInput();
     copied = false;
+    automatedRun = null;
+    captureStatus = null;
+    error = '';
   }
 
   async function copyRequest() {
     await navigator.clipboard.writeText(request);
     copied = true;
   }
+
+  function stopPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = undefined;
+  }
+
+  async function refreshCaptureStatus(runId: string) {
+    if (!BRIDGE_TOKEN) return;
+    captureStatus = await callBridgeTool<{ run_id: string }, GetConceptCaptureStatusOutput>(
+      { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+      'get_concept_capture_status',
+      { run_id: runId },
+    );
+  }
+
+  function startPolling(runId: string) {
+    stopPolling();
+    pollTimer = setInterval(() => {
+      refreshCaptureStatus(runId)
+        .then((status) => {
+          if (status.capture_job_status === 'complete' || status.ready_for_projects) {
+            captureRunning = false;
+          }
+        })
+        .catch(() => undefined);
+    }, 3000);
+  }
+
+  async function startConceptRun() {
+    error = '';
+    busy = true;
+    automatedRun = null;
+    capturePrepared = null;
+    captureRunning = false;
+    captureStatus = null;
+    request = briefInput();
+
+    try {
+      if (handoffMode === 'manual') {
+        prepareRequest();
+        return;
+      }
+
+      if (!BRIDGE_TOKEN) {
+        error = 'Automated capture needs VITE_RAYCAST_BRIDGE_TOKEN in .env.local and the bridge running on :8787.';
+        return;
+      }
+
+      const input: CreateComparisonRunInput = {
+        title: effectiveTitle,
+        question: request,
+        capture_mode: 'automated',
+        models_requested: ['ChatGPT', 'Claude'],
+        target_models: ['sora-2'],
+      };
+
+      automatedRun = await callBridgeTool<CreateComparisonRunInput, CreateComparisonRunOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'create_comparison_run',
+        input,
+      );
+      capturePrepared = await callBridgeTool<{ run_id: string }, PrepareConceptCaptureOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'prepare_concept_capture',
+        { run_id: automatedRun.run_id },
+      );
+      captureRunning = true;
+      await callBridgeTool<{ run_id: string; prepare_first: boolean }, RunConceptCaptureOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'run_concept_capture',
+        { run_id: automatedRun.run_id, prepare_first: false },
+      );
+      await refreshCaptureStatus(automatedRun.run_id);
+      startPolling(automatedRun.run_id);
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : String(caught);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function openProjects() {
+    const runId = automatedRun?.run_id;
+    if (runId) await goto(`/comparisons?run=${encodeURIComponent(runId)}`);
+    else await goto('/comparisons');
+  }
+
+  onDestroy(stopPolling);
 </script>
 
 <svelte:head><title>Create — Directors Cut</title></svelte:head>
@@ -105,14 +251,18 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   <div class="dc-create-shell">
     <header class="dc-create-header">
       <div><p class="dc-eyebrow">New prompt project</p><h1>What do you want to make?</h1></div>
-      <p>Start with a rough idea, paste a detailed treatment, or use the wand for an editable example from the Directors Cut prompt library.</p>
+      <p>Start with a rough idea. Choose manual Raycast Script Commands or automated capture via Cursor computer use + the bridge.</p>
     </header>
 
     <section class="dc-create-form">
-        <label class="dc-field">
-          <span>Project title</span>
-          <input class="dc-text-input" bind:value={projectTitle} placeholder="Festival After Midnight" />
-        </label>
+        <div class="dc-quick-starts">
+          <span class="dc-quick-starts-label">Quick start</span>
+          <div class="dc-quick-start-row">
+            {#each QUICK_START_PRESETS as preset (preset.id)}
+              <button class="dc-quick-start-chip" type="button" onclick={() => applyPreset(preset)}>{preset.label}</button>
+            {/each}
+          </div>
+        </div>
 
         <div class="dc-field dc-field-idea">
           <div class="dc-field-heading"><label for="creative-idea">Creative idea</label><button class="dc-wand" type="button" onclick={useSamplePrompt} aria-label="Use a sample prompt from the library" title="Use a library sample"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5L8.5 20.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L15 4Zm-1 3 3 3M6 3v3M4.5 4.5h3M19 15v4M17 17h4M18 2v2M17 3h2"/></svg><span>Try an example</span></button></div>
@@ -120,10 +270,44 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
           {#if sampleSource}<span class="dc-sample-source">Adapted from <strong>{sampleSource}</strong> · click the wand again for another</span>{/if}
         </div>
 
+        <label class="dc-field">
+          <span>Project title</span>
+          <input
+            class="dc-text-input"
+            bind:value={projectTitle}
+            placeholder="Auto-generated from your idea"
+            oninput={() => { titleManuallyEdited = true; }}
+          />
+          {#if titleOptions.length}
+            <div class="dc-title-options">
+              {#each titleOptions as option (option)}
+                <button
+                  class="dc-title-option"
+                  class:dc-title-option-active={projectTitle === option}
+                  type="button"
+                  onclick={() => selectTitle(option)}
+                >{option}</button>
+              {/each}
+            </div>
+          {/if}
+        </label>
+
         <div class="dc-create-options">
           <label class="dc-field"><span>Output</span><select bind:value={format}><option value="trailer">Trailer / teaser</option><option value="music video">Music video</option><option value="commercial">Commercial</option><option value="short film scene">Short film scene</option><option value="visual concept">Visual concept</option></select></label>
           <label class="dc-field"><span>Duration</span><select bind:value={duration} disabled><option value="12">12 seconds</option></select></label>
         </div>
+
+        <fieldset class="dc-handoff-mode">
+          <legend>Raycast handoff</legend>
+          <label class:dc-handoff-active={handoffMode === 'automated'}>
+            <input type="radio" name="handoff-mode" value="automated" bind:group={handoffMode} />
+            <span><strong>Automated</strong><small>Bridge creates the run · Cursor agent captures ChatGPT + Claude with computer use</small></span>
+          </label>
+          <label class:dc-handoff-active={handoffMode === 'manual'}>
+            <input type="radio" name="handoff-mode" value="manual" bind:group={handoffMode} />
+            <span><strong>Manual</strong><small>Copy the canonical brief · run Raycast Script Commands yourself</small></span>
+          </label>
+        </fieldset>
 
         <fieldset class="dc-targets">
           <legend>First vertical slice</legend>
@@ -136,10 +320,74 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
           {#if referenceUrl}<img src={referenceUrl} alt="Selected visual reference" /><div><strong>{referenceName}</strong><span>Reference stays local until a prompt-agent connection is added.</span></div>{:else}<div class="dc-reference-icon">+</div><div><strong>Add a visual reference</strong><span>Character, product, location, frame, or mood image</span></div>{/if}
         </label>
 
-        <div class="dc-submit-row"><button class="dc-prepare-button" disabled={!projectTitle.trim() || !idea.trim()} onclick={prepareRequest}>Prepare Raycast concept run</button><div class="dc-connection-note"><span class="dc-status-dot"></span><span>Next: copy the brief and run “Start Directors Cut Concept Run” in Raycast. It saves the project and rebuilds the Projects index before either model answer is captured.</span></div></div>
+        <div class="dc-submit-row">
+          <button class="dc-prepare-button" disabled={!canSubmit} onclick={startConceptRun}>
+            {busy ? 'Working…' : handoffMode === 'manual' ? 'Prepare Raycast concept run' : 'Start automated concept run'}
+          </button>
+          <div class="dc-connection-note">
+            <span class="dc-status-dot" class:dc-status-live={!!BRIDGE_TOKEN}></span>
+            <span>
+              {#if handoffMode === 'manual'}
+                Next: copy the brief and run “Start Directors Cut Concept Run” in Raycast.
+              {:else if BRIDGE_TOKEN}
+                Bridge connected. Automated mode drives Raycast via computer use and streams answers here.
+              {:else}
+                Set <code>VITE_RAYCAST_BRIDGE_TOKEN</code> in <code>.env.local</code> for automated capture, or switch to Manual.
+              {/if}
+            </span>
+          </div>
+        </div>
+        {#if error}<p class="dc-create-error">{error}</p>{/if}
     </section>
 
-    {#if request}
+    {#if automatedRun}
+      <section class="dc-request-panel dc-automated-panel">
+        <div class="dc-request-header">
+          <div><span class="dc-column-kicker">Automated run created</span><h2>{automatedRun.title}</h2></div>
+          <button onclick={openProjects}>Open Projects</button>
+        </div>
+        <div class="dc-automated-meta">
+          <div><span>Run ID</span><strong>{automatedRun.run_id}</strong></div>
+          <div><span>Status</span><strong>{captureStatus?.run_status ?? automatedRun.run_status}</strong></div>
+          <div><span>Captured</span><strong>{captureStatus?.captured_valid_count ?? 0} / 2 valid</strong></div>
+          <div><span>Computer use</span><strong>{captureRunning ? 'running…' : captureStatus?.capture_job_status ?? 'idle'}</strong></div>
+        </div>
+        {#if captureStatus}
+          <ul class="dc-capture-model-list">
+            {#each captureStatus.models as model (model.label)}
+              <li data-status={model.status}>
+                <span>{model.label}</span>
+                <span>{model.raycast_agent}</span>
+                <span>{model.status}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        {#if captureStatus?.answers?.length}
+          <div class="dc-captured-answers">
+            {#each captureStatus.answers as answer (answer.answer_id)}
+              <article data-status={answer.structure_status}>
+                <header>
+                  <strong>{answer.model_name}</strong>
+                  <span>{answer.structure_status}</span>
+                </header>
+                {#if answer.title}<h3>{answer.title}</h3>{/if}
+                {#if answer.logline}<p>{answer.logline}</p>{/if}
+              </article>
+            {/each}
+          </div>
+        {/if}
+        {#if captureRunning}
+          <p class="dc-agent-prompt">Computer use is driving Raycast (<strong>Sora 2 - ChatGPT</strong>, then <strong>Sora 2 - Haiku</strong>). Answers will appear above when captured.</p>
+        {:else if capturePrepared && !captureStatus?.ready_for_projects}
+          <p class="dc-agent-prompt">Capture finished or stalled. Check Raycast is open and Accessibility is granted to Raycast / Cursor.</p>
+        {:else if captureStatus?.ready_for_projects}
+          <p class="dc-agent-prompt">Both concepts captured. Open Projects to compare and approve.</p>
+        {/if}
+      </section>
+    {/if}
+
+    {#if request && handoffMode === 'manual'}
       <section class="dc-request-panel">
         <div class="dc-request-header"><div><span class="dc-column-kicker">Ready for Raycast</span><h2>Canonical concept brief</h2></div><button onclick={copyRequest}>{copied ? 'Copied' : 'Copy for Raycast'}</button></div>
         <pre>{request}</pre>
@@ -155,8 +403,17 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   .dc-create-header h1 { margin: 0; font-size: clamp(30px,5vw,48px); letter-spacing: -.05em; line-height: 1; }
   .dc-create-header > p { max-width: 650px; margin: 14px 0 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.6; }
   .dc-create-form { display: flex; flex-direction: column; gap: 18px; padding-top: 26px; }
+  .dc-quick-starts { display: flex; flex-direction: column; gap: 8px; }
+  .dc-quick-starts-label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .dc-quick-start-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dc-quick-start-chip { padding: 8px 10px; border: 1px solid var(--dc-border); border-radius: 999px; background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 10px; cursor: pointer; }
+  .dc-quick-start-chip:hover { border-color: #71717a; color: var(--dc-text); }
+  .dc-title-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .dc-title-option { padding: 6px 8px; border: 1px solid var(--dc-border); border-radius: 999px; background: #0d0d0f; color: var(--dc-text-dim); font-size: 9px; cursor: pointer; }
+  .dc-title-option:hover { border-color: #52525b; color: var(--dc-text-muted); }
+  .dc-title-option-active { border-color: #a1a1aa; color: var(--dc-text); }
   .dc-field { display: flex; flex-direction: column; gap: 7px; }
-  .dc-field > span, .dc-targets legend, .dc-field-heading label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .dc-field > span, .dc-targets legend, .dc-handoff-mode legend, .dc-field-heading label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
   .dc-field-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .dc-wand { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
   .dc-wand:hover { border-color: #52525b; color: var(--dc-text); }
@@ -169,6 +426,14 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   .dc-sample-source { color: var(--dc-text-dim); font-size: 9px; letter-spacing: 0; text-transform: none; }
   .dc-sample-source strong { color: var(--dc-text-muted); font-weight: 600; }
   .dc-create-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dc-handoff-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; border: 0; }
+  .dc-handoff-mode legend { margin-bottom: 8px; }
+  .dc-handoff-mode label { display: flex; gap: 9px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); cursor: pointer; min-height: 44px; }
+  .dc-handoff-active { border-color: #71717a; }
+  .dc-handoff-mode input { accent-color: #fafafa; }
+  .dc-handoff-mode span { display: flex; flex-direction: column; gap: 3px; }
+  .dc-handoff-mode strong { color: var(--dc-text); font-size: 11px; }
+  .dc-handoff-mode small { color: var(--dc-text-dim); font-size: 9px; line-height: 1.3; }
   .dc-targets { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0; padding: 0; border: 0; }
   .dc-targets legend { margin-bottom: 8px; }
   .dc-targets label { display: flex; gap: 9px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); cursor: pointer; min-height: 44px; }
@@ -187,11 +452,35 @@ Run “Start Directors Cut Concept Run.” Enter the project title as argument 1
   .dc-prepare-button { min-height: 44px; padding: 12px 16px; border: 0; border-radius: var(--dc-radius); background: var(--dc-text); color: var(--dc-bg); font-size: 12px; font-weight: 750; cursor: pointer; }
   .dc-prepare-button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
   .dc-connection-note { display: flex; align-items: flex-start; gap: 8px; color: var(--dc-text-dim); font-size: 9px; line-height: 1.5; }
+  .dc-connection-note code { font-family: var(--dc-font-mono); color: var(--dc-text-muted); }
   .dc-status-dot { flex: 0 0 auto; width: 6px; height: 6px; margin-top: 4px; border-radius: 50%; background: #f59e0b; }
+  .dc-status-live { background: #22c55e; }
+  .dc-create-error { margin: 0; color: #f87171; font-size: 11px; line-height: 1.5; }
   .dc-request-panel { margin-top: 28px; padding: 18px; border: 1px solid var(--dc-border); border-radius: 8px; background: var(--dc-bg-elev); }
   .dc-request-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--dc-border); }
   .dc-request-header h2 { margin: 4px 0 0; font-size: 15px; }
   .dc-request-header button { padding: 6px 9px; border: 1px solid var(--dc-border); border-radius: 4px; background: transparent; color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
   .dc-request-panel pre { max-height: 440px; overflow: auto; margin: 16px 0 0; color: var(--dc-text-muted); font-family: var(--dc-font-mono); font-size: 10px; line-height: 1.6; white-space: pre-wrap; }
-  @media(max-width:700px){.dc-targets{grid-template-columns:1fr}.dc-submit-row{grid-template-columns:1fr}.dc-create-options{grid-template-columns:1fr}}
+  .dc-automated-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+  .dc-automated-meta div { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
+  .dc-automated-meta span { color: var(--dc-text-dim); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+  .dc-automated-meta strong { color: var(--dc-text); font-size: 11px; word-break: break-word; }
+  .dc-capture-model-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+  .dc-capture-model-list li { display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; padding: 8px 10px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); font-size: 10px; color: var(--dc-text-muted); }
+  .dc-capture-model-list li[data-status='captured'] { border-color: #166534; }
+  .dc-capture-model-list li[data-status='invalid'] { border-color: #991b1b; }
+  .dc-capture-prepared { margin-top: 16px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
+  .dc-capture-prepared p { margin: 0 0 10px; color: var(--dc-text-muted); font-size: 10px; line-height: 1.5; }
+  .dc-capture-prepared code { font-family: var(--dc-font-mono); font-size: 9px; color: var(--dc-text-dim); }
+  .dc-capture-steps { margin: 0; padding-left: 18px; color: var(--dc-text-muted); font-size: 10px; line-height: 1.6; }
+  .dc-capture-steps strong { color: var(--dc-text); font-weight: 600; }
+  .dc-captured-answers { display: grid; gap: 10px; margin-top: 16px; }
+  .dc-captured-answers article { padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
+  .dc-captured-answers article[data-status='valid'] { border-color: #166534; }
+  .dc-captured-answers article[data-status='invalid'] { border-color: #991b1b; }
+  .dc-captured-answers header { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 10px; color: var(--dc-text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .dc-captured-answers h3 { margin: 0 0 6px; font-size: 13px; color: var(--dc-text); }
+  .dc-captured-answers p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--dc-text-muted); }
+  .dc-agent-prompt { margin: 14px 0 0; color: var(--dc-text-muted); font-size: 11px; line-height: 1.5; }
+  @media(max-width:700px){.dc-targets,.dc-handoff-mode{grid-template-columns:1fr}.dc-submit-row,.dc-automated-meta{grid-template-columns:1fr}.dc-create-options{grid-template-columns:1fr}}
 </style>

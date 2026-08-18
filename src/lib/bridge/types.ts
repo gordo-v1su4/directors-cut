@@ -209,6 +209,7 @@ export interface RecordConceptDecisionOutput {
   answer_id: string;
   decision: ConceptDecisionValue;
   decided_at: string;
+  prompt_sha256: string;
   run_status: string;
   approved_current_concepts: number;
   required_current_concepts: number;
@@ -217,9 +218,9 @@ export interface RecordConceptDecisionOutput {
 }
 
 export type VideoProvider = 'higgsfield' | 'direct_sora';
-export interface QuoteVideoGenerationInput { run_id: string; answer_ids: [string, string]; provider: VideoProvider }
+export interface QuoteVideoGenerationInput { run_id: string; answer_ids: string[]; provider: VideoProvider }
 export interface QuoteVideoGenerationOutput {
-  quote_id: string; run_id: string; answer_ids: [string, string]; provider: VideoProvider; model: string;
+  quote_id: string; run_id: string; answer_ids: string[]; prompt_hashes: string[]; provider: VideoProvider; model: string;
   quote_status: 'quoted' | 'agent_handoff_required' | 'unavailable';
   credit_cost_each: number | null; credit_cost_total: number | null;
   duration_seconds: 12; aspect_ratio: '16:9'; quoted_at: string; expires_at: string;
@@ -230,10 +231,95 @@ export interface VideoGenerationJob { answer_id: string; prompt_id: string; job_
 export interface SubmitVideoGenerationOutput {
   generation_id: string; quote_id: string; run_id: string; provider: VideoProvider; model: string;
   status: 'submitting' | 'running' | 'generation_partial' | 'ready_for_review' | 'failed';
-  jobs: [VideoGenerationJob, VideoGenerationJob]; submitted_at: string; automatic_fallback: false;
+  jobs: VideoGenerationJob[]; submitted_at: string; automatic_fallback: false;
 }
 export interface GetVideoGenerationStatusInput { generation_id: string }
 export interface GetVideoGenerationStatusOutput extends SubmitVideoGenerationOutput { updated_at: string }
+
+export type CaptureHandoffMode = 'manual' | 'automated';
+
+export interface CreateComparisonRunInput {
+  title: string;
+  question: string;
+  capture_mode?: CaptureHandoffMode;
+  models_requested?: string[];
+  target_models?: string[];
+}
+
+export interface CreateComparisonRunOutput {
+  run_id: string;
+  title: string;
+  capture_mode: CaptureHandoffMode;
+  comparison_run_path: string;
+  capture_request_path?: string;
+  index_rebuilt: boolean;
+  run_status: string;
+  models_requested: string[];
+  projects_url: string;
+  next_step: string;
+}
+
+export interface GetConceptCaptureStatusInput {
+  run_id: string;
+}
+
+export interface GetConceptCaptureStatusOutput {
+  run_id: string;
+  run_status: string;
+  capture_mode: CaptureHandoffMode;
+  capture_workflow: 'computer_use' | 'script_commands';
+  capture_job_status?: 'idle' | 'running' | 'complete';
+  models: Array<{
+    label: string;
+    raycast_agent: string;
+    status: 'pending' | 'captured' | 'invalid';
+    answer_id?: string;
+  }>;
+  answers?: Array<{
+    answer_id: string;
+    model_name: string;
+    structure_status: string;
+    title?: string;
+    logline?: string;
+    summary?: string;
+  }>;
+  answers_count: number;
+  captured_valid_count: number;
+  invalid_count: number;
+  pending_count: number;
+  ready_for_projects: boolean;
+  projects_url: string;
+}
+
+export interface RunConceptCaptureInput {
+  run_id: string;
+  prepare_first?: boolean;
+}
+
+export interface RunConceptCaptureOutput {
+  run_id: string;
+  started: boolean;
+  workflow: 'computer_use';
+  log_file: string;
+  message: string;
+}
+
+export interface PrepareConceptCaptureInput {
+  run_id: string;
+}
+
+export interface PrepareConceptCaptureOutput {
+  run_id: string;
+  title: string;
+  active_capture_path: string;
+  prompt_file: string;
+  prompt_copied_to_clipboard: boolean;
+  capture_commands: {
+    chatgpt: string;
+    claude: string;
+  };
+  message: string;
+}
 
 // --- Tool registry ---------------------------------------------------------
 
@@ -244,6 +330,10 @@ export type ToolName =
   | 'search_prompt_library'
   | 'save_prompt_pack'
   | 'generate_cinematic_grid'
+  | 'create_comparison_run'
+  | 'get_concept_capture_status'
+  | 'prepare_concept_capture'
+  | 'run_concept_capture'
   | 'record_concept_decision'
   | 'quote_video_generation'
   | 'submit_video_generation'
@@ -256,6 +346,10 @@ export const ALLOWED_TOOLS: readonly ToolName[] = [
   'search_prompt_library',
   'save_prompt_pack',
   'generate_cinematic_grid',
+  'create_comparison_run',
+  'get_concept_capture_status',
+  'prepare_concept_capture',
+  'run_concept_capture',
   'record_concept_decision',
   'quote_video_generation',
   'submit_video_generation',

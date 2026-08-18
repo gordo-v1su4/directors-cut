@@ -61,6 +61,16 @@ export interface ModelAnswer {
   created_at: string;
   tokens_estimated?: number | null;
   source: string;
+  content_sha256?: string;
+  prompt_sha256?: string;
+  skill_id?: string;
+  container_settings?: {
+    model: 'sora_2';
+    seconds: 12;
+    size: '1280x720';
+    aspect_ratio: '16:9';
+    input: 'text';
+  };
   // Runtime UI status, not persisted in schema
   ui_status?: 'captured' | 'pending' | 'missing';
 }
@@ -74,6 +84,7 @@ export interface ConceptDecision {
   decision: ConceptDecisionValue;
   note?: string;
   decided_at: string;
+  prompt_sha256?: string;
   source: 'directors_cut_ui' | 'bridge' | string;
 }
 
@@ -114,6 +125,14 @@ export interface GenerationPrompt {
   source: ArtifactSource;
   artifact_ids?: string[];
   notes?: string;
+  prompt_sha256?: string;
+  response_sha256?: string;
+  source_model_label?: string;
+  skill_id?: string;
+  generation_id?: string;
+  quote_id?: string;
+  duration_seconds?: 12;
+  aspect_ratio?: '16:9';
 }
 
 export interface ComparisonArtifact {
@@ -136,6 +155,12 @@ export interface ComparisonArtifact {
   status?: ArtifactStatus;
   model?: string;
   job_id?: string;
+  generation_id?: string;
+  quote_id?: string;
+  prompt_sha256?: string;
+  response_sha256?: string;
+  source_model_label?: string;
+  skill_id?: string;
   result_url?: string;
   width?: number;
   height?: number;

@@ -37,6 +37,11 @@
       <p class="dc-concept-logline">{concept.logline}</p>
       <p class="dc-concept-summary">{concept.summary}</p>
       <div class="dc-concept-specs"><span>12 seconds</span><span>16:9 video</span></div>
+      <details class="dc-concept-prompt">
+        <summary>Sora prompt</summary>
+        <pre>{concept.sora_prompt}</pre>
+        <CopyButton text={concept.sora_prompt} label="Copy prompt" size={10} />
+      </details>
     </div>
   {/if}
 
@@ -55,6 +60,7 @@
   {#if answer.created_at && !isMissing}
     <div class="dc-answer-meta">
       {new Date(answer.created_at).toLocaleString()} · {answer.source}
+      {#if answer.skill_id}<span> · {answer.skill_id}</span>{/if}
     </div>
   {/if}
 </div>
