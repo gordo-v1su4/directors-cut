@@ -1,132 +1,212 @@
-# Directors Cut — Session Status & Handoff
+# Directors Cut — Status & Project Map
 
-> **Last updated:** 2026-07-03 by Hermes
-> **Purpose:** Prevent duplicated agent work and make the Phase 0 handoff explicit.
+> **Last updated:** 2026-08-16  
+> **Purpose:** Single source of truth for what this repo is, where we are, and what comes next.
 
-## Current reality — 2026-07-29
+---
 
-- The Svelte app is built and running at `http://127.0.0.1:5190`; the older Phase 0 notes below are retained as historical context.
-- Main navigation: Create, Home, Library, Projects, Techniques, Sources.
-- Create accepts an idea, format, duration, model targets, audio direction, and a local image reference. It can produce a copyable prompt-agent request, but no AI prompt service is connected and nothing is persisted as a new project yet.
-- Projects currently indexes two real comparison runs. THE PINK ROOM has two ingested Sora videos and a pending Seedance artifact; the older Sora Vice run contains prompt candidates but its attempted media generation was blocked by the configured account's billing limit.
-- Project media previews, version UI, reference strips, and the lightbox exist. Vision scoring and keep/remix/reject/resend remain UI-only placeholders.
-- The experimental Techniques page lives on `codex/camera-moves-pilot` at `/pilots/camera-moves`. It contains 12 foundational camera-move placeholders and 12 static specialty-shot placeholders, with Seedance and LTX-2.3 positioned as its prompt targets.
-- Deferred: Angle Lab / LTX-2.3 CrossView contact-sheet generation. Revisit in late August 2026 after the IC-LoRA workflow matures; see `docs/TODO.md`.
-- Best next product milestone: connect Create to a real prompt-generation endpoint, persist its output as a project/run, and make that new run appear in Projects without manual JSONL editing.
+## Main goal
 
-## Current state
+**Turn strong creative ideas into reusable, testable Sora video specs — and browse them in a focused web app.**
 
-### Repos created (both private on GitHub)
-- `github.com/gordo-v1su4/directors-cut` — creative consumer (prompt library, workflows, Svelte visual browser)
-- `github.com/gordo-v1su4/raycast-pro-bridge` — Raycast Pro layer (MCP bridge, AI Commands, Agents, Script Commands)
+Directors Cut is not a production repo for individual shows or commercials. It is the **creative intelligence layer**:
 
-Notes:
-- `directors-cut` is the active repo on this host: `/root/Github/directors-cut`.
-- `raycast-pro-bridge` exists on GitHub, but no local checkout was found at `/root/Github/raycast-pro-bridge` during this handoff cleanup. Clone/inspect it tomorrow before assuming any Raycast implementation exists.
+1. **Ideate** — slate and package concepts (`hype-slate/`, teaser-series skill)
+2. **Compare** — capture real ChatGPT + Claude answers via Raycast (`/create` → Script Commands → `/comparisons`)
+3. **Generate** — submit approved concepts to Sora through the bridge (when configured)
+4. **Library** — promote winners into **Sora library video specs** in `content/cards/sora/` for reuse
 
-### Plan written
-- `docs/directors-cut-deep-dive-plan.md` — 1003-line plan authored by Hermes
-- Covers: prompt-card schema, Obsidian structure, multi-agent comparison flow, Svelte 5 visual browser, Raycast/Hermes consumption, build phases 0-5
-- Current build order: **repo first, Obsidian after milestones**
+The generated video is the deliverable in the comparison slice. The **library spec** is the long-term asset once an idea proves out.
 
-### Phase 0 status
+---
 
-Phase 0 prompt-library baseline is complete and merged on top of `origin/main`, except for optional/manual Raycast comparison answers.
+## What lives here vs elsewhere
 
-Delivered in `directors-cut/`:
-1. Prompt-card Markdown library under `content/cards/`
-   - 3 Seedance cards
-   - 4 Sora cards
-   - 3 cross-model cards
-   - 10 total cards
-2. Schema drafts under `schemas/`
-   - `prompt-card.schema.json`
-   - `prompt-pack.schema.json`
-   - `comparison-run.schema.json`
-   - `model-answer.schema.json`
-3. Bun-native index builder
-   - `scripts/build-index.ts`
-   - Usage: `bun run scripts/build-index.ts`
-   - No npm/package-lock workflow should be introduced unless the repo explicitly changes direction.
-4. Generated browser index
-   - `public/data/prompt-cards.index.jsonl`
-   - Includes card frontmatter, body excerpt, file path, `source_urls`, and `source_notes`
-5. GitHub reference index
-   - `content/references/repos.md`
+| In **directors-cut** | Elsewhere |
+|----------------------|-----------|
+| Svelte app (`src/`) | **super-seed2** — production projects (Blood Rush, TinyParka, etc.) |
+| Prompt & comparison data (`content/`) | **raycast-pro-bridge** — Raycast Script Commands + HTTP bridge |
+| Schemas, index builders, docs | |
+| Early workflow: `hype-slate/`, `skillset/02-teaser-series-package/` | |
+| Vendored agent skills (`skillset/imported-skills/`) | |
 
-Not done / intentionally deferred:
-- No Raycast model answers were invented. A comparison run folder should only be created once real Raycast/model answers exist.
-- No Svelte app scaffold yet; Phase 1 starts from the real cards and JSONL index.
-- No local `raycast-pro-bridge` checkout was present on this host during cleanup; inspect/clone tomorrow.
-- Obsidian mirror should be updated after this repo commit/push if a project-map milestone note is desired.
+**Rule:** Only keep content this app creates or curates (Raycast runs, prompt cards, hype-slate workflow). Production project trees do not belong here.
 
-### Verification run
+---
 
-Use Bun only:
+## System map
 
-```bash
-cd /root/Github/directors-cut
-bun run scripts/build-index.ts
-bun scripts/validate-schemas.ts
-for f in schemas/*.json; do bun -e "JSON.parse(await Bun.file('$f').text()); console.log('valid schema json: $f')"; done
-find . -maxdepth 3 \( -name package-lock.json -o -name npm-shrinkwrap.json -o -name pnpm-lock.yaml -o -name yarn.lock -o -name package.json \) -print | sort
+```
+hype-slate (slate → pick → package)
+        │
+        ▼
+/create ──copy brief──► Raycast (ChatGPT + Claude)
+        │                      │
+        │                      ▼
+        │              content/comparisons/<run-id>/
+        │              answers.jsonl · artifacts.jsonl · media/
+        │                      │
+        ▼                      ▼
+public/data/comparisons.index.json ──► /comparisons (Projects UI)
+                                              │
+                                              ▼ approve + generate (bridge)
+                                              │
+                                              ▼ promote winner
+content/cards/sora/ ◄──────────────── Sora library video specs
+        │
+        ▼
+public/data/prompt-cards.index.jsonl ──► /prompts (Library UI)
 ```
 
-Expected current result:
-- 10 prompt cards found
-- 10 JSONL index entries written
-- schema/card/index validation passes
-- all schema JSON files parse successfully
-- no npm/yarn/pnpm/package-lock artifacts found
+**Dev app:** `http://localhost:5190` · `bun run dev`  
+**Bridge (optional):** `VITE_RAYCAST_BRIDGE_URL` + `VITE_RAYCAST_BRIDGE_TOKEN` → `http://127.0.0.1:8787`
 
-## Key decisions made
-1. Two repos, not one: `raycast-pro-bridge` (Raycast layer) + `directors-cut` (creative consumer)
-2. No Ollama — user explicitly refused local models
-3. No `raycast2api` — ToS violation risk
-4. HTTP MCP bridge on RackNerd5 over Tailscale (not stdio)
-5. Hybrid storage: Markdown canonical in repo, JSONL index for app
-6. Library-first build order: prove creative loop before plumbing
-7. Repo-first, Obsidian-after-milestones
-8. Svelte 5 with runes preferred for the visual browser
-9. TanStack Table v9 Svelte adapter (alpha), isolated behind wrapper component
-10. Pindeck-style dark/dense visual tokens (`--dc-*` prefix)
-11. Use Bun for JS/TS work here. Do not introduce npm/package-lock unless the repo explicitly requires it.
-12. Terminology correction: user meant `cmux`, not `omx`. Use cmux wording/commands unless a file or running process explicitly says OMX/OMP.
+---
+
+## Web app routes
+
+| Route | Role |
+|-------|------|
+| `/create` | Build Raycast brief for 12s Sora concept run |
+| `/comparisons` | Projects — compare runs, approve concepts, quote/generate |
+| `/prompts` | Library — browse prompt cards (target: Sora video specs) |
+| `/` | Dashboard — stats, latest media |
+| `/pilots/camera-moves` | Techniques placeholders (experimental) |
+| `/sources` | Reference repo index |
+
+---
+
+## Current state (2026-08-16)
+
+### Shipped
+
+- **Library:** 10 prompt cards (4 Sora, 3 Seedance, 3 cross-model) — mostly templates, **0 tested by us**
+- **Projects:** 3 comparison runs indexed
+  - **NIGHT SHIFT 2004 E2E** — ChatGPT + Claude captured; no video yet
+  - **Pink Room** — 2 Sora videos ingested
+  - **Sora Vice** — text answers; generation blocked by billing
+- **Create → Raycast** vertical slice (brief copy, concept package schema)
+- **Comparison UI** — media preview, lightbox, version cells, concept approval + generation gating (partial WIP uncommitted in `src/`)
+- **hype-slate** — 40-concept slate + 4 Stage-3 packages (early app workflow)
+- **Seedance 2.0** skill vendored at upstream v6.7.0
+
+### Not done
+
+| Area | Gap |
+|------|-----|
+| **Sora library video specs** | Cards exist as adapted templates; no promoted specs from real runs yet |
+| **Create persistence** | New runs still require manual JSONL / Raycast script rebuild |
+| **Bridge in UI** | Needs `.env.local` token for quote/generate on Projects |
+| **Review actions** | Keep / Iterate / Extend / Reject — placeholders |
+| **Vision score** | Placeholder |
+| **Docs** | `TODO.md` still reflects July Phase 1 checklist |
+
+### Uncommitted local work
+
+- `src/` — comparison generation UI refinements
+- `.cursor/skills/seedance-25-prompt/` — generic 2.5 grammar (untracked)
+
+---
+
+## Near-term priority (user direction)
+
+**After solid ideas land in Projects, build out the Sora library video specs first.**
+
+Intended flow:
+
+1. Run comparison slice on strong concepts (Raycast → approve → generate → review video)
+2. Mark what works (human rating, production readiness)
+3. **Promote** winning prompts + container settings into `content/cards/sora/` as first-class **video specs**
+4. Browse and reuse specs from `/prompts` Library
+
+Open product questions — **decisions (2026-08-16 interview):**
+
+| Question | Decision |
+|----------|----------|
+| What is a Sora library video spec? | **Minimal:** final Sora prompt text + duration/size (12s, 720p, 16:9) |
+| When does an idea promote to the library? | **Approve** on the Projects row is enough — adds the spec to the Library table (prompt + 12s / 720p / 16:9). Video can follow. |
+| Where do solid ideas come from? | **Both** hype-slate packages and `/create` → Raycast one-offs |
+| Library scope | **Sora first**; keep existing Seedance/cross-model cards browsable |
+| First spec categories | **Netflix teaser**, **series sizzle**, **commercial** |
+
+**Build order implied:**
+
+1. Fresh brief on `/create` → Raycast capture → `/comparisons` review
+2. **Approve** winning concept → appears in `/prompts` Library table
+3. Generate Sora video (bridge) → attach test run when ready
+4. Repeat; expand categories: Netflix teaser → series sizzle → commercial
+
+**Next E2E test:** Walk through a **new** concept from `/create` through Raycast (not Pink Room — already has videos). NIGHT SHIFT 2004 is the prior test run (concepts only, no Sora yet); use it as reference, then draft fresh.
+
+---
+
+## Comparison runs (live data)
+
+| Run ID | Title | Status | Artifacts |
+|--------|-------|--------|-----------|
+| `20260815-085327-night-shift-2004-e2e` | NIGHT SHIFT 2004 | answers_collected | 0 videos |
+| `2026-07-pink-room-two-part-teaser-001` | THE PINK ROOM | partially_generated | 2 Sora MP4s |
+| `2026-07-sora-vice-teaser-001` | Sora Vice | answers_collected | billing blocked |
+
+---
+
+## Sora library today (`content/cards/sora/`)
+
+| Card | Focus | Tested |
+|------|-------|--------|
+| Netflix Teaser Cinematic Continuity | Continuous camera, title in-world | No |
+| Director Style Editing Matrix | Edit rhythm / director study | No |
+| Audio-First Micro Documentary | Sound-led observational | No |
+| World-Simulator Physics Loop | Physical coherence loop | No |
+
+These are **templates**. The goal is to grow this folder with **specs backed by real comparison runs and renders**.
+
+---
+
+## UI smoke test
+
+```bash
+cd ~/Documents/Github/directors-cut
+bun run check
+bun run dev    # → http://localhost:5190
+```
+
+| Check | Route | Expect |
+|-------|-------|--------|
+| Dashboard | `/` | 10 cards, latest Pink Room previews |
+| Library | `/prompts` | Table + drawer + copy |
+| Projects | `/comparisons` | 3 runs, NIGHT SHIFT concepts |
+| Create | `/create` | Brief builder + Raycast handoff |
+| Mobile nav | any | Hamburger drawer |
+
+Full E2E requires Raycast + bridge env — see `HANDOFF.md`.
+
+---
 
 ## Key files
-- Plan: `docs/directors-cut-deep-dive-plan.md`
-- Status: `docs/STATUS.md`
-- Tomorrow TODO: `docs/TODO.md`
-- References: `content/references/repos.md`
-- Cards: `content/cards/`
-- Schemas: `schemas/`
-- Index builder: `scripts/build-index.ts`
-- Generated index: `public/data/prompt-cards.index.jsonl`
-- Seedance skill (Hermes): `seedance-director`
-- Trailer skill (Hermes): `teaser-trailer-screenplay`
-- cmux steering skill (Hermes): `cmux-agent-steering`
 
-## If picking up from scratch tomorrow
-1. Read `docs/directors-cut-deep-dive-plan.md` for the full roadmap.
-2. Read this `STATUS.md` and `docs/TODO.md` for current state.
-3. Do **not** ask Kimi/GLM/another agent to redo Phase 0; inspect the current repo first.
-4. Run the Bun verification block above.
-5. Start Phase 1 only after confirming the real cards render from `public/data/prompt-cards.index.jsonl`.
-6. For Raycast work, first clone/inspect `github.com/gordo-v1su4/raycast-pro-bridge`; do not assume the local repo already exists.
+| Doc / path | Role |
+|------------|------|
+| `HANDOFF.md` | Raycast → Sora vertical slice |
+| `docs/comparison-lab-requirements.md` | Projects UI spec |
+| `docs/ui-ux-handoff.md` | Visual browser wireframes |
+| `docs/directors-cut-deep-dive-plan.md` | Full roadmap (historical phases) |
+| `docs/TODO.md` | Task backlog (needs refresh) |
+| `content/cards/` | Library source of truth |
+| `content/comparisons/` | Project run source of truth |
+| `schemas/prompt-card.schema.json` | Card frontmatter contract |
+| `schemas/generation-prompt.schema.json` | Concrete generation prompts |
 
-## cmux / peer-agent inspection note
+---
 
-If another agent is working in cmux, inspect before steering:
+## Repos
 
-```bash
-cmux capture-pane --surface surface:1 | tail -30
-# or
-cmux capture-pane --surface surface:2 | tail -30
-```
+- `github.com/gordo-v1su4/directors-cut` — this repo
+- `github.com/gordo-v1su4/raycast-pro-bridge` — Raycast + bridge
+- `github.com/gordo-v1su4/super-seed2` — production generation projects
 
-To steer/take over, send a concise message into the same surface:
+---
 
-```bash
-cmux send --surface surface:1 'HERMES - I am taking over. Stop editing and leave the worktree as-is.'
-cmux send-key --surface surface:1 enter
-```
+## Historical note
+
+Sections below Phase 0 in older commits described Hermes handoff from July 2026. Phase 0–2 baselines are complete. Treat **Sora library video specs** and **comparison → promote** as the active product thread unless decisions say otherwise.
