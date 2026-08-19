@@ -50,6 +50,7 @@
   let gridError = $state('');
   let gridJobByAnswer = $state<Record<string, GenerateCinematicGridOutput>>({});
   const pollTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const pollFailures = new Map<string, number>();
 
   let promptsMap = $derived(
     new Map<string, GenerationPrompt>(
@@ -117,7 +118,8 @@
   }
 
   function hasReadyVideo(row: ComparisonRow): boolean {
-    return row.promptOnlyVideoSoraSlot.versions.some((artifact) => artifact.status === 'generated' && !!artifact.media_url);
+    return [...row.promptOnlyVideoSeedanceSlot.versions, ...row.promptOnlyVideoSoraSlot.versions]
+      .some((artifact) => artifact.status === 'generated' && !!artifact.media_url);
   }
 
   function rowGenerationStatus(row: ComparisonRow): 'Pending' | 'Approved' | 'Quoted' | 'Generating' | 'Ready' | 'Failed' {
@@ -157,7 +159,10 @@
     gridBusyAnswerId = row.answer.answer_id;
     gridError = '';
     try {
-      const title = row.answer.structured_prompt?.title ?? row.answer.model_name;
+      const pkg = row.answer.structured_prompt;
+      const title = pkg && typeof pkg === 'object' && !Array.isArray(pkg) && 'title' in pkg && typeof pkg.title === 'string'
+        ? pkg.title
+        : row.answer.model_name;
       const gridJob = await callBridgeTool<GenerateCinematicGridInput, GenerateCinematicGridOutput>(
         { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
         'generate_cinematic_grid',
@@ -231,10 +236,18 @@
         { generation_id: generationId },
       );
       updateGeneration(row.answer.answer_id, { submission, error: '' });
+      pollFailures.delete(row.answer.answer_id);
       await onrefresh?.();
-      if (!['ready_for_review', 'failed'].includes(submission.status)) schedulePoll(row, generationId);
+      if (!['ready_for_review', 'failed'].includes(submission.status)) {
+        schedulePoll(row, generationId);
+      } else {
+        localStorage.removeItem(storageKey(row.answer.answer_id));
+      }
     } catch (error) {
       updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+      const failures = (pollFailures.get(row.answer.answer_id) ?? 0) + 1;
+      pollFailures.set(row.answer.answer_id, failures);
+      schedulePoll(row, generationId, Math.min(30_000, 2_000 * (2 ** Math.min(failures - 1, 4))));
     }
   }
 
@@ -270,10 +283,10 @@
             <div class="dc-concept-gate-card-title">{title}</div>
             <div class="dc-action-group">
               <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
-              <button class="dc-action-button dc-reject-button" disabled={row.answer.ui_status === 'missing' || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
+              <button class="dc-action-button dc-reject-button" disabled={savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
             </div>
             {#if row.canGenerate && generationStatus !== 'Ready'}
-              <button class="dc-action-button dc-row-quote-button" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Get live quote → Sora</button>
+              <button class="dc-action-button dc-row-quote-button" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Get live Higgsfield quote</button>
             {/if}
             {#if generation?.quote?.quote_status === 'quoted' && !generation.submission}
               <button class="dc-action-button dc-confirm-generation" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>

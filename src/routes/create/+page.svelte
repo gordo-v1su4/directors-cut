@@ -161,13 +161,15 @@
     pollTimer = undefined;
   }
 
-  async function refreshCaptureStatus(runId: string) {
-    if (!BRIDGE_TOKEN) return;
-    captureStatus = await callBridgeTool<{ run_id: string }, GetConceptCaptureStatusOutput>(
+  async function refreshCaptureStatus(runId: string): Promise<GetConceptCaptureStatusOutput | null> {
+    if (!BRIDGE_TOKEN) return null;
+    const status = await callBridgeTool<{ run_id: string }, GetConceptCaptureStatusOutput>(
       { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
       'get_concept_capture_status',
       { run_id: runId },
     );
+    captureStatus = status;
+    return status;
   }
 
   function startPolling(runId: string) {
@@ -175,8 +177,9 @@
     pollTimer = setInterval(() => {
       refreshCaptureStatus(runId)
         .then((status) => {
-          if (status.capture_job_status === 'complete' || status.ready_for_projects) {
+          if (status && (status.capture_job_status === 'complete' || status.ready_for_projects)) {
             captureRunning = false;
+            stopPolling();
           }
         })
         .catch(() => undefined);
@@ -469,11 +472,6 @@
   .dc-capture-model-list li { display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; padding: 8px 10px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); font-size: 10px; color: var(--dc-text-muted); }
   .dc-capture-model-list li[data-status='captured'] { border-color: #166534; }
   .dc-capture-model-list li[data-status='invalid'] { border-color: #991b1b; }
-  .dc-capture-prepared { margin-top: 16px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
-  .dc-capture-prepared p { margin: 0 0 10px; color: var(--dc-text-muted); font-size: 10px; line-height: 1.5; }
-  .dc-capture-prepared code { font-family: var(--dc-font-mono); font-size: 9px; color: var(--dc-text-dim); }
-  .dc-capture-steps { margin: 0; padding-left: 18px; color: var(--dc-text-muted); font-size: 10px; line-height: 1.6; }
-  .dc-capture-steps strong { color: var(--dc-text); font-weight: 600; }
   .dc-captured-answers { display: grid; gap: 10px; margin-top: 16px; }
   .dc-captured-answers article { padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
   .dc-captured-answers article[data-status='valid'] { border-color: #166534; }

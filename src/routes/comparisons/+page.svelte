@@ -29,7 +29,8 @@
       && (label.includes('chatgpt') || label.startsWith('gpt-') || label.includes('claude'));
   }) ?? []);
   let readyModelRows = $derived(currentModelRows.filter((row) =>
-    row.promptOnlyVideoSoraSlot.versions.some((artifact) => artifact.status === 'generated' && !!artifact.media_url)
+    [...row.promptOnlyVideoSeedanceSlot.versions, ...row.promptOnlyVideoSoraSlot.versions]
+      .some((artifact) => artifact.status === 'generated' && !!artifact.media_url)
   ));
   let judgingUnlocked = $derived(currentModelRows.length === 2 && readyModelRows.length === 2);
 
@@ -176,7 +177,7 @@
         <ol>
           <li><strong>Pick a concept</strong> — scroll to the table below and click <strong>Approve idea</strong> on ChatGPT or Claude (pinned right column).</li>
           <li><strong>Generate grid</strong> (optional) — click <strong>Generate grid</strong> in the Shot grid column for a Nano Banana storyboard.</li>
-          <li><strong>Generate Sora video</strong> — after approve: use <strong>Get live quote → Sora</strong> in the green box, <em>or</em> ask a Cursor agent with the Higgsfield plugin to generate and save the video to this run.</li>
+          <li><strong>Generate video</strong> — after approval, use <strong>Get live Higgsfield quote</strong>. The local bridge submits, polls, downloads, records provenance, rebuilds the index, and returns the playable result here.</li>
         </ol>
       </div>
     {/if}
@@ -184,7 +185,7 @@
     <GenerationStatusBanner status={genStatus} artifacts={run.artifacts} />
 
     <div class="dc-review-progress" data-ready={judgingUnlocked}>
-      <div><span>Serial Sora review</span><strong>{readyModelRows.length}/2 videos ready</strong></div>
+      <div><span>Serial video review</span><strong>{readyModelRows.length}/2 videos ready</strong></div>
       <p>{judgingUnlocked ? 'Judging unlocked.' : 'Approve, quote, and generate each model independently. Judging remains locked until both videos are playable.'}</p>
     </div>
 
