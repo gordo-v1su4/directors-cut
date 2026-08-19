@@ -42,9 +42,9 @@
     {
       "run_id": "20260818-180320-checkout-teaser",
       "title": "Checkout - Teaser",
-      "status": "answers_collected",
+      "status": "generation_partial",
       "answer_count": 2,
-      "artifact_count": 3,
+      "artifact_count": 4,
       "approved_concept_count": 1,
       "model_labels": [
         "ChatGPT",
