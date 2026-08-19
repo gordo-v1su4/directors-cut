@@ -6,14 +6,18 @@
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
   import { callBridgeTool } from '$lib/bridge/types';
   import type {
-    GenerateCinematicGridInput,
-    GenerateCinematicGridOutput,
+    GetImageGenerationStatusInput,
+    GetImageGenerationStatusOutput,
     GetVideoGenerationStatusInput,
     GetVideoGenerationStatusOutput,
+    QuoteImageGenerationInput,
+    QuoteImageGenerationOutput,
     QuoteVideoGenerationInput,
     QuoteVideoGenerationOutput,
     RecordConceptDecisionInput,
     RecordConceptDecisionOutput,
+    SubmitImageGenerationInput,
+    SubmitImageGenerationOutput,
     SubmitVideoGenerationInput,
     SubmitVideoGenerationOutput,
   } from '$lib/bridge/types';
@@ -45,12 +49,19 @@
     error?: string;
   }
 
+  interface RowGridGenerationState {
+    quote?: QuoteImageGenerationOutput;
+    submission?: SubmitImageGenerationOutput | GetImageGenerationStatusOutput;
+    busy?: boolean;
+    error?: string;
+  }
+
   let generationByAnswer = $state<Record<string, RowGenerationState>>({});
-  let gridBusyAnswerId = $state('');
-  let gridError = $state('');
-  let gridJobByAnswer = $state<Record<string, GenerateCinematicGridOutput>>({});
+  let gridByAnswer = $state<Record<string, RowGridGenerationState>>({});
   const pollTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const pollFailures = new Map<string, number>();
+  const gridPollTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const gridPollFailures = new Map<string, number>();
 
   let promptsMap = $derived(
     new Map<string, GenerationPrompt>(
@@ -146,39 +157,83 @@
     return null;
   }
 
-  async function requestShotGrid(row: ComparisonRow) {
-    const prompt = soraPromptForRow(row);
-    if (!prompt) {
-      gridError = 'This row needs a valid Sora prompt before generating a shot grid.';
+  function gridStorageKey(answerId: string): string {
+    return `directors-cut:grid-generation:${run.run_id}:${answerId}`;
+  }
+
+  function updateGrid(answerId: string, patch: Partial<RowGridGenerationState>) {
+    gridByAnswer = {
+      ...gridByAnswer,
+      [answerId]: { ...gridByAnswer[answerId], ...patch },
+    };
+  }
+
+  async function requestGridQuote(row: ComparisonRow) {
+    if (!soraPromptForRow(row) || !BRIDGE_TOKEN) {
+      updateGrid(row.answer.answer_id, { error: BRIDGE_TOKEN ? 'This row needs a valid concept prompt.' : 'Bridge token is not configured for this local UI session.' });
       return;
     }
-    if (!BRIDGE_TOKEN) {
-      gridError = 'Bridge token is not configured for this local UI session.';
-      return;
-    }
-    gridBusyAnswerId = row.answer.answer_id;
-    gridError = '';
+    updateGrid(row.answer.answer_id, { busy: true, error: '', quote: undefined, submission: undefined });
     try {
-      const pkg = row.answer.structured_prompt;
-      const title = pkg && typeof pkg === 'object' && !Array.isArray(pkg) && 'title' in pkg && typeof pkg.title === 'string'
-        ? pkg.title
-        : row.answer.model_name;
-      const gridJob = await callBridgeTool<GenerateCinematicGridInput, GenerateCinematicGridOutput>(
+      const quote = await callBridgeTool<QuoteImageGenerationInput, QuoteImageGenerationOutput>(
         { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'generate_cinematic_grid',
-        {
-          brief: `Create a cinematic 3x3 semantic shot grid for this 12-second teaser concept.\nTitle: ${title}\n\n${prompt}`,
-          grid_layout: '3x3',
-          aspect_ratio: '16:9',
-          resolution: '2k',
-          model: 'nano_banana_2',
-        },
+        'quote_image_generation',
+        { run_id: run.run_id, answer_id: row.answer.answer_id },
       );
-      gridJobByAnswer = { ...gridJobByAnswer, [row.answer.answer_id]: gridJob };
+      updateGrid(row.answer.answer_id, { quote });
     } catch (error) {
-      gridError = error instanceof Error ? error.message : String(error);
+      updateGrid(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
     } finally {
-      gridBusyAnswerId = '';
+      updateGrid(row.answer.answer_id, { busy: false });
+    }
+  }
+
+  async function confirmGridGeneration(row: ComparisonRow) {
+    const quote = gridByAnswer[row.answer.answer_id]?.quote;
+    if (!quote) return;
+    updateGrid(row.answer.answer_id, { busy: true, error: '' });
+    try {
+      const submission = await callBridgeTool<SubmitImageGenerationInput, SubmitImageGenerationOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'submit_image_generation',
+        { quote_id: quote.quote_id, confirmed: true },
+      );
+      updateGrid(row.answer.answer_id, { submission });
+      localStorage.setItem(gridStorageKey(row.answer.answer_id), submission.generation_id);
+      scheduleGridPoll(row, submission.generation_id, 1200);
+    } catch (error) {
+      updateGrid(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      updateGrid(row.answer.answer_id, { busy: false });
+    }
+  }
+
+  function scheduleGridPoll(row: ComparisonRow, generationId: string, delay = 5000) {
+    const existing = gridPollTimers.get(row.answer.answer_id);
+    if (existing) clearTimeout(existing);
+    gridPollTimers.set(row.answer.answer_id, setTimeout(() => pollGridGeneration(row, generationId), delay));
+  }
+
+  async function pollGridGeneration(row: ComparisonRow, generationId: string) {
+    try {
+      const submission = await callBridgeTool<GetImageGenerationStatusInput, GetImageGenerationStatusOutput>(
+        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+        'get_image_generation_status',
+        { generation_id: generationId },
+      );
+      updateGrid(row.answer.answer_id, { submission, error: '' });
+      gridPollFailures.delete(row.answer.answer_id);
+      await onrefresh?.();
+      if (!['ready_for_review', 'failed'].includes(submission.status)) {
+        scheduleGridPoll(row, generationId);
+      } else {
+        localStorage.removeItem(gridStorageKey(row.answer.answer_id));
+      }
+    } catch (error) {
+      updateGrid(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
+      const failures = (gridPollFailures.get(row.answer.answer_id) ?? 0) + 1;
+      gridPollFailures.set(row.answer.answer_id, failures);
+      scheduleGridPoll(row, generationId, Math.min(30_000, 2_000 * (2 ** Math.min(failures - 1, 4))));
     }
   }
 
@@ -256,11 +311,14 @@
     for (const row of rows) {
       const generationId = localStorage.getItem(storageKey(row.answer.answer_id));
       if (generationId) schedulePoll(row, generationId, 50);
+      const gridGenerationId = localStorage.getItem(gridStorageKey(row.answer.answer_id));
+      if (gridGenerationId) scheduleGridPoll(row, gridGenerationId, 50);
     }
   });
 
   onDestroy(() => {
     for (const timer of pollTimers.values()) clearTimeout(timer);
+    for (const timer of gridPollTimers.values()) clearTimeout(timer);
   });
 </script>
 
@@ -319,6 +377,7 @@
     <tbody>
       {#each rows as row (row.answer.answer_id)}
         {@const generation = generationByAnswer[row.answer.answer_id]}
+        {@const gridGeneration = gridByAnswer[row.answer.answer_id]}
         {@const generationStatus = rowGenerationStatus(row)}
         <tr>
           <td>
@@ -330,15 +389,26 @@
               label="Shared grid"
               {promptsMap}
               {answersMap}
-              onGenerate={() => requestShotGrid(row)}
-              generateDisabled={!soraPromptForRow(row) || !BRIDGE_TOKEN}
-              generateBusy={gridBusyAnswerId === row.answer.answer_id}
-              generateLabel="Generate grid"
             />
-            {#if gridJobByAnswer[row.answer.answer_id]}
+            <button class="dc-action-button" disabled={!soraPromptForRow(row) || !BRIDGE_TOKEN || gridGeneration?.busy || !!gridGeneration?.submission} onclick={() => requestGridQuote(row)}>
+              {gridGeneration?.busy ? 'Checking…' : 'Optional · Get Nano Banana Pro quote'}
+            </button>
+            {#if gridGeneration?.quote && !gridGeneration.submission}
+              <div class="dc-row-quote">
+                <span>Nano Banana Pro · 3×3 · 2K · edge-to-edge</span>
+                <strong>{gridGeneration.quote.credit_cost_total} credits</strong>
+              </div>
+              <button class="dc-action-button dc-confirm-generation" disabled={gridGeneration.busy} onclick={() => confirmGridGeneration(row)}>
+                Confirm {gridGeneration.quote.credit_cost_total} credits and generate grid
+              </button>
+            {/if}
+            {#if gridGeneration?.submission}
               <p class="dc-decision-help" style="margin-top: 6px;">
-                Grid job {gridJobByAnswer[row.answer.answer_id].job_id} · {gridJobByAnswer[row.answer.answer_id].status}
+                Nano Banana Pro {gridGeneration.submission.job.job_id ?? 'submitting'} · {gridGeneration.submission.status}
               </p>
+            {/if}
+            {#if gridGeneration?.error}
+              <p class="dc-decision-error">{gridGeneration.error}</p>
             {/if}
           </td>
           <td>
@@ -442,7 +512,4 @@
       {/each}
     </tbody>
   </table>
-  {#if gridError}
-    <p class="dc-decision-error" style="margin-top: 8px;">{gridError}</p>
-  {/if}
 </div>

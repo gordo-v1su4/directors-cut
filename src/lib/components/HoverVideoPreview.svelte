@@ -75,7 +75,7 @@
       <video
         bind:this={video}
         src={artifact.media_url}
-        poster={artifact.thumbnail_url}
+
         autoplay
         muted
         playsinline

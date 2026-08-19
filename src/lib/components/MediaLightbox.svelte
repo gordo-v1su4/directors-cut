@@ -89,7 +89,7 @@
                 controls
                 autoplay
                 style="width: 100%; max-height: 56vh; border-radius: var(--dc-radius); display: block;"
-                poster={active.thumbnail_url}
+
               >
                 <track kind="captions" />
               </video>
@@ -119,7 +119,7 @@
               >
                 {#if artifact.thumbnail_url || artifact.media_url}
                   {#if artifact.artifact_type === 'video_result' || artifact.artifact_type === 'end_video'}
-                    <video src={artifact.media_url} poster={artifact.thumbnail_url} preload="metadata" muted playsinline aria-label={artifact.title}></video>
+                    <video src={artifact.media_url} preload="metadata" muted playsinline aria-label={artifact.title}></video>
                   {:else}
                     <img src={artifact.thumbnail_url ?? artifact.media_url} alt={artifact.title} loading="lazy" />
                   {/if}

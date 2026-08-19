@@ -92,6 +92,8 @@ export interface GetResearchStatusOutput {
   updated_at: string;
   artifact_names?: string[];
   message?: string;
+  images?: GeneratedImage[];
+  ui_artifact?: string;
 }
 
 // --- Tool: read_research_artifact ------------------------------------------
@@ -192,7 +194,27 @@ export interface GenerateCinematicGridOutput {
   status: JobStatus;
   created_at: string;
   artifact_names?: string[];
+  images?: GeneratedImage[];
+  ui_artifact?: string;
 }
+
+export interface QuoteImageGenerationInput { run_id: string; answer_id: string }
+export interface QuoteImageGenerationOutput {
+  quote_id: string; run_id: string; answer_id: string; prompt_hash: string; prompt_text: string;
+  provider: 'higgsfield'; model: 'nano_banana_2'; display_name: 'Nano Banana Pro'; quote_status: 'quoted';
+  credit_cost_total: number; aspect_ratio: '16:9'; resolution: '2k'; grid_layout: '3x3';
+  border_policy: 'edge_to_edge_no_thick_borders'; quoted_at: string; expires_at: string; capability_verified: true;
+}
+export interface SubmitImageGenerationInput { quote_id: string; confirmed: true }
+export interface ImageGenerationJob {
+  answer_id: string; prompt_id: string; job_id?: string; status: 'submitting' | 'running' | 'completed' | 'failed'; message?: string;
+}
+export interface SubmitImageGenerationOutput {
+  generation_id: string; quote_id: string; run_id: string; provider: 'higgsfield'; model: 'nano_banana_2'; display_name: 'Nano Banana Pro';
+  status: 'submitting' | 'running' | 'ready_for_review' | 'failed'; job: ImageGenerationJob; submitted_at: string; automatic_fallback: false;
+}
+export interface GetImageGenerationStatusInput { generation_id: string }
+export interface GetImageGenerationStatusOutput extends SubmitImageGenerationOutput { updated_at: string }
 
 export type ConceptDecisionValue = 'approved' | 'rejected';
 
@@ -335,6 +357,9 @@ export type ToolName =
   | 'prepare_concept_capture'
   | 'run_concept_capture'
   | 'record_concept_decision'
+  | 'quote_image_generation'
+  | 'submit_image_generation'
+  | 'get_image_generation_status'
   | 'quote_video_generation'
   | 'submit_video_generation'
   | 'get_video_generation_status';
@@ -351,6 +376,9 @@ export const ALLOWED_TOOLS: readonly ToolName[] = [
   'prepare_concept_capture',
   'run_concept_capture',
   'record_concept_decision',
+  'quote_image_generation',
+  'submit_image_generation',
+  'get_image_generation_status',
   'quote_video_generation',
   'submit_video_generation',
   'get_video_generation_status',

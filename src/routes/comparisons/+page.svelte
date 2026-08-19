@@ -198,7 +198,7 @@
               <div style="aspect-ratio: 16 / 9; overflow: hidden; background: var(--dc-bg-elev-2);">
                 {#if item.thumbnail_url || item.media_url}
                   {#if item.artifact_type === 'video_result' || item.artifact_type === 'end_video'}
-                    <video src={item.media_url} poster={item.thumbnail_url} preload="metadata" muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                    <video src={item.media_url} preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
                   {:else}
                     <img src={item.thumbnail_url ?? item.media_url} alt={item.title} loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />
                   {/if}

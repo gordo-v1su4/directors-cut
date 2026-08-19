@@ -123,8 +123,9 @@ Observed results before handoff:
 1. Install/register the new Script Commands in the owner’s live Raycast Script Commands directory.
 2. Perform one real ChatGPT + Claude capture on the M3 Mac.
 3. Confirm both answers appear in the Projects UI after index rebuild.
-4. Connect the existing Sora/Higgsfield submission path; retain manual copy/open fallback.
-5. Attach both real videos to their source answers with provenance.
-6. Add video-only review actions: **Keep / Iterate / Extend / Reject**.
-7. Run a browser smoke test of Create and Projects on desktop and mobile widths.
-8. Expand the future team profile only after this slice works: Creative Director, Story Producer, integrated Writer/Prompt/Sound role, and Brutal Review Critic.
+4. The Higgsfield video lane now quotes, confirms, submits, polls, downloads, indexes, and returns playable video previews from the actual MP4 rather than reusing image-grid posters.
+5. The optional Nano Banana Pro lane now uses the same quote/confirm/poll/download/index lifecycle. Higgsfield's API/CLI machine id is `nano_banana_2`; the UI must always call it Nano Banana Pro. Grid prompts require a full-bleed edge-to-edge 3×3 canvas with no white/black borders, thick gutters, frames, mats, margins, letterboxing, or pillarboxing.
+6. Attach both real videos to their source answers with provenance.
+7. Add video-only review actions: **Keep / Iterate / Extend / Reject**.
+8. Run a browser smoke test of Create and Projects on desktop and mobile widths.
+9. Expand the future team profile only after this slice works: Creative Director, Story Producer, integrated Writer/Prompt/Sound role, and Brutal Review Critic.

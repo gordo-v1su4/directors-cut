@@ -47,7 +47,7 @@
   const isVideo = $derived(
     active?.artifact_type === 'video_result' || active?.artifact_type === 'end_video'
   );
-  const previewUrl = $derived(active?.thumbnail_url || active?.media_url);
+  const previewUrl = $derived(isVideo ? active?.media_url : active?.thumbnail_url || active?.media_url);
 
   function openPrompt(e: MouseEvent) {
     e.stopPropagation();
@@ -152,9 +152,8 @@
         {#if isVideo}
           <div class="dc-slot-media" style="position: relative;">
             <video
-              src={previewUrl}
-              poster={active.thumbnail_url}
-              preload="metadata"
+              src={active.media_url}
+              preload="auto"
               muted
               style="width: 100%; height: 100%; object-fit: cover; display: block;"
               onmouseenter={(e) => e.currentTarget.play()}
@@ -212,7 +211,7 @@
         >
           {#if v.thumbnail_url || v.media_url}
             {#if v.artifact_type === 'video_result' || v.artifact_type === 'end_video'}
-              <video src={v.media_url} poster={v.thumbnail_url} preload="metadata" muted playsinline aria-label={v.title}></video>
+              <video src={v.media_url} preload="metadata" muted playsinline aria-label={v.title}></video>
             {:else}
               <img src={v.thumbnail_url ?? v.media_url} alt={v.title} loading="lazy" />
             {/if}

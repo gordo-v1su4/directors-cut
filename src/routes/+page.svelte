@@ -119,7 +119,7 @@
             <div class="dc-media-frame">
               {#if item.thumbnail_url || item.media_url}
                 {#if isVideoType(item)}
-                  <video src={item.media_url} poster={item.thumbnail_url} preload="metadata" muted playsinline aria-label={item.title}></video>
+                  <video src={item.media_url} preload="metadata" muted playsinline aria-label={item.title}></video>
                 {:else}
                   <img src={item.thumbnail_url ?? item.media_url} alt={item.title} loading="lazy" />
                 {/if}
