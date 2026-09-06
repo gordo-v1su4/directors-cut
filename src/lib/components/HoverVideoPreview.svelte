@@ -8,7 +8,14 @@
   let playing = $state(false);
   let muted = $state(true);
 
+  /** Vertical drag offset while the sheet is being swiped away. */
+  let dragY = $state(0);
+  let dragging = $state(false);
+  let dragStartY = 0;
+
   const progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
+
+  const DISMISS_DISTANCE = 110;
 
   function formatTime(value: number) {
     if (!Number.isFinite(value)) return '0:00';
@@ -40,6 +47,29 @@
     if (event.target === event.currentTarget) onClose();
   }
 
+  /**
+   * Swipe-down-to-dismiss on the sheet header. Only the header is draggable so
+   * the scrubber and the video surface keep their own gestures.
+   */
+  function onDragStart(event: PointerEvent) {
+    if (event.pointerType === 'mouse') return;
+    dragging = true;
+    dragStartY = event.clientY;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function onDragMove(event: PointerEvent) {
+    if (!dragging) return;
+    dragY = Math.max(0, event.clientY - dragStartY);
+  }
+
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    if (dragY > DISMISS_DISTANCE) onClose();
+    else dragY = 0;
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') onClose();
     if (event.key === ' ' && event.target === document.body) {
@@ -54,11 +84,21 @@
 <div class="dc-hover-player-backdrop" role="presentation" onclick={handleBackdrop}>
   <div
     class="dc-hover-player"
+    class:dc-dragging={dragging}
+    style={`--drag-y: ${dragY}px`}
     role="dialog"
     aria-modal="true"
     aria-label={`Video preview: ${artifact.title}`}
   >
-    <header class="dc-hover-player-header">
+    <header
+      class="dc-hover-player-header"
+      role="presentation"
+      onpointerdown={onDragStart}
+      onpointermove={onDragMove}
+      onpointerup={onDragEnd}
+      onpointercancel={onDragEnd}
+    >
+      <div class="dc-sheet-grip" aria-hidden="true"></div>
       <div class="dc-hover-player-copy">
         <p class="dc-hover-player-kicker">Video preview</p>
         <h2>{artifact.title}</h2>
@@ -95,6 +135,15 @@
           <span class="dc-stage-play-bar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.5v9l8-4.5-8-4.5Z" /></svg>
           </span>
+        </button>
+      {/if}
+
+      {#if muted}
+        <!-- Autoplay must start muted, so unmuting needs its own obvious tap
+             target on touch — the header control is too small to find. -->
+        <button class="dc-unmute" onclick={toggleMute}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Z" /></svg>
+          Tap for sound
         </button>
       {/if}
     </div>
@@ -403,31 +452,153 @@
     }
   }
 
-  @media (max-width: 620px) {
+  /* Drag handle and unmute pill are touch-only affordances. */
+  .dc-sheet-grip,
+  .dc-unmute {
+    display: none;
+  }
+
+  @media (max-width: 860px) {
     .dc-hover-player-backdrop {
       align-items: flex-end;
       padding: 0;
+      background: rgba(0, 0, 0, 0.82);
     }
 
     .dc-hover-player {
       width: 100%;
-      border-radius: var(--dc-radius) var(--dc-radius) 0 0;
+      max-height: 100dvh;
+      border-radius: 16px 16px 0 0;
       border-left: 0;
       border-right: 0;
       border-bottom: 0;
+      /* Follows the finger during a swipe-to-dismiss. */
+      transform: translateY(var(--drag-y, 0px));
+      transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+      touch-action: pan-y;
+    }
+
+    .dc-hover-player.dc-dragging {
+      transition: none;
+    }
+
+    .dc-hover-player-header {
+      position: relative;
+      padding: 16px 14px 12px;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .dc-sheet-grip {
+      display: block;
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      width: 38px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.28);
+      transform: translateX(-50%);
     }
 
     .dc-hover-player-header h2 {
+      font-size: 15px;
+    }
+
+    .dc-hover-player-meta {
       font-size: 12px;
     }
 
-    .dc-audio-control {
-      display: none;
+    .dc-hover-player-close {
+      width: var(--dc-tap);
+      height: var(--dc-tap);
+      border-radius: 999px;
+    }
+
+    .dc-hover-player-close svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .dc-stage-play-bar {
+      height: 60px;
+      min-width: 60px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .dc-stage-play-bar svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .dc-unmute {
+      display: inline-flex;
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      align-items: center;
+      gap: 7px;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(8px);
+      color: #fafafa;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .dc-unmute svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
     }
 
     .dc-hover-player-controls {
-      grid-template-columns: auto minmax(0, 1fr);
-      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      gap: 12px;
+      padding: 12px 14px;
+      padding-bottom: max(14px, var(--dc-safe-b));
+    }
+
+    .dc-transport,
+    .dc-audio-control {
+      height: var(--dc-tap);
+      border-radius: 999px;
+    }
+
+    .dc-transport { min-width: var(--dc-tap); }
+    .dc-audio-control { width: var(--dc-tap); }
+
+    .dc-transport svg,
+    .dc-audio-control svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .dc-timecode { font-size: 12px; min-width: 40px; }
+
+    /* A finger needs a bigger grab area than a mouse pointer. */
+    .dc-scrubber { height: 40px; }
+    .dc-scrubber::-webkit-slider-runnable-track { height: 5px; }
+    .dc-scrubber::-webkit-slider-thumb {
+      width: 16px;
+      height: 16px;
+      margin-top: -5.5px;
+      border-radius: 50%;
+    }
+    .dc-scrubber::-moz-range-track,
+    .dc-scrubber::-moz-range-progress { height: 5px; }
+    .dc-scrubber::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dc-hover-player-backdrop,
+    .dc-hover-player {
+      animation: none;
+      transition: none;
     }
   }
 </style>

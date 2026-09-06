@@ -29,11 +29,29 @@
   });
 </script>
 
-<div style="padding: 24px; overflow-y: auto; height: 100%;">
-  <h1 style="font-size: 18px; font-weight: 600; margin: 0 0 8px; color: var(--dc-text);">Source Map</h1>
-  <p style="font-size: 12px; color: var(--dc-text-dim); margin: 0 0 20px;">Where the library came from — each source linked to its citing cards.</p>
+<div class="dc-page-shell">
+  <h1 class="dc-sources-title">Source Map</h1>
+  <p class="dc-sources-intro">Where the library came from — each source linked to its citing cards.</p>
 
-  <table class="dc-table" style="max-width: 900px;">
+  <!-- Mobile: one card per source. A three-column URL table cannot survive 375px. -->
+  <div class="dc-card-list">
+    {#each sortedSources as [url, citing] (url)}
+      <a class="dc-list-card dc-source-card" href={url} target="_blank" rel="noopener">
+        <span class="dc-list-card-title dc-source-url">{url}</span>
+        <span class="dc-list-card-meta">
+          {#each [...new Set(citing.map((c) => c.model_family))] as fam}
+            <Badge label={fam} color={FAMILY_COLORS[fam] ?? 'var(--dc-general)'} />
+          {/each}
+        </span>
+        <span class="dc-list-card-foot">
+          <span>{citing.length} card{citing.length === 1 ? '' : 's'} cite this</span>
+          <span aria-hidden="true">↗</span>
+        </span>
+      </a>
+    {/each}
+  </div>
+
+  <table class="dc-table dc-desk-table" style="max-width: 900px;">
     <thead>
       <tr>
         <th style="min-width: 300px">Source URL</th>
@@ -60,3 +78,41 @@
     </tbody>
   </table>
 </div>
+
+<style>
+  .dc-sources-title {
+    margin: 0 0 8px;
+    color: var(--dc-text);
+    font-size: 26px;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+  }
+
+  .dc-sources-intro {
+    margin: 0 0 20px;
+    color: var(--dc-text-dim);
+    font-size: 13px;
+  }
+
+  .dc-source-card {
+    text-decoration: none;
+  }
+
+  /* Long URLs must wrap rather than widen the card past the viewport. */
+  .dc-source-url {
+    display: block;
+    color: var(--dc-sora);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .dc-source-card .dc-list-card-meta { display: flex; }
+  .dc-source-card .dc-list-card-foot { display: flex; }
+
+  @media (min-width: 861px) {
+    .dc-sources-title { font-size: 18px; font-weight: 600; }
+    .dc-sources-intro { font-size: 12px; }
+  }
+</style>

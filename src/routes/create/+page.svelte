@@ -400,7 +400,9 @@
 </div>
 
 <style>
-  .dc-create-page { height: 100%; overflow-y: auto; padding: 34px clamp(18px,4vw,52px) 52px; }
+  /* Mobile scrolls the document; desktop keeps the fixed-height workspace. */
+  .dc-create-page { padding: 22px var(--dc-page-pad) 44px; }
+  @media (min-width: 861px) { .dc-create-page { height: 100%; overflow-y: auto; padding: 34px clamp(18px,4vw,52px) 52px; } }
   .dc-create-shell { max-width: 860px; margin: 0 auto; }
   .dc-create-header { padding-bottom: 25px; border-bottom: 1px solid var(--dc-border); }
   .dc-create-header h1 { margin: 0; font-size: clamp(30px,5vw,48px); letter-spacing: -.05em; line-height: 1; }
@@ -481,4 +483,34 @@
   .dc-captured-answers p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--dc-text-muted); }
   .dc-agent-prompt { margin: 14px 0 0; color: var(--dc-text-muted); font-size: 11px; line-height: 1.5; }
   @media(max-width:700px){.dc-targets,.dc-handoff-mode{grid-template-columns:1fr}.dc-submit-row,.dc-automated-meta{grid-template-columns:1fr}.dc-create-options{grid-template-columns:1fr}}
+
+  @media (max-width: 860px) {
+    .dc-create-header { padding-bottom: 18px; }
+    .dc-create-header h1 { font-size: clamp(28px, 8vw, 36px); }
+    .dc-create-header > p { font-size: 13px; }
+
+    /* Anything under 16px makes iOS Safari zoom the viewport on focus, which
+       leaves the form off-centre and needs a pinch to recover. */
+    .dc-field textarea,
+    .dc-field select,
+    .dc-text-input { font-size: 16px; }
+    .dc-field select { min-height: var(--dc-tap); }
+    .dc-field textarea { min-height: 150px; }
+
+    /* Chips and toggles need real thumb targets. */
+    .dc-quick-start-chip,
+    .dc-title-option,
+    .dc-wand { min-height: 38px; padding-inline: 13px; font-size: 12px; }
+    .dc-quick-start-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--dc-page-pad) * -1); padding-inline: var(--dc-page-pad); }
+    .dc-quick-start-row::-webkit-scrollbar { display: none; }
+    .dc-quick-start-chip { flex: 0 0 auto; }
+
+    .dc-prepare-button { width: 100%; font-size: 15px; }
+    .dc-request-header { align-items: flex-start; flex-direction: column; }
+    .dc-request-header button { min-height: 38px; padding-inline: 14px; font-size: 12px; }
+    .dc-request-panel { padding: 14px; }
+    .dc-request-panel pre { max-height: 300px; font-size: 11px; }
+    .dc-capture-model-list li { grid-template-columns: 1fr; font-size: 12px; }
+    .dc-connection-note { font-size: 11px; }
+  }
 </style>

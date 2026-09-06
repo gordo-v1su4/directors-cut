@@ -380,10 +380,10 @@
         {@const gridGeneration = gridByAnswer[row.answer.answer_id]}
         {@const generationStatus = rowGenerationStatus(row)}
         <tr>
-          <td>
+          <td data-label="Prompt source">
             <ModelAnswerCell answer={row.answer} />
           </td>
-          <td>
+          <td data-label="Shot grid · Nano Banana Pro">
             <VersionedArtifactCell
               slotData={row.promptOnlyImageSlot}
               label="Shared grid"
@@ -411,25 +411,25 @@
               <p class="dc-decision-error">{gridGeneration.error}</p>
             {/if}
           </td>
-          <td>
+          <td data-label="Prompt only · Seedance">
             <VersionedArtifactCell slotData={row.promptOnlyVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />
           </td>
-          <td>
+          <td data-label="Prompt only · Sora">
             <VersionedArtifactCell slotData={row.promptOnlyVideoSoraSlot} label="Sora" {promptsMap} {answersMap} />
           </td>
-          <td>
+          <td data-label="Visual inputs">
             <ReferenceImageStrip images={row.referenceImages} />
           </td>
-          <td>
+          <td data-label="Reference assisted · Image">
             <VersionedArtifactCell slotData={row.referenceAssistedImageSlot} label="Image" {promptsMap} {answersMap} />
           </td>
-          <td>
+          <td data-label="Reference assisted · Seedance">
             <VersionedArtifactCell slotData={row.referenceAssistedVideoSeedanceSlot} label="Seedance" {promptsMap} {answersMap} />
           </td>
-          <td>
+          <td data-label="Reference assisted · Sora">
             <VersionedArtifactCell slotData={row.referenceAssistedVideoSoraSlot} label="Sora" {promptsMap} {answersMap} />
           </td>
-          <td>
+          <td data-label="Vision review">
             <div class="dc-vision-score-cell">
               {#if row.visionScores?.length}
                 <div class="dc-vision-score-list">
@@ -459,7 +459,7 @@
               {/if}
             </div>
           </td>
-          <td>
+          <td data-label="Concept gate">
             <div class="dc-row-actions">
               <div class="dc-row-status-line">
                 <div class="dc-decision-status" data-status={generationStatus.toLowerCase()}>{generationStatus}</div>

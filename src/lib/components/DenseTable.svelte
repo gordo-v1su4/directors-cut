@@ -62,7 +62,44 @@
   <PromptModal prompt={activePrompt} onClose={closePrompt} />
 {/if}
 
-<table class="dc-table">
+<!--
+  Mobile: a tappable card per card-record. Ten columns of metadata never fit a
+  phone, so the card leads with the title and keeps only the signal a browsing
+  user acts on — family, confidence, use cases, and the prompt itself.
+-->
+<div class="dc-card-list">
+  {#each data as c (c.id)}
+    <div class="dc-list-card" class:selected={c.id === selectedId}>
+      <button
+        class="dc-list-card-hit"
+        onclick={() => onselect?.(c.id)}
+        aria-label={`Open ${c.title}`}
+      >
+        <span class="dc-list-card-title">{c.title}</span>
+        <span class="dc-list-card-meta">
+          <Badge label={c.model_family} color={FAMILY_COLORS[c.model_family] ?? 'var(--dc-general)'} active />
+          <Badge label={c.confidence} color={CONFIDENCE_COLORS[c.confidence] ?? 'var(--dc-text-dim)'} />
+          {#if c.tested_by_us}<Badge label="✓ tested" color="var(--dc-conf-high)" />{/if}
+        </span>
+        {#if c.use_cases.length}
+          <span class="dc-list-card-sub">{c.use_cases.join(' · ')}</span>
+        {/if}
+      </button>
+      <div class="dc-list-card-foot">
+        <span>{c.prompt_mode} · {c.aspect_ratio} · {c.source_count} src</span>
+        {#if c.generation_prompts?.length || c.prompt_pattern}
+          <button class="dc-list-card-action" onclick={() => openPrompt(c)}>
+            {c.generation_prompts?.length
+              ? `${c.generation_prompts.length} prompt${c.generation_prompts.length === 1 ? '' : 's'}`
+              : 'View pattern'}
+          </button>
+        {/if}
+      </div>
+    </div>
+  {/each}
+</div>
+
+<table class="dc-table dc-desk-table">
   <thead>
     <tr>
       <th style="min-width: 120px">Prompt</th>
@@ -128,3 +165,27 @@
     {/each}
   </tbody>
 </table>
+
+<style>
+  /* The whole card body is one tap target; the footer action sits outside it
+     so a nested button never swallows the row tap. */
+  .dc-list-card-hit {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .dc-list-card-hit .dc-list-card-title,
+  .dc-list-card-hit .dc-list-card-sub {
+    display: block;
+  }
+
+  .dc-list-card-hit .dc-list-card-meta {
+    display: flex;
+  }
+</style>

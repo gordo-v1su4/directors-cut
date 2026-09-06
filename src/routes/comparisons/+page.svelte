@@ -105,7 +105,7 @@
     <a class="dc-create-link" href="/create">+ New prompt project</a>
   </div>
   {#if runList.length > 1}
-    <div class="dc-run-switcher" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-border-subtle);">
+    <div class="dc-run-switcher">
       {#each runList as r (r.run_id)}
         <button
           class="dc-badge"
@@ -214,7 +214,7 @@
       </div>
     {/if}
 
-    <p class="dc-table-scroll-hint">↓ Comparison table — first column is each model’s <strong>Sora prompt</strong>. Approve is pinned on the right.</p>
+    <p class="dc-table-scroll-hint">Each model below is one card — scroll down through <strong>prompt source</strong>, the generated slots, then <strong>concept gate</strong> to approve.</p>
 
     <div class="dc-comparison-table-scroll-outer">
       <div class="dc-comparison-table-scroll-inner">
@@ -229,3 +229,40 @@
     <div class="dc-empty-state">No comparison run selected.</div>
   {/if}
 </div>
+
+<style>
+  .dc-run-switcher {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--dc-border-subtle);
+    /* Phones get a swipeable row of runs instead of a wrapping pill cloud
+       that pushes the actual comparison off the first screen. */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    margin-inline: calc(var(--dc-page-pad) * -1);
+    padding-inline: var(--dc-page-pad);
+  }
+
+  .dc-run-switcher::-webkit-scrollbar { display: none; }
+
+  .dc-run-switcher :global(button) {
+    flex: 0 0 auto;
+    min-height: var(--dc-tap);
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 861px) {
+    .dc-run-switcher {
+      flex-wrap: wrap;
+      overflow-x: visible;
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+
+    .dc-run-switcher :global(button) { min-height: 0; }
+  }
+</style>

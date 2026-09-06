@@ -6,6 +6,10 @@
   import type { ComparisonArtifact } from '$lib/types/comparison';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
   import HoverVideoPreview from '$lib/components/HoverVideoPreview.svelte';
+  import MobileReel from '$lib/components/MobileReel.svelte';
+  import { isDesktop } from '$lib/viewport.svelte';
+
+  const desktop = isDesktop();
 
   let cards: PromptCardIndex[] = $state.raw([]);
   let latestMedia: ComparisonArtifact[] = $state.raw([]);
@@ -102,10 +106,15 @@
     </div>
 
   <section class="dc-media-section">
-    <div class="dc-section-heading"><h2 class="dc-section-title">Latest media</h2><span class="dc-section-note">Hover videos to preview · click for sound</span></div>
+    <div class="dc-section-heading">
+      <h2 class="dc-section-title">Latest media</h2>
+      <span class="dc-section-note dc-note-desktop">Hover videos to preview · click for sound</span>
+      <span class="dc-section-note dc-note-mobile">{latestVideos.length} clip{latestVideos.length === 1 ? '' : 's'}</span>
+    </div>
     {#if latestVideos.length === 0}
       <p style="font-size: 13px; color: var(--dc-text-muted); margin: 0;">No generated videos yet.</p>
     {:else}
+      {#if desktop.matches}
       <div class="dc-media-grid">
         {#each latestVideos as item (item.artifact_id)}
           <button
@@ -132,6 +141,9 @@
           </button>
         {/each}
       </div>
+      {:else}
+        <MobileReel artifacts={latestVideos} onselect={(item) => (hoverVideo = item)} />
+      {/if}
     {/if}
   </section>
 
@@ -145,3 +157,28 @@
   </section>
   </div>
 </div>
+
+<style>
+  /*
+   * Mobile reading order puts the work first: reel → totals → breakdowns.
+   * Desktop keeps the original analytical order.
+   */
+  @media (max-width: 860px) {
+    .dc-dashboard-inner {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dc-dashboard-header { order: 0; }
+    .dc-media-section { order: 1; margin-top: 4px; }
+    .dc-stat-grid { order: 2; margin-block: 26px 0; }
+    .dc-dashboard-grid { order: 3; margin-top: 26px; }
+    .dc-attention { order: 4; }
+
+    .dc-note-desktop { display: none; }
+  }
+
+  @media (min-width: 861px) {
+    .dc-note-mobile { display: none; }
+  }
+</style>

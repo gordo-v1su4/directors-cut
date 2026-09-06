@@ -136,11 +136,28 @@
     min-width: 280px;
   }
 
-  @media (max-width: 960px) {
+  /* Below the desktop breakpoint this is a full-width bottom sheet
+     (positioned by the shared `.dc-drawer` rules in app.css). */
+  @media (max-width: 860px) {
     .dc-drawer {
-      width: 50vw;
+      width: 100%;
       min-width: 0;
     }
+
+    .dc-drawer-inner {
+      padding: 4px 16px max(20px, var(--dc-safe-b));
+    }
+
+    .dc-drawer-heading h2 { font-size: 19px; }
+
+    .dc-drawer-close,
+    .dc-drawer-button,
+    .dc-drawer-link-badge {
+      min-height: var(--dc-tap);
+      font-size: 13px;
+    }
+
+    .dc-drawer-close { width: var(--dc-tap); }
   }
 
   .dc-drawer-inner {

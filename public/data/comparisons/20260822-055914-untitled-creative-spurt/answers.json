@@ -1,0 +1,36 @@
+[
+  {
+    "answer_id": "claude-b56cad7b",
+    "run_id": "20260822-055914-untitled-creative-spurt",
+    "agent_name": "Raycast",
+    "model_name": "Claude",
+    "model_class": "raycast_ai",
+    "target_model": "sora-2",
+    "prompt_mode": "creative_concept",
+    "answer_text": "```text\nTITLE:\nNIÑERO\n\nLOGLINE:\nA hardened street dealer is forced to babysit his mother's weekend after-school kids—and chaos is the only thing he can't control.\n\nHOOK:\nWhen a Latino drug dealer's mom takes a weekend trip, she leaves him with ten screaming first-graders, a backpack full of art supplies, and zero escape routes. His empire is about to meet its match.\n\nSORA PROMPT — 12 SECONDS:\nCreate a 12-second comedy-thriller teaser for \"NIÑERO,\" a street-dealer-meets-daycare collision film. Aesthetic: \"Barrio Bedlam\"—sodium-lit street corners bleeding into primary-color chaos, marigold chaos cutting against gun-metal gray. Pacing: relentless. 0.4–0.6s cuts escalating to 0.2s flash-frames during the meltdown. Needle-drop: Latin trap beat with crisp hi-hats, then sudden vinyl-skip into child's laughter, sub-bass thump on the title.\n\n[0:00–0:03 — The Setup]\nHard cut. Dealer in kitchen, gold chain catching light. Mom says (one line only): \"You're watching them—no exceptions.\" She leaves. Door slams. He stares, confused. Camera whips to ten kids bursting through the back door, screaming. Bright primary colors flood the frame.\n\n[0:03–0:07 — The Chaos]\nFlash-frame montage: kids drawing on walls. Marker on his face. A child hanging from his arm. Spaghetti on the ceiling. He's on the phone: \"Nah, I can't—\" Paint explosion. Close-up of his expression shifting from \"street lieutenant\" to pure panic. One half-second slow-mo of spaghetti flying past his head.\n\n[0:07–0:11 — The Reckoning]\nBack to trap beat. He yells (one line, desperate): \"¡Órale, stop!\" Kids freeze. One beats of silence. Then they MOVE again, worse. He dives. Whip-pan to him covered in glitter and juice, surrounded by controlled chaos. Beat hits hard. Kids chanting his name like a chant.\n\n[0:11–0:12 — Title]\nSilence. One. Two. Full vacuum. Then: \"NIÑERO\" slams on-screen in hand-painted graffiti font—bold, playful, street-tagged. Sub-bass impact. Blackout.\n\nStyle: Handheld and whip-pans for kinetic energy. One hero slow-mo of flying spaghetti. Crush the blacks on him, saturate the kids' chaos in neon primaries (yellow, cyan, hot pink). Halation on kitchen practicals. Film grain, digital handheld look—\"found footage babysitter energy.\" No text except title. No exposition. One line of dialogue per act, natural panic. Loud, diegetic kid noise layered under trap—scissors, markers, laughter, screaming. Costume: dealer chain stays, rips into apron halfway through. Kids in weekend art-class mess. Blackout on final beat, no fade.\n```",
+    "structured_prompt": {
+      "package_type": "creative_concept_v1",
+      "title": "NIÑERO",
+      "logline": "A hardened street dealer is forced to babysit his mother's weekend after-school kids—and chaos is the only thing he can't control.",
+      "summary": "When a Latino drug dealer's mom takes a weekend trip, she leaves him with ten screaming first-graders, a backpack full of art supplies, and zero escape routes. His empire is about to meet its match.",
+      "sora_prompt": "Create a 12-second comedy-thriller teaser for \"NIÑERO,\" a street-dealer-meets-daycare collision film. Aesthetic: \"Barrio Bedlam\"—sodium-lit street corners bleeding into primary-color chaos, marigold chaos cutting against gun-metal gray. Pacing: relentless. 0.4–0.6s cuts escalating to 0.2s flash-frames during the meltdown. Needle-drop: Latin trap beat with crisp hi-hats, then sudden vinyl-skip into child's laughter, sub-bass thump on the title.\n\n[0:00–0:03 — The Setup]\nHard cut. Dealer in kitchen, gold chain catching light. Mom says (one line only): \"You're watching them—no exceptions.\" She leaves. Door slams. He stares, confused. Camera whips to ten kids bursting through the back door, screaming. Bright primary colors flood the frame.\n\n[0:03–0:07 — The Chaos]\nFlash-frame montage: kids drawing on walls. Marker on his face. A child hanging from his arm. Spaghetti on the ceiling. He's on the phone: \"Nah, I can't—\" Paint explosion. Close-up of his expression shifting from \"street lieutenant\" to pure panic. One half-second slow-mo of spaghetti flying past his head.\n\n[0:07–0:11 — The Reckoning]\nBack to trap beat. He yells (one line, desperate): \"¡Órale, stop!\" Kids freeze. One beats of silence. Then they MOVE again, worse. He dives. Whip-pan to him covered in glitter and juice, surrounded by controlled chaos. Beat hits hard. Kids chanting his name like a chant.\n\n[0:11–0:12 — Title]\nSilence. One. Two. Full vacuum. Then: \"NIÑERO\" slams on-screen in hand-painted graffiti font—bold, playful, street-tagged. Sub-bass impact. Blackout.\n\nStyle: Handheld and whip-pans for kinetic energy. One hero slow-mo of flying spaghetti. Crush the blacks on him, saturate the kids' chaos in neon primaries (yellow, cyan, hot pink). Halation on kitchen practicals. Film grain, digital handheld look—\"found footage babysitter energy.\" No text except title. No exposition. One line of dialogue per act, natural panic. Loud, diegetic kid noise layered under trap—scissors, markers, laughter, screaming. Costume: dealer chain stays, rips into apron halfway through. Kids in weekend art-class mess. Blackout on final beat, no fade.\n```",
+      "runtime_seconds": 12,
+      "prompt_count": 1
+    },
+    "structure_status": "valid",
+    "structure_errors": [],
+    "created_at": "2026-08-22T06:17:13.442482Z",
+    "tokens_estimated": null,
+    "source": "raycast_clipboard",
+    "content_sha256": "b56cad7b56bb155d41785b7b8530e888f82d643823c70cf7886472516ea731a1",
+    "prompt_sha256": "922370be145381b396f39a9dfb9bb50445ae7f706022c8ad7a81983fc086e572",
+    "skill_id": "sora-2-12s-prompt",
+    "container_settings": {
+      "model": "sora_2",
+      "seconds": 12,
+      "size": "1280x720",
+      "aspect_ratio": "16:9",
+      "input": "text"
+    }
+  }
+]

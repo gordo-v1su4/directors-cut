@@ -97,7 +97,9 @@
 </div>
 
 <style>
-  .techniques-page { height: 100%; overflow-y: auto; padding: 38px clamp(18px,4vw,54px) 70px; }
+  /* Mobile scrolls the document; desktop keeps the fixed-height workspace. */
+  .techniques-page { padding: 24px var(--dc-page-pad) 48px; }
+  @media (min-width: 861px) { .techniques-page { height: 100%; overflow-y: auto; padding: 38px clamp(18px,4vw,54px) 70px; } }
   .techniques-header { max-width: 1380px; margin: 0 auto 30px; display: flex; align-items: end; justify-content: space-between; gap: 30px; }
   .techniques-header h1 { max-width: 760px; margin: 0; font-size: clamp(34px,5vw,64px); line-height: .96; letter-spacing: -.055em; }
   .techniques-header p:last-child { max-width: 650px; margin: 18px 0 0; color: var(--dc-text-muted); font-size: 13px; line-height: 1.6; }
@@ -116,5 +118,41 @@
   .move-dialog { position:relative;width:min(1040px,95vw);max-height:92vh;overflow:auto;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);border:1px solid #3f3f46;border-radius:10px;background:#0d0d0f;box-shadow:0 28px 90px rgba(0,0,0,.7) }.move-dialog-close{position:absolute;right:10px;top:10px;z-index:2;width:28px;height:28px;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(0,0,0,.65);color:#fafafa;font-size:18px;cursor:pointer}.move-dialog-visual{min-height:100%;display:grid;align-items:center;background:#050506}.move-dialog-body{padding:32px}.move-dialog-heading{display:flex;justify-content:space-between;align-items:start;gap:18px}.move-dialog-heading>div>span{color:var(--dc-text-dim);font-size:8px;text-transform:uppercase;letter-spacing:.1em}.move-dialog h2{margin:4px 0 0;font-size:31px;letter-spacing:-.045em}.move-specs{display:flex;gap:4px}.move-specs span{padding:4px 6px;border:1px solid var(--dc-border);border-radius:999px;color:var(--dc-text-muted);font-size:8px}.move-dialog-description{margin:20px 0 8px;color:var(--dc-text-muted);font-size:12px;line-height:1.6}.move-intention{margin:0;color:var(--dc-text-dim);font-size:10px}.move-prompt-tabs{display:flex;gap:4px;margin-top:26px}.move-prompt-tabs button{padding:6px 10px;border:1px solid var(--dc-border);background:transparent;color:var(--dc-text-dim);font-size:9px;cursor:pointer}.move-prompt-tabs button.active{background:var(--dc-text);color:var(--dc-bg)}.move-prompt{margin-top:8px;padding:14px;border:1px solid var(--dc-border);border-radius:6px;background:#09090b}.move-prompt p{min-height:115px;margin:0;color:var(--dc-text-muted);font-family:var(--dc-font-mono);font-size:10px;line-height:1.65}.move-prompt button{width:100%;margin-top:14px;padding:9px;border:0;border-radius:4px;background:#fafafa;color:#09090b;font-size:10px;font-weight:700;cursor:pointer}
   @media(max-width:1100px){.specialty-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(max-width:980px){.technique-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.specialty-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.move-dialog{grid-template-columns:1fr}.move-dialog-visual{min-height:320px}}
-  @media(max-width:680px){.techniques-header,.techniques-toolbar,.specialty-heading{align-items:start;flex-direction:column}.family-filter{justify-content:start}.technique-grid,.specialty-grid{grid-template-columns:1fr}.techniques-engine{display:none}.move-dialog-body{padding:24px}.move-dialog-heading{flex-direction:column}.move-dialog-backdrop{padding:8px}}
+  @media(max-width:680px){.techniques-header,.techniques-toolbar,.specialty-heading{align-items:start;flex-direction:column}.family-filter{justify-content:start}.technique-grid,.specialty-grid{grid-template-columns:1fr}.techniques-engine{display:none}.move-dialog-heading{flex-direction:column}}
+
+  @media (max-width: 860px) {
+    .techniques-header h1 { font-size: clamp(30px, 9vw, 40px); }
+    .techniques-header p:last-child { font-size: 13px; }
+    .techniques-toolbar { padding-block: 14px; }
+    .technique-search { width: 100%; }
+    /* 16px avoids the iOS focus-zoom; 44px gives a real thumb target. */
+    .technique-search input { min-height: var(--dc-tap); font-size: 16px; }
+    .family-filter { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; margin-inline: calc(var(--dc-page-pad) * -1); padding-inline: var(--dc-page-pad); }
+    .family-filter::-webkit-scrollbar { display: none; }
+    .family-filter button { flex: 0 0 auto; min-height: 36px; padding-inline: 13px; font-size: 12px; }
+    .technique-card h2 { font-size: 18px; }
+    .technique-card-body > p { min-height: 0; font-size: 12px; }
+    .specialty-copy p { min-height: 0; font-size: 12px; }
+
+    /* The move detail becomes a full-height sheet instead of a centred dialog. */
+    .move-dialog-backdrop { align-items: end; padding: 0; }
+    .move-dialog {
+      width: 100%;
+      max-height: 92dvh;
+      border-radius: 16px 16px 0 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      padding-bottom: var(--dc-safe-b);
+    }
+    .move-dialog-close { width: 40px; height: 40px; font-size: 22px; }
+    .move-dialog-visual { min-height: 210px; }
+    .move-dialog-body { padding: 20px 18px 24px; }
+    .move-dialog h2 { font-size: 26px; }
+    .move-dialog-description { font-size: 13px; }
+    .move-prompt-tabs { margin-top: 20px; }
+    .move-prompt-tabs button { min-height: 40px; padding-inline: 16px; font-size: 12px; }
+    .move-prompt p { min-height: 0; font-size: 12px; }
+    .move-prompt button { min-height: var(--dc-tap); font-size: 14px; }
+  }
 </style>
