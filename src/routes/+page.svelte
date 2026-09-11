@@ -1,184 +1,195 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { loadPromptCards } from '$lib/data/loader';
-  import { loadLatestArtifacts } from '$lib/data/comparisons';
-  import type { PromptCardIndex } from '$lib/types/prompt-card';
-  import type { ComparisonArtifact } from '$lib/types/comparison';
+  import { loadComparisonsIndex, loadComparisonRun, loadLatestArtifacts } from '$lib/data/comparisons';
+  import type { ComparisonArtifact, ComparisonRunDetail, ComparisonRunSummary } from '$lib/types/comparison';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
-  import HoverVideoPreview from '$lib/components/HoverVideoPreview.svelte';
-  import MobileReel from '$lib/components/MobileReel.svelte';
   import { isDesktop } from '$lib/viewport.svelte';
 
   const desktop = isDesktop();
-
-  let cards: PromptCardIndex[] = $state.raw([]);
-  let latestMedia: ComparisonArtifact[] = $state.raw([]);
+  let projects = $state<ComparisonRunSummary[]>([]);
+  let latestMedia = $state<ComparisonArtifact[]>([]);
+  let selectedIndex = $state(0);
+  let selectedDetail = $state<ComparisonRunDetail | null>(null);
   let lightboxArtifacts = $state<ComparisonArtifact[] | null>(null);
   let lightboxIndex = $state(0);
-  let hoverVideo = $state<ComparisonArtifact | null>(null);
+  let loading = $state(true);
 
-  const families = $derived(
-    Object.entries(
-      cards.reduce<Record<string, number>>((acc, c) => {
-        acc[c.model_family] = (acc[c.model_family] ?? 0) + 1;
-        return acc;
-      }, {}),
-    ).sort((a, b) => b[1] - a[1]),
+  const selectedProject = $derived(projects[selectedIndex]);
+  const selectedMedia = $derived(
+    latestMedia.filter((item) => item.run_id === selectedProject?.run_id && (item.media_url || item.thumbnail_url)),
   );
+  const projectVersions = $derived(selectedDetail?.artifacts.filter((item) => item.media_url || item.thumbnail_url) ?? []);
+  const heroArtifact = $derived(selectedMedia[0] ?? projectVersions[0]);
 
-  const useCases = $derived(
-    [...new Set(cards.flatMap((c) => c.use_cases))].sort(),
-  );
-  const featuredUseCases = $derived(useCases.slice(0, 8));
-
-  const testedCount = $derived(cards.filter((c) => c.tested_by_us).length);
-  const sourceCount = $derived(
-    cards.reduce((acc, c) => acc + c.source_count, 0),
-  );
-
-  const latestVideos = $derived(latestMedia.filter(isVideoType));
-
-  function openLightbox(item: ComparisonArtifact, index: number) {
-    lightboxArtifacts = latestMedia;
-    lightboxIndex = index;
+  function mediaUrl(item: ComparisonArtifact | undefined) {
+    return item?.thumbnail_url ?? item?.media_url ?? '';
   }
 
-  function closeLightbox() {
-    lightboxArtifacts = null;
-  }
-
-  function isVideoType(item: ComparisonArtifact) {
+  function isVideo(item: ComparisonArtifact) {
     return item.artifact_type === 'video_result' || item.artifact_type === 'end_video';
   }
 
-  function playPreview(event: MouseEvent | FocusEvent) {
-    const video = (event.currentTarget as HTMLElement).querySelector('video');
-    if (video) void video.play().catch(() => {});
+  async function selectProject(index: number) {
+    selectedIndex = index;
+    selectedDetail = null;
+    const project = projects[index];
+    if (project) selectedDetail = await loadComparisonRun(project.run_id);
   }
 
-  function resetPreview(event: MouseEvent | FocusEvent) {
-    const video = (event.currentTarget as HTMLElement).querySelector('video');
-    if (!video) return;
-    video.pause();
-    video.currentTime = 0;
+  function move(direction: number) {
+    if (!projects.length) return;
+    selectedIndex = (selectedIndex + direction + projects.length) % projects.length;
+    void selectProject(selectedIndex);
+  }
+
+  function openVersions() {
+    if (projectVersions.length) {
+      lightboxArtifacts = projectVersions;
+      lightboxIndex = 0;
+    }
+  }
+
+  function statusLabel(status: string) {
+    return status.replaceAll('_', ' ');
   }
 
   onMount(async () => {
-    cards = await loadPromptCards();
-    latestMedia = await loadLatestArtifacts();
+    const index = await loadComparisonsIndex();
+    projects = index.runs.filter((run) => run.status !== 'promoted');
+    latestMedia = await loadLatestArtifacts(8);
+    if (projects.length) selectedDetail = await loadComparisonRun(projects[0].run_id);
+    loading = false;
   });
 </script>
 
 {#if lightboxArtifacts}
-  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={closeLightbox} />
-{/if}
-{#if hoverVideo}
-  <HoverVideoPreview artifact={hoverVideo} onClose={() => hoverVideo = null} />
+  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={() => lightboxArtifacts = null} />
 {/if}
 
-<div class="dc-dashboard">
+<main class="dc-dashboard">
   <div class="dc-dashboard-inner">
     <header class="dc-dashboard-header">
-      <div><p class="dc-eyebrow">Creative intelligence library</p><h1>Dashboard</h1></div>
-      <p class="dc-dashboard-intro">Prompt research, model comparisons, and generated media in one focused workspace.</p>
+      <div><p class="dc-eyebrow">Directors Cut / workspace</p><h1>Works in progress</h1></div>
+      <p class="dc-dashboard-intro">Follow active concepts from first answer to final frame. Select a project to inspect its versions and open the comparison table.</p>
     </header>
-    <section class="dc-stat-grid" aria-label="Library totals">
-      <div class="dc-stat"><span class="dc-stat-value">{cards.length}</span><span class="dc-stat-label">Cards</span></div>
-      <div class="dc-stat"><span class="dc-stat-value">{sourceCount}</span><span class="dc-stat-label">Sources</span></div>
-      <div class="dc-stat"><span class="dc-stat-value">{testedCount}</span><span class="dc-stat-label">Tested</span></div>
-    </section>
 
-    <div class="dc-dashboard-grid">
-      <section class="dc-section">
-        <div class="dc-section-heading"><h2 class="dc-section-title">Model families</h2><span class="dc-section-note">{cards.length} cards total</span></div>
-      {#each families as [family, count]}
-        <div class="dc-family-row">
-          <span class="dc-family-name">{family.replace(/[_-]/g, ' ')}</span>
-          <div class="dc-family-track"><div class="dc-family-fill" style:width="{(count / cards.length) * 100}%"></div></div>
-          <span class="dc-family-count">{count}</span>
-        </div>
-      {/each}
-      </section>
-      <section class="dc-section">
-        <div class="dc-section-heading"><h2 class="dc-section-title">Use cases</h2><span class="dc-section-note">Top themes</span></div>
-        <div class="dc-use-case-summary"><div class="dc-use-case-list">{#each featuredUseCases as uc}<span class="dc-use-case-chip">{uc.replace(/[_-]/g, ' ')}</span>{/each}</div><span class="dc-use-case-more">+{Math.max(0, useCases.length - featuredUseCases.length)} more across the library</span></div>
-      </section>
-    </div>
-
-  <section class="dc-media-section">
-    <div class="dc-section-heading">
-      <h2 class="dc-section-title">Latest media</h2>
-      <span class="dc-section-note dc-note-desktop">Hover videos to preview · click for sound</span>
-      <span class="dc-section-note dc-note-mobile">{latestVideos.length} clip{latestVideos.length === 1 ? '' : 's'}</span>
-    </div>
-    {#if latestVideos.length === 0}
-      <p style="font-size: 13px; color: var(--dc-text-muted); margin: 0;">No generated videos yet.</p>
+    {#if loading}
+      <div class="dc-project-loading">Loading active projects…</div>
+    {:else if !projects.length}
+      <section class="dc-empty-work"><p class="dc-eyebrow">No active work</p><h2>Start a project to see it here.</h2><a href="/create">Create a prompt project</a></section>
     {:else}
-      {#if desktop.matches}
-      <div class="dc-media-grid">
-        {#each latestVideos as item (item.artifact_id)}
-          <button
-            class="dc-media-card"
-            onclick={() => hoverVideo = item}
-            onmouseenter={(event) => { playPreview(event); hoverVideo = item; }}
-            onmouseleave={resetPreview}
-            onfocus={playPreview}
-            onblur={resetPreview}
-          >
-            <div class="dc-media-frame">
-              {#if item.thumbnail_url || item.media_url}
-                {#if isVideoType(item)}
-                  <video src={item.media_url} preload="metadata" muted playsinline aria-label={item.title}></video>
-                {:else}
-                  <img src={item.thumbnail_url ?? item.media_url} alt={item.title} loading="lazy" />
-                {/if}
-              {:else}
-                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--dc-text-dim); font-size: 11px;">No preview</div>
-              {/if}
-              <span class="dc-media-overlay">▶ Preview</span>
-            </div>
-            <div class="dc-media-copy"><div class="dc-media-title">{item.title}</div><div class="dc-media-meta">{item.provider.replace(/_/g, ' ')} · {item.artifact_type.replace(/_/g, ' ')}</div></div>
-          </button>
-        {/each}
-      </div>
-      {:else}
-        <MobileReel artifacts={latestVideos} onselect={(item) => (hoverVideo = item)} />
-      {/if}
-    {/if}
-  </section>
+      <section class="dc-workstage" aria-label="Active projects">
+        <div class="dc-workstage-heading">
+          <div><p class="dc-eyebrow">Active project {selectedIndex + 1} / {projects.length}</p><h2>{selectedProject?.title}</h2></div>
+          <div class="dc-carousel-controls">
+            <button type="button" aria-label="Previous project" onclick={() => move(-1)}>←</button>
+            <button type="button" aria-label="Next project" onclick={() => move(1)}>→</button>
+          </div>
+        </div>
 
-  <section class="dc-attention">
-    <div class="dc-section-heading"><h2 class="dc-section-title">Needs attention</h2></div>
-    <ul class="dc-attention-list">
-      <li>Untested cards: {cards.length - testedCount}</li>
-      <li>Sora Vice: generation blocked by billing limit</li>
-      <li>Pink Room: two Sora takes ingested; Seedance download pending</li>
-    </ul>
-  </section>
+        <div class="dc-hero-layout">
+          <div class="dc-key-art" class:has-art={!!heroArtifact}>
+            {#if heroArtifact}
+              {#if isVideo(heroArtifact)}
+                <video src={heroArtifact.media_url} poster={heroArtifact.thumbnail_url} muted autoplay loop playsinline aria-label={heroArtifact.title}></video>
+              {:else}<img src={mediaUrl(heroArtifact)} alt={heroArtifact.title} />{/if}
+              <span class="dc-art-label">Key art / {heroArtifact.provider.replaceAll('_', ' ')}</span>
+            {:else}
+              <div class="dc-art-empty"><span>KEY ART</span><small>Awaiting generated media</small></div>
+            {/if}
+          </div>
+          <div class="dc-project-panel">
+            <div class="dc-project-status"><span class="dc-status-dot"></span>{statusLabel(selectedProject?.status ?? 'draft')}</div>
+            <p class="dc-project-question">{selectedDetail?.question || 'Creative concept in progress'}</p>
+            <p class="dc-project-meta">{selectedProject?.model_labels?.length ?? 0} model versions · {selectedProject?.artifact_count ?? 0} media artifacts</p>
+            <div class="dc-version-strip">
+              {#each projectVersions.slice(0, 4) as version, i}
+                <button type="button" class="dc-version-thumb" aria-label="Open version {i + 1}" onclick={() => { lightboxArtifacts = projectVersions; lightboxIndex = i; }}>
+                  {#if mediaUrl(version)}<img src={mediaUrl(version)} alt="" />{:else}<span>V{i + 1}</span>{/if}
+                </button>
+              {:else}<span class="dc-no-versions">Versions will appear here as media lands.</span>{/each}
+            </div>
+            <div class="dc-project-actions">
+              <a class="dc-primary-action" href="/comparisons?run={selectedProject?.run_id}">Open comparison table</a>
+              <button class="dc-secondary-action" type="button" onclick={openVersions} disabled={!projectVersions.length}>View all versions</button>
+            </div>
+          </div>
+        </div>
+        <div class="dc-carousel-dots" aria-label="Choose project">
+          {#each projects as project, i}<button class:active={i === selectedIndex} type="button" aria-label="Show {project.title}" onclick={() => selectProject(i)}></button>{/each}
+        </div>
+      </section>
+    {/if}
+
+    <section class="dc-media-section">
+      <div class="dc-section-heading"><h2 class="dc-section-title">Latest media feed</h2><span class="dc-section-note">Recent generated frames and takes</span></div>
+      <div class="dc-media-feed">
+        {#each latestMedia.slice(0, 6) as item}
+          <button type="button" class="dc-feed-card" onclick={() => { lightboxArtifacts = latestMedia; lightboxIndex = latestMedia.findIndex((a) => a.artifact_id === item.artifact_id); }}>
+            <div class="dc-feed-frame">{#if mediaUrl(item)}<img src={mediaUrl(item)} alt={item.title} loading="lazy" />{:else}<span>No preview</span>{/if}</div>
+            <div class="dc-feed-copy"><strong>{item.title}</strong><small>{item.provider.replaceAll('_', ' ')} · {statusLabel(item.artifact_type)}</small></div>
+          </button>
+        {:else}<p class="dc-no-versions">No generated media yet.</p>{/each}
+      </div>
+    </section>
   </div>
-</div>
+</main>
 
 <style>
-  /*
-   * Mobile reading order puts the work first: reel → totals → breakdowns.
-   * Desktop keeps the original analytical order.
-   */
-  @media (max-width: 860px) {
-    .dc-dashboard-inner {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .dc-dashboard-header { order: 0; }
-    .dc-media-section { order: 1; margin-top: 4px; }
-    .dc-stat-grid { order: 2; margin-block: 26px 0; }
-    .dc-dashboard-grid { order: 3; margin-top: 26px; }
-    .dc-attention { order: 4; }
-
-    .dc-note-desktop { display: none; }
+  .dc-workstage { border-top: 1px solid var(--dc-border); padding-top: 18px; }
+  .dc-workstage-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:14px; }
+  .dc-workstage-heading h2 { margin:0; font-size:clamp(21px, 3vw, 32px); letter-spacing:-.04em; text-wrap:balance; }
+  .dc-carousel-controls { display:flex; gap:6px; }
+  .dc-carousel-controls button { width:var(--dc-tap); height:var(--dc-tap); border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:var(--dc-text); cursor:pointer; }
+  .dc-hero-layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(280px, .8fr); min-height:390px; border:1px solid var(--dc-border); background:var(--dc-bg-elev); }
+  .dc-key-art { position:relative; min-height:280px; background:linear-gradient(135deg, #151518, #09090b); overflow:hidden; }
+  .dc-key-art img, .dc-key-art video { width:100%; height:100%; min-height:280px; object-fit:cover; display:block; }
+  .dc-key-art:not(.has-art) { display:grid; place-items:center; }
+  .dc-art-empty { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--dc-text-dim); letter-spacing:.18em; font-size:11px; }
+  .dc-art-empty small { letter-spacing:0; font-size:10px; }
+  .dc-art-label { position:absolute; left:12px; bottom:12px; padding:5px 8px; background:rgba(0,0,0,.72); color:var(--dc-text-muted); font-size:10px; text-transform:capitalize; }
+  .dc-project-panel { display:flex; flex-direction:column; padding:24px; border-left:1px solid var(--dc-border); }
+  .dc-project-status { color:var(--dc-text-muted); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .dc-status-dot { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--dc-evidence-corroborated); }
+  .dc-project-question { margin:28px 0 0; color:var(--dc-text); font-size:17px; line-height:1.35; text-wrap:balance; }
+  .dc-project-meta { margin:10px 0 22px; color:var(--dc-text-dim); font-size:11px; }
+  .dc-version-strip { display:flex; gap:7px; min-height:54px; overflow-x:auto; padding-bottom:4px; }
+  .dc-version-thumb { flex:0 0 72px; height:50px; padding:0; overflow:hidden; border:1px solid var(--dc-border); background:var(--dc-bg); cursor:pointer; }
+  .dc-version-thumb img { width:100%; height:100%; object-fit:cover; }
+  .dc-version-thumb span { color:var(--dc-text-muted); font:11px var(--dc-font-mono); }
+  .dc-no-versions { color:var(--dc-text-dim); font-size:11px; }
+  .dc-project-actions { display:flex; flex-direction:column; gap:8px; margin-top:auto; padding-top:24px; }
+  .dc-primary-action, .dc-secondary-action { min-height:var(--dc-tap); display:inline-flex; justify-content:center; align-items:center; padding:0 13px; border:1px solid var(--dc-border); font-size:11px; text-decoration:none; cursor:pointer; }
+  .dc-primary-action { background:var(--dc-text); color:var(--dc-bg); font-weight:700; }
+  .dc-secondary-action { background:transparent; color:var(--dc-text-muted); }
+  .dc-secondary-action:disabled { opacity:.45; cursor:not-allowed; }
+  .dc-carousel-dots { display:flex; justify-content:center; gap:6px; padding:14px 0 0; }
+  .dc-carousel-dots button { width:20px; height:3px; border:0; padding:0; background:var(--dc-border); cursor:pointer; }
+  .dc-carousel-dots button.active { background:var(--dc-text); }
+  .dc-media-section { margin-top:38px; }
+  .dc-media-feed { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
+  .dc-feed-card { min-width:0; padding:0; border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:inherit; text-align:left; cursor:pointer; }
+  .dc-feed-frame { aspect-ratio:16/9; background:var(--dc-bg); overflow:hidden; display:grid; place-items:center; color:var(--dc-text-dim); font-size:10px; }
+  .dc-feed-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+  .dc-feed-copy { display:flex; flex-direction:column; gap:4px; padding:9px; }
+  .dc-feed-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:600; }
+  .dc-feed-copy small { color:var(--dc-text-dim); font-size:9px; text-transform:capitalize; }
+  .dc-project-loading, .dc-empty-work { padding:72px 24px; border:1px solid var(--dc-border); color:var(--dc-text-muted); }
+  .dc-empty-work h2 { margin:8px 0 18px; color:var(--dc-text); }
+  .dc-empty-work a { color:var(--dc-text); font-size:12px; }
+  @media (max-width:860px) {
+    .dc-hero-layout { grid-template-columns:1fr; min-height:0; }
+    .dc-key-art { min-height:220px; aspect-ratio:16/10; }
+    .dc-key-art img, .dc-key-art video { min-height:0; }
+    .dc-project-panel { border-left:0; border-top:1px solid var(--dc-border); padding:18px; }
+    .dc-project-question { margin-top:20px; font-size:16px; }
+    .dc-media-feed { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:6px; }
+    .dc-feed-card { flex:0 0 72vw; scroll-snap-align:start; }
   }
-
-  @media (min-width: 861px) {
-    .dc-note-mobile { display: none; }
+  @media (max-width:520px) {
+    .dc-workstage-heading { align-items:start; }
+    .dc-workstage-heading h2 { max-width:240px; }
+    .dc-carousel-controls button { width:40px; height:40px; }
+    .dc-project-actions { padding-top:18px; }
   }
 </style>
