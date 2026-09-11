@@ -1510,6 +1510,69 @@ nav a.active {
 @keyframes dc-fade-in { from { opacity: 0; } }
 @keyframes dc-sheet-in { from { transform: translateY(100%); } }
 
+/* --- Final narrow-screen guardrails -------------------------------------- */
+@media (max-width: 480px) {
+  .dc-page-shell,
+  .dc-library-main,
+  .dc-create-page {
+    padding-left: max(12px, var(--dc-safe-l));
+    padding-right: max(12px, var(--dc-safe-r));
+  }
+
+  .dc-dashboard-grid,
+  .dc-create-options,
+  .dc-quote-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-projects-intro h1,
+  .dc-create-header h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .dc-run-actions,
+  .dc-artifact-actions,
+  .dc-request-header,
+  .dc-generation-gate-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dc-run-actions > *,
+  .dc-artifact-actions > *,
+  .dc-request-header button,
+  .dc-generation-gate-heading button {
+    width: 100%;
+    min-height: var(--dc-tap);
+  }
+
+  .dc-drawer-actions {
+    flex-direction: column;
+  }
+
+  .dc-drawer-actions > *,
+  .dc-drawer-toolbar .dc-copy-button {
+    width: 100%;
+  }
+
+  .dc-drawer-header {
+    gap: 8px;
+  }
+
+  .dc-drawer-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dc-drawer-close {
+    width: 100%;
+  }
+
+  .dc-table-scroll-hint {
+    margin-inline: 0;
+  }
+}
+
 /* --- Video reel (mobile home) -------------------------------------------- */
 .dc-reel {
   display: grid;
