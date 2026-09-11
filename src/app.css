@@ -47,6 +47,7 @@
   --dc-bp-md: 768px;
   --dc-bp-lg: 1024px;
   --dc-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --dc-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
   --dc-page-pad: 16px;
   /* Safe areas — resolved once so every surface can reuse them. */
   --dc-safe-t: env(safe-area-inset-top, 0px);

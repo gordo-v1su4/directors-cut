@@ -100,7 +100,7 @@
           </div>
           <div class="dc-project-panel">
             <div class="dc-project-status"><span class="dc-status-dot"></span>{statusLabel(selectedProject?.status ?? 'draft')}</div>
-            <p class="dc-project-question">{selectedDetail?.question || 'Creative concept in progress'}</p>
+            <p class="dc-project-question" title={selectedDetail?.question || 'Creative concept in progress'}>{selectedDetail?.question || 'Creative concept in progress'}</p>
             <p class="dc-project-meta">{selectedProject?.model_labels?.length ?? 0} model versions · {selectedProject?.artifact_count ?? 0} media artifacts</p>
             <div class="dc-version-strip">
               {#each projectVersions.slice(0, 4) as version, i}
@@ -138,28 +138,28 @@
 <style>
   .dc-workstage { border-top: 1px solid var(--dc-border); padding-top: 18px; }
   .dc-workstage-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:14px; }
-  .dc-workstage-heading h2 { margin:0; font-size:clamp(21px, 3vw, 32px); letter-spacing:-.04em; text-wrap:balance; }
-  .dc-carousel-controls { display:flex; gap:6px; }
-  .dc-carousel-controls button { width:var(--dc-tap); height:var(--dc-tap); border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:var(--dc-text); cursor:pointer; }
-  .dc-hero-layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(280px, .8fr); min-height:390px; border:1px solid var(--dc-border); background:var(--dc-bg-elev); }
-  .dc-key-art { position:relative; min-height:280px; background:linear-gradient(135deg, #151518, #09090b); overflow:hidden; }
-  .dc-key-art img, .dc-key-art video { width:100%; height:100%; min-height:280px; object-fit:cover; display:block; }
+  .dc-workstage-heading h2 { margin:0; max-width:calc(100% - 108px); overflow:hidden; font-size:clamp(21px, 3vw, 32px); letter-spacing:-.04em; line-height:1.05; text-overflow:ellipsis; white-space:nowrap; }
+  .dc-carousel-controls { display:flex; flex:0 0 auto; gap:6px; }
+  .dc-carousel-controls button { width:38px; height:38px; border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:var(--dc-text); cursor:pointer; }
+  .dc-hero-layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(280px, .8fr); height:390px; border:1px solid var(--dc-border); background:var(--dc-bg-elev); }
+  .dc-key-art { position:relative; min-height:0; background:linear-gradient(135deg, #151518, #09090b); overflow:hidden; }
+  .dc-key-art img, .dc-key-art video { width:100%; height:100%; object-fit:cover; display:block; }
   .dc-key-art:not(.has-art) { display:grid; place-items:center; }
-  .dc-art-empty { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--dc-text-dim); letter-spacing:.18em; font-size:11px; }
-  .dc-art-empty small { letter-spacing:0; font-size:10px; }
+  .dc-art-empty { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--dc-text-dim); letter-spacing:.18em; font-size:11px; font-family:var(--dc-font-sans); text-transform:uppercase; }
+  .dc-art-empty small { letter-spacing:0; font-size:10px; text-transform:none; }
   .dc-art-label { position:absolute; left:12px; bottom:12px; padding:5px 8px; background:rgba(0,0,0,.72); color:var(--dc-text-muted); font-size:10px; text-transform:capitalize; }
-  .dc-project-panel { display:flex; flex-direction:column; padding:24px; border-left:1px solid var(--dc-border); }
+  .dc-project-panel { display:flex; min-height:0; flex-direction:column; padding:24px; border-left:1px solid var(--dc-border); }
   .dc-project-status { color:var(--dc-text-muted); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
   .dc-status-dot { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--dc-evidence-corroborated); }
-  .dc-project-question { margin:28px 0 0; color:var(--dc-text); font-size:17px; line-height:1.35; text-wrap:balance; }
-  .dc-project-meta { margin:10px 0 22px; color:var(--dc-text-dim); font-size:11px; }
+  .dc-project-question { display:-webkit-box; margin:28px 0 0; overflow:hidden; color:var(--dc-text); font-size:17px; line-height:1.35; line-clamp:5; -webkit-box-orient:vertical; -webkit-line-clamp:5; }
+  .dc-project-meta { margin:10px 0 18px; color:var(--dc-text-dim); font-size:11px; }
   .dc-version-strip { display:flex; gap:7px; min-height:54px; overflow-x:auto; padding-bottom:4px; }
   .dc-version-thumb { flex:0 0 72px; height:50px; padding:0; overflow:hidden; border:1px solid var(--dc-border); background:var(--dc-bg); cursor:pointer; }
   .dc-version-thumb img { width:100%; height:100%; object-fit:cover; }
   .dc-version-thumb span { color:var(--dc-text-muted); font:11px var(--dc-font-mono); }
   .dc-no-versions { color:var(--dc-text-dim); font-size:11px; }
-  .dc-project-actions { display:flex; flex-direction:column; gap:8px; margin-top:auto; padding-top:24px; }
-  .dc-primary-action, .dc-secondary-action { min-height:var(--dc-tap); display:inline-flex; justify-content:center; align-items:center; padding:0 13px; border:1px solid var(--dc-border); font-size:11px; text-decoration:none; cursor:pointer; }
+  .dc-project-actions { display:flex; flex-direction:row; gap:8px; margin-top:auto; padding-top:18px; }
+  .dc-primary-action, .dc-secondary-action { min-height:34px; flex:1; display:inline-flex; justify-content:center; align-items:center; padding:0 10px; border:1px solid var(--dc-border); font-size:10px; text-decoration:none; cursor:pointer; }
   .dc-primary-action { background:var(--dc-text); color:var(--dc-bg); font-weight:700; }
   .dc-secondary-action { background:transparent; color:var(--dc-text-muted); }
   .dc-secondary-action:disabled { opacity:.45; cursor:not-allowed; }
@@ -178,10 +178,10 @@
   .dc-empty-work h2 { margin:8px 0 18px; color:var(--dc-text); }
   .dc-empty-work a { color:var(--dc-text); font-size:12px; }
   @media (max-width:860px) {
-    .dc-hero-layout { grid-template-columns:1fr; min-height:0; }
-    .dc-key-art { min-height:220px; aspect-ratio:16/10; }
-    .dc-key-art img, .dc-key-art video { min-height:0; }
-    .dc-project-panel { border-left:0; border-top:1px solid var(--dc-border); padding:18px; }
+    .dc-hero-layout { grid-template-columns:1fr; height:auto; }
+    .dc-key-art { min-height:0; aspect-ratio:16/9; }
+    .dc-key-art img, .dc-key-art video { min-height:0; aspect-ratio:16/9; }
+    .dc-project-panel { min-height:340px; border-left:0; border-top:1px solid var(--dc-border); padding:18px; }
     .dc-project-question { margin-top:20px; font-size:16px; }
     .dc-media-feed { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:6px; }
     .dc-feed-card { flex:0 0 72vw; scroll-snap-align:start; }
