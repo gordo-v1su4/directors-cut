@@ -11,8 +11,16 @@
     RunConceptCaptureOutput,
   } from '$lib/bridge/types';
 
+  type CreateMode = 'create' | 'ingest';
+
+  let mode = $state<CreateMode>('create');
   let projectTitle = $state('');
   let idea = $state('');
+  let ingestPrompt = $state('');
+  let ingestFile = $state<File | null>(null);
+  let ingestUrl = $state('');
+  let ingestReady = $state(false);
+  let ingestBusy = $state(false);
   let format = $state('trailer');
   let duration = $state('12');
   let targetSora = $state(true);
@@ -130,6 +138,28 @@
     if (referenceUrl) URL.revokeObjectURL(referenceUrl);
     referenceName = file.name;
     referenceUrl = URL.createObjectURL(file);
+  }
+
+  function handleIngestFile(event: Event) {
+    const file = (event.currentTarget as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (ingestUrl) URL.revokeObjectURL(ingestUrl);
+    ingestFile = file;
+    ingestUrl = URL.createObjectURL(file);
+    ingestReady = false;
+  }
+
+  async function ingestProject() {
+    if (!ingestFile || !ingestPrompt.trim()) return;
+    ingestBusy = true;
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    ingestReady = true;
+    ingestBusy = false;
+  }
+
+  function switchMode(nextMode: CreateMode) {
+    mode = nextMode;
+    error = '';
   }
 
   function briefInput() {
@@ -257,6 +287,12 @@
       <p>Start with a rough idea. Choose manual Raycast Script Commands or automated capture via Cursor computer use + the bridge.</p>
     </header>
 
+    <div class="dc-create-tabs" role="tablist" aria-label="Project workflow">
+      <button class:dc-create-tab-active={mode === 'create'} type="button" role="tab" aria-selected={mode === 'create'} onclick={() => switchMode('create')}>Create</button>
+      <button class="dc-create-tab-ingest" class:dc-create-tab-active={mode === 'ingest'} type="button" role="tab" aria-selected={mode === 'ingest'} onclick={() => switchMode('ingest')}>Ingest</button>
+    </div>
+
+    {#if mode === 'create'}
     <section class="dc-create-form">
         <div class="dc-quick-starts">
           <span class="dc-quick-starts-label">Quick start</span>
@@ -342,6 +378,40 @@
         </div>
         {#if error}<p class="dc-create-error">{error}</p>{/if}
     </section>
+    {:else}
+    <section class="dc-ingest-panel" aria-labelledby="ingest-title">
+      <div class="dc-ingest-copy">
+        <p class="dc-eyebrow">Existing work</p>
+        <h2 id="ingest-title">Bring a finished video into the workspace.</h2>
+        <p>Upload the finished cut and its prompt. The project record, category, title, and comparison entry can be enriched from there.</p>
+      </div>
+
+      <label class="dc-ingest-drop" class:dc-ingest-drop-ready={!!ingestFile}>
+        <input type="file" accept="video/*" onchange={handleIngestFile} />
+        {#if ingestFile}
+          <video src={ingestUrl} muted controls playsinline aria-label="Selected video preview"></video>
+          <div class="dc-ingest-file"><strong>{ingestFile.name}</strong><span>{(ingestFile.size / 1024 / 1024).toFixed(1)} MB · ready to ingest</span></div>
+        {:else}
+          <span class="dc-ingest-plus">+</span>
+          <strong>Drop a finished video here</strong>
+          <span>MP4, WebM, or MOV · 16:9 preferred</span>
+        {/if}
+      </label>
+
+      <label class="dc-field dc-ingest-prompt">
+        <span>Original prompt</span>
+        <textarea bind:value={ingestPrompt} rows="7" placeholder="Paste the prompt used to make this video. The AI will use it to name, categorize, and describe the project."></textarea>
+      </label>
+
+      <div class="dc-ingest-actions">
+        <button class="dc-prepare-button" type="button" disabled={!ingestFile || !ingestPrompt.trim() || ingestBusy} onclick={ingestProject}>{ingestBusy ? 'Preparing project…' : ingestReady ? 'Project ready' : 'Analyze and add to projects'}</button>
+        <p class="dc-connection-note">Video and prompt are the only required inputs. Metadata can be edited from the comparison table after ingest.</p>
+      </div>
+      {#if ingestReady}
+        <div class="dc-ingest-result"><span class="dc-status-dot dc-status-live"></span><strong>Ingest staged</strong><span>AI enrichment will use the supplied prompt to populate the project card and category.</span></div>
+      {/if}
+    </section>
+    {/if}
 
     {#if automatedRun}
       <section class="dc-request-panel dc-automated-panel">
