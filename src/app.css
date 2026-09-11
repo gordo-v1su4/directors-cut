@@ -1133,6 +1133,38 @@ nav a.active {
   font-weight: 600;
 }
 
+/* Reference-inspired archive folders and create tabs */
+.dc-projects-library { display: block; min-height: 100%; }
+.dc-projects-library .dc-library-main { max-width: 1220px; margin: 0 auto; padding: 34px clamp(18px, 4vw, 56px) 56px; }
+.dc-projects-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--dc-border); }
+.dc-projects-header h1 { margin: 0; font-size: clamp(36px, 5vw, 60px); font-weight: 400; letter-spacing: -.065em; line-height: .95; }
+.dc-projects-subtitle { max-width: 420px; margin: 12px 0 0; color: var(--dc-text-muted); font-size: 13px; line-height: 1.55; }
+.dc-projects-new { display: inline-flex; align-items: center; gap: 14px; min-height: 38px; padding: 0 14px; border: 1px solid var(--dc-border); color: var(--dc-text); text-decoration: none; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.dc-projects-new:hover { border-color: var(--dc-text); }
+.dc-folder-index { margin: 28px 0 34px; }
+.dc-folder-index-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+.dc-folder-index-heading h2 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -.025em; }
+.dc-folder-index-heading > span { color: var(--dc-text-dim); font: 10px var(--dc-font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.dc-folder-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.dc-folder-card { position: relative; display: flex; flex-direction: column; align-items: stretch; min-height: 188px; padding: 0 16px 16px; border: 1px solid var(--dc-border); background: #0c0c0e; color: var(--dc-text); cursor: pointer; text-align: left; transition: border-color .18s ease, transform .18s ease, background .18s ease; }
+.dc-folder-card:hover, .dc-folder-card:focus-visible, .dc-folder-card-active { border-color: var(--dc-text-muted); background: #111114; outline: none; transform: translateY(-2px); }
+.dc-folder-tab { display: inline-flex; align-items: center; align-self: flex-start; min-height: 26px; max-width: 82%; padding: 0 10px; margin: -1px 0 26px -1px; border: 1px solid var(--dc-border); border-top: 0; background: #151518; color: var(--dc-text-muted); font: 9px var(--dc-font-mono); letter-spacing: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-folder-card-all .dc-folder-tab { background: var(--dc-text); color: var(--dc-bg); border-color: var(--dc-text); }
+.dc-folder-line { display: block; height: 1px; margin-bottom: 18px; background: var(--dc-border); }
+.dc-folder-card strong { font-size: 16px; font-weight: 500; letter-spacing: -.02em; }
+.dc-folder-card small { min-height: 34px; margin-top: 7px; color: var(--dc-text-dim); font-size: 11px; line-height: 1.45; }
+.dc-folder-card b { display: flex; justify-content: space-between; margin-top: auto; padding-top: 18px; color: var(--dc-text-muted); font: 10px var(--dc-font-mono); font-weight: 400; letter-spacing: .04em; text-transform: uppercase; }
+.dc-folder-card b span { color: var(--dc-text); font-size: 14px; }
+.dc-projects-library .dc-library-filters { display: flex; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--dc-border); }
+.dc-projects-library .dc-library-search { flex: 1 1 280px; }
+.dc-projects-library .dc-table-scroll-hint { margin-top: 8px; }
+.dc-projects-library .dc-drawer { position: fixed; top: var(--dc-nav-height); right: 0; bottom: 0; width: min(420px, 36vw); min-width: 320px; border-left: 1px solid var(--dc-border); z-index: 70; transform: translateX(100%); transition: transform .22s ease; }
+.dc-projects-library .dc-drawer.open { transform: translateX(0); }
+@media (min-width: 861px) {
+  .dc-projects-library .dc-drawer:not(.open) { display: none; }
+  .dc-projects-library .dc-library-main { width: 100%; }
+}
+
 /* Create / ingest workflow */
 .dc-create-tabs {
   display: flex;
@@ -1154,10 +1186,13 @@ nav a.active {
   font-weight: 650;
   letter-spacing: .02em;
 }
-.dc-create-tabs button:first-child { border-radius: 7px 10px 0 0; }
+.dc-create-tabs button:first-child { border-radius: 0; }
 .dc-create-tabs button:hover, .dc-create-tabs button:focus-visible { color: var(--dc-text); background: var(--dc-bg-elev-2); outline: none; }
-.dc-create-tabs .dc-create-tab-active { background: var(--dc-bg); color: var(--dc-text); border-color: var(--dc-text-dim); }
-.dc-create-tabs .dc-create-tab-ingest { transform: translateY(2px); }
+.dc-create-tabs .dc-create-tab-active { position: relative; background: var(--dc-bg); color: var(--dc-text); border-color: var(--dc-text); }
+.dc-create-tabs .dc-create-tab-active::before { content: ''; position: absolute; left: 12px; top: -7px; width: 34px; height: 7px; border: 1px solid var(--dc-text); border-bottom: 0; border-radius: 7px 7px 0 0; background: var(--dc-bg); }
+.dc-create-tabs .dc-create-tab-ingest { transform: none; }
+.dc-create-tabs .dc-create-tab-ingest::before { content: ''; position: absolute; left: 12px; top: -7px; width: 28px; height: 7px; border: 1px solid var(--dc-border); border-bottom: 0; border-radius: 7px 7px 0 0; background: var(--dc-bg-elev); }
+.dc-create-tabs button { position: relative; }
 .dc-ingest-panel {
   display: grid;
   gap: 22px;
@@ -1192,6 +1227,14 @@ nav a.active {
 .dc-ingest-actions .dc-prepare-button { width: fit-content; }
 .dc-ingest-result { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px; border: 1px solid var(--dc-border); background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 11px; }
 .dc-ingest-result strong { color: var(--dc-text); }
+@media (max-width: 860px) {
+  .dc-projects-library .dc-library-main { padding-top: 24px; }
+  .dc-projects-header { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .dc-projects-new { width: 100%; justify-content: space-between; }
+  .dc-folder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dc-projects-library .dc-drawer { top: auto; right: 0; bottom: 0; width: 100%; min-width: 0; transform: translateY(100%); }
+  .dc-projects-library .dc-drawer.open { transform: translateY(0); }
+}
 @media (max-width: 640px) {
   .dc-create-tabs { margin-top: 20px; }
   .dc-create-tabs button { flex: 1; padding: 0 12px; }
@@ -1744,6 +1787,20 @@ nav a.active {
 @media (max-width: 860px) {
   .dc-media-grid { display: none; }
 }
+
+/* Projects archive: short tabbed folders with a technical index feel. */
+.dc-projects-header { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:20px; }
+.dc-projects-header h1 { margin:0; font-size:clamp(28px, 4vw, 42px); letter-spacing:-.055em; line-height:1; }
+.dc-projects-subtitle { max-width:520px; margin:10px 0 0; color:var(--dc-text-muted); font-size:12px; line-height:1.55; }
+.dc-projects-new { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; padding:0 12px; border:1px solid var(--dc-border); color:var(--dc-text); font-size:11px; text-decoration:none; }
+.dc-projects-new span { color:var(--dc-text-dim); }
+.dc-folder-tabs { display:flex; align-items:end; gap:5px; min-height:38px; overflow-x:auto; border-bottom:1px solid var(--dc-border); }
+.dc-folder-tab { position:relative; display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; min-height:30px; padding:0 13px; border:1px solid var(--dc-border); border-bottom:0; background:var(--dc-bg-elev); color:var(--dc-text-muted); font-size:10px; letter-spacing:.05em; text-transform:uppercase; }
+.dc-folder-tab::before { content:''; position:absolute; top:-5px; left:9px; width:24px; height:5px; border:1px solid var(--dc-border); border-bottom:0; background:var(--dc-bg-elev); }
+.dc-folder-tab b { color:var(--dc-text-dim); font:10px var(--dc-font-mono); }
+.dc-folder-tab.is-active { background:var(--dc-bg-elev-2); color:var(--dc-text); }
+.dc-folder-body { border:1px solid var(--dc-border); border-top:0; padding:14px; background:color-mix(in srgb, var(--dc-bg-elev) 42%, transparent); }
+@media (max-width:600px) { .dc-projects-header { align-items:start; flex-direction:column; gap:16px; } .dc-projects-new { width:100%; } .dc-folder-body { padding:10px; } }
 
 /* --- Mobile card lists (replace dense tables) ---------------------------- */
 .dc-card-list {
