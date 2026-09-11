@@ -13,6 +13,7 @@
   let lightboxArtifacts = $state<ComparisonArtifact[] | null>(null);
   let lightboxIndex = $state(0);
   let loading = $state(true);
+  let heroMuted = $state(true);
 
   const selectedProject = $derived(projects[selectedIndex]);
   const selectedMedia = $derived(
@@ -91,7 +92,8 @@
           <div class="dc-key-art" class:has-art={!!heroArtifact}>
             {#if heroArtifact}
               {#if isVideo(heroArtifact)}
-                <video src={heroArtifact.media_url} poster={heroArtifact.thumbnail_url} muted autoplay loop playsinline aria-label={heroArtifact.title}></video>
+                <video src={heroArtifact.media_url} poster={heroArtifact.thumbnail_url} muted={heroMuted} autoplay loop playsinline aria-label={heroArtifact.title}></video>
+                <button type="button" class="dc-hero-volume" aria-label={heroMuted ? 'Unmute key art video' : 'Mute key art video'} onclick={() => (heroMuted = !heroMuted)}>{heroMuted ? 'VOL 0' : 'VOL 1'}</button>
               {:else}<img src={mediaUrl(heroArtifact)} alt={heroArtifact.title} />{/if}
               <span class="dc-art-label">Key art / {heroArtifact.provider.replaceAll('_', ' ')}</span>
             {:else}
@@ -148,6 +150,8 @@
   .dc-art-empty { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--dc-text-dim); letter-spacing:.18em; font-size:11px; font-family:var(--dc-font-sans); text-transform:uppercase; }
   .dc-art-empty small { letter-spacing:0; font-size:10px; text-transform:none; }
   .dc-art-label { position:absolute; left:12px; bottom:12px; padding:5px 8px; background:rgba(0,0,0,.72); color:var(--dc-text-muted); font-size:10px; text-transform:capitalize; }
+  .dc-hero-volume { position:absolute; right:12px; bottom:12px; min-width:50px; min-height:30px; padding:0 8px; border:1px solid rgba(255,255,255,.24); background:rgba(0,0,0,.72); color:var(--dc-text); font:10px var(--dc-font-mono); cursor:pointer; }
+  .dc-hero-volume:hover, .dc-hero-volume:focus-visible { border-color:var(--dc-text); outline:none; }
   .dc-project-panel { display:flex; min-height:0; flex-direction:column; padding:24px; border-left:1px solid var(--dc-border); }
   .dc-project-status { color:var(--dc-text-muted); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
   .dc-status-dot { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--dc-evidence-corroborated); }

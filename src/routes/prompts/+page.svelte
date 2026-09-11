@@ -53,7 +53,21 @@
 </script>
 
 <div class="dc-library-page">
-  <div class="dc-library-main">
+  <header class="dc-projects-header">
+    <div>
+      <p class="dc-eyebrow">Directors Cut / archive</p>
+      <h1>Projects</h1>
+      <p class="dc-projects-subtitle">Prompt cards, references, and working notes organized as a living production index.</p>
+    </div>
+    <a class="dc-projects-new" href="/create">New project <span>↗</span></a>
+  </header>
+  <div class="dc-folder-tabs" aria-label="Project folders">
+    <span class="dc-folder-tab is-active">All projects <b>{filtered.length}</b></span>
+    {#each families.slice(0, 4) as family}
+      <span class="dc-folder-tab">{family} <b>{allCards.filter((card) => card.model_family === family).length}</b></span>
+    {/each}
+  </div>
+  <div class="dc-library-main dc-folder-body">
     <div class="dc-library-filters">
       <input
         type="search"

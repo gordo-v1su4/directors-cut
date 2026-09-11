@@ -1745,6 +1745,20 @@ nav a.active {
   .dc-media-grid { display: none; }
 }
 
+/* Projects archive: short tabbed folders with a technical index feel. */
+.dc-projects-header { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:20px; }
+.dc-projects-header h1 { margin:0; font-size:clamp(28px, 4vw, 42px); letter-spacing:-.055em; line-height:1; }
+.dc-projects-subtitle { max-width:520px; margin:10px 0 0; color:var(--dc-text-muted); font-size:12px; line-height:1.55; }
+.dc-projects-new { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; padding:0 12px; border:1px solid var(--dc-border); color:var(--dc-text); font-size:11px; text-decoration:none; }
+.dc-projects-new span { color:var(--dc-text-dim); }
+.dc-folder-tabs { display:flex; align-items:end; gap:5px; min-height:38px; overflow-x:auto; border-bottom:1px solid var(--dc-border); }
+.dc-folder-tab { position:relative; display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; min-height:30px; padding:0 13px; border:1px solid var(--dc-border); border-bottom:0; background:var(--dc-bg-elev); color:var(--dc-text-muted); font-size:10px; letter-spacing:.05em; text-transform:uppercase; }
+.dc-folder-tab::before { content:''; position:absolute; top:-5px; left:9px; width:24px; height:5px; border:1px solid var(--dc-border); border-bottom:0; background:var(--dc-bg-elev); }
+.dc-folder-tab b { color:var(--dc-text-dim); font:10px var(--dc-font-mono); }
+.dc-folder-tab.is-active { background:var(--dc-bg-elev-2); color:var(--dc-text); }
+.dc-folder-body { border:1px solid var(--dc-border); border-top:0; padding:14px; background:color-mix(in srgb, var(--dc-bg-elev) 42%, transparent); }
+@media (max-width:600px) { .dc-projects-header { align-items:start; flex-direction:column; gap:16px; } .dc-projects-new { width:100%; } .dc-folder-body { padding:10px; } }
+
 /* --- Mobile card lists (replace dense tables) ---------------------------- */
 .dc-card-list {
   display: grid;
