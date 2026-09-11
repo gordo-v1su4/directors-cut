@@ -41,20 +41,6 @@ export const NAV_LINKS: NavLink[] = [
     icon: 'projects',
     match: (p) => p.startsWith('/comparisons'),
   },
-  {
-    href: '/pilots/camera-moves',
-    label: 'Techniques',
-    hint: 'Camera moves and shots',
-    icon: 'techniques',
-    match: (p) => p.startsWith('/pilots/camera-moves'),
-  },
-  {
-    href: '/sources',
-    label: 'Sources',
-    hint: 'Reference repos and links',
-    icon: 'sources',
-    match: (p) => p === '/sources',
-  },
 ];
 
 /** Four destinations flank the centred Create tab; the rest live in "More". */

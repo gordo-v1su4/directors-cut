@@ -47,6 +47,7 @@
   --dc-bp-md: 768px;
   --dc-bp-lg: 1024px;
   --dc-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --dc-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
   --dc-page-pad: 16px;
   /* Safe areas — resolved once so every surface can reuse them. */
   --dc-safe-t: env(safe-area-inset-top, 0px);
@@ -1510,6 +1511,69 @@ nav a.active {
 @keyframes dc-fade-in { from { opacity: 0; } }
 @keyframes dc-sheet-in { from { transform: translateY(100%); } }
 
+/* --- Final narrow-screen guardrails -------------------------------------- */
+@media (max-width: 480px) {
+  .dc-page-shell,
+  .dc-library-main,
+  .dc-create-page {
+    padding-left: max(12px, var(--dc-safe-l));
+    padding-right: max(12px, var(--dc-safe-r));
+  }
+
+  .dc-dashboard-grid,
+  .dc-create-options,
+  .dc-quote-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-projects-intro h1,
+  .dc-create-header h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .dc-run-actions,
+  .dc-artifact-actions,
+  .dc-request-header,
+  .dc-generation-gate-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dc-run-actions > *,
+  .dc-artifact-actions > *,
+  .dc-request-header button,
+  .dc-generation-gate-heading button {
+    width: 100%;
+    min-height: var(--dc-tap);
+  }
+
+  .dc-drawer-actions {
+    flex-direction: column;
+  }
+
+  .dc-drawer-actions > *,
+  .dc-drawer-toolbar .dc-copy-button {
+    width: 100%;
+  }
+
+  .dc-drawer-header {
+    gap: 8px;
+  }
+
+  .dc-drawer-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dc-drawer-close {
+    width: 100%;
+  }
+
+  .dc-table-scroll-hint {
+    margin-inline: 0;
+  }
+}
+
 /* --- Video reel (mobile home) -------------------------------------------- */
 .dc-reel {
   display: grid;
@@ -1820,5 +1884,101 @@ nav a.active {
   .dc-tab {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Final narrow-screen guardrails: keep controls usable without making dense
+   research views artificially tall or forcing the document sideways. */
+@media (max-width: 560px) {
+  .dc-page-shell,
+  .dc-dashboard {
+    padding-top: 18px;
+    padding-bottom: 28px;
+  }
+
+  .dc-top-nav-bar {
+    min-height: 48px;
+    padding-inline: max(12px, var(--dc-safe-l)) max(12px, var(--dc-safe-r));
+  }
+
+  .dc-brand {
+    gap: 8px;
+  }
+
+  .dc-brand-text {
+    max-width: 155px;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+  }
+
+  .dc-dashboard h1,
+  .dc-projects-intro h1 {
+    font-size: clamp(24px, 8vw, 30px);
+  }
+
+  .dc-dashboard-intro {
+    max-width: none;
+  }
+
+  .dc-family-row {
+    grid-template-columns: minmax(84px, 1.1fr) minmax(72px, 1fr) 22px;
+    gap: 8px;
+  }
+
+  .dc-family-name,
+  .dc-section-note {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dc-use-case-summary {
+    padding: 12px;
+  }
+
+  .dc-media-section {
+    margin-top: 26px;
+  }
+
+  .dc-table th,
+  .dc-table td {
+    padding: 8px;
+  }
+
+  .dc-drawer {
+    width: min(100vw, 420px) !important;
+    max-width: 100vw;
+  }
+
+  .dc-form-grid,
+  .dc-create-grid,
+  .dc-action-group {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dc-run-actions,
+  .dc-run-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dc-run-actions > *,
+  .dc-create-link {
+    width: 100%;
+  }
+
+  .dc-comparison-table-scroll-outer,
+  .dc-comparison-table-wrap {
+    margin-inline: -1px;
+    max-width: calc(100vw - 2 * var(--dc-page-pad) + 2px);
+  }
+}
+
+@media (min-width: 861px) {
+  .dc-tabbar,
+  .dc-sheet,
+  .dc-sheet-scrim {
+    display: none;
   }
 }
