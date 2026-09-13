@@ -74,6 +74,14 @@
     loadRun(id);
   }
 
+  function posterForRun(title: string, index: number) {
+    const normalized = title.toLowerCase();
+    if (normalized.includes('pink room')) return '/media/project-pink-room.png';
+    if (normalized.includes('night shift')) return '/media/project-night-shift.png';
+    if (normalized.includes('analog') || normalized.includes('archive')) return '/media/project-analog.png';
+    return index % 2 === 0 ? '/media/project-noir.png' : '/media/project-analog.png';
+  }
+
   async function refreshSelectedRun() {
     if (selectedRunId) await loadRun(selectedRunId);
   }
@@ -105,15 +113,25 @@
     <a class="dc-create-link" href="/create">+ New prompt project</a>
   </div>
   {#if runList.length > 1}
-    <div class="dc-run-switcher">
-      {#each runList as r (r.run_id)}
+    <div class="dc-run-switcher" aria-label="Projects">
+      {#each runList as r, index (r.run_id)}
         <button
-          class="dc-badge"
-          style="cursor: pointer; padding: 6px 10px; font-size: 11px; border-radius: var(--dc-radius); border: 1px solid {r.run_id === selectedRunId ? 'var(--dc-sora)' : 'var(--dc-border)'}; color: {r.run_id === selectedRunId ? 'var(--dc-sora)' : 'var(--dc-text-muted)'}; background: {r.run_id === selectedRunId ? 'rgba(45,212,191,0.08)' : 'transparent'};"
+          class:dc-run-card-active={r.run_id === selectedRunId}
+          class="dc-run-card"
+          aria-pressed={r.run_id === selectedRunId}
           onclick={() => selectRun(r.run_id)}
         >
-          {r.title}
-          <span style="color: var(--dc-text-dim); margin-left: 4px;">({r.answer_count} ans · {r.artifact_count} art)</span>
+          <span class="dc-run-card-art">
+            <img src={posterForRun(r.title, index)} alt="" loading="lazy" />
+            <span class="dc-run-card-art-index">{String(index + 1).padStart(2, '0')}</span>
+            <span class="dc-run-card-art-mark">FILM / {String(index + 1).padStart(2, '0')}</span>
+          </span>
+          <span class="dc-run-card-copy">
+            <span class="dc-run-card-kicker">Project {String(index + 1).padStart(2, '0')} / {r.status}</span>
+            <strong>{r.title}</strong>
+            <span class="dc-run-card-meta">{r.answer_count} answers · {r.artifact_count} artifacts</span>
+          </span>
+          <span class="dc-run-card-arrow" aria-hidden="true">↗</span>
         </button>
       {/each}
     </div>
@@ -232,37 +250,129 @@
 
 <style>
   .dc-run-switcher {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
     border-bottom: 1px solid var(--dc-border-subtle);
-    /* Phones get a swipeable row of runs instead of a wrapping pill cloud
-       that pushes the actual comparison off the first screen. */
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    margin-inline: calc(var(--dc-page-pad) * -1);
-    padding-inline: var(--dc-page-pad);
   }
 
-  .dc-run-switcher::-webkit-scrollbar { display: none; }
-
-  .dc-run-switcher :global(button) {
-    flex: 0 0 auto;
-    min-height: var(--dc-tap);
-    scroll-snap-align: start;
+  .dc-run-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 18px;
+    min-height: 118px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--dc-border);
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--dc-bg-elev), #0d0d0f);
+    color: var(--dc-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
   }
 
-  @media (min-width: 861px) {
+  .dc-run-card:hover,
+  .dc-run-card:focus-visible {
+    border-color: var(--dc-text-dim);
+    background: var(--dc-bg-elev-2);
+    transform: translateY(-2px);
+    outline: none;
+  }
+
+  .dc-run-card-active {
+    border-color: var(--dc-accent);
+    box-shadow: inset 0 0 0 1px var(--dc-accent), 0 12px 24px rgba(0,0,0,.18);
+  }
+
+  .dc-run-card-art {
+    position: relative;
+    display: block;
+    min-height: 118px;
+    overflow: hidden;
+    border-right: 1px solid var(--dc-border);
+    background: #0a0a0b;
+  }
+
+  .dc-run-card-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 118px;
+    object-fit: cover;
+    filter: saturate(.7) contrast(1.08);
+    opacity: .88;
+    transition: transform .3s ease, opacity .3s ease;
+  }
+
+  .dc-run-card:hover .dc-run-card-art img,
+  .dc-run-card:focus-visible .dc-run-card-art img { transform: scale(1.05); opacity: 1; }
+
+  .dc-run-card-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.48));
+    pointer-events: none;
+  }
+
+  .dc-run-card-art-index,
+  .dc-run-card-art-mark {
+    position: absolute;
+    z-index: 1;
+    font-family: var(--dc-font-mono);
+    color: #f1f0ea;
+    text-shadow: 0 1px 8px rgba(0,0,0,.45);
+  }
+
+  .dc-run-card-art-index { top: 9px; left: 10px; font-size: 10px; letter-spacing: .12em; }
+  .dc-run-card-art-mark { right: 8px; bottom: 8px; color: var(--dc-accent); font-size: 18px; letter-spacing: -.08em; }
+
+  .dc-run-card-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    padding: 14px 12px;
+  }
+
+  .dc-run-card-copy strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.16;
+    letter-spacing: -.02em;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .dc-run-card-kicker,
+  .dc-run-card-meta {
+    color: var(--dc-text-dim);
+    font-family: var(--dc-font-mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .dc-run-card-meta { letter-spacing: .02em; text-transform: none; }
+  .dc-run-card-arrow { align-self: start; padding-top: 12px; color: var(--dc-text-dim); font-size: 16px; }
+
+  @media (max-width: 860px) {
     .dc-run-switcher {
-      flex-wrap: wrap;
-      overflow-x: visible;
-      margin-inline: 0;
-      padding-inline: 0;
+      display: flex;
+      gap: 10px;
+      margin-inline: calc(var(--dc-page-pad) * -1);
+      padding-inline: var(--dc-page-pad);
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
     }
-
-    .dc-run-switcher :global(button) { min-height: 0; }
+    .dc-run-switcher::-webkit-scrollbar { display: none; }
+    .dc-run-card { flex: 0 0 min(84vw, 320px); scroll-snap-align: start; }
   }
 </style>

@@ -34,18 +34,33 @@
   onMount(async () => { allCards = await loadPromptCards(); });
 </script>
 
-<svelte:head><title>Projects — Directors Cut</title></svelte:head>
+<svelte:head><title>Prompts — Directors Cut</title></svelte:head>
 
 <div class="dc-library-page dc-projects-library">
   <main class="dc-library-main">
-    <header class="dc-projects-header">
+    <header class="dc-projects-header dc-prompts-header">
       <div>
-        <p class="dc-eyebrow">Directors Cut / archive</p>
-        <h1>Projects</h1>
-        <p class="dc-projects-subtitle">A working index of prompt systems, references, and production-ready patterns.</p>
+        <p class="dc-eyebrow">Directors Cut / prompt archive</p>
+        <h1>Prompts</h1>
+        <p class="dc-projects-subtitle">Reusable recipes for building a shot: study the structure, then adapt the language to your project.</p>
       </div>
-      <a class="dc-projects-new" href="/create">New project <span>↗</span></a>
+      <a class="dc-projects-new" href="/create">Build a prompt <span>↗</span></a>
     </header>
+
+    <section class="dc-prompt-recipe" aria-labelledby="prompt-recipe-title">
+      <div class="dc-prompt-recipe-intro">
+        <p class="dc-eyebrow">How a prompt works</p>
+        <h2 id="prompt-recipe-title">A shot is a recipe.</h2>
+        <p>Start with the subject. Add the action, camera, light, and finish. The library keeps those ingredients visible so you can edit one decision at a time.</p>
+      </div>
+      <div class="dc-prompt-recipe-formula" aria-label="Prompt formula">
+        <span><b>01</b> Subject</span><i>+</i>
+        <span><b>02</b> Action</span><i>+</i>
+        <span><b>03</b> Camera</span><i>+</i>
+        <span><b>04</b> Light</span><i>+</i>
+        <span><b>05</b> Finish</span>
+      </div>
+    </section>
 
     <section class="dc-folder-index" aria-labelledby="folder-index-title">
       <div class="dc-folder-index-heading">
