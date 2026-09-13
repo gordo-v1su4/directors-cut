@@ -74,6 +74,14 @@
     loadRun(id);
   }
 
+  function posterForRun(title: string, index: number) {
+    const normalized = title.toLowerCase();
+    if (normalized.includes('pink room')) return '/media/project-pink-room.png';
+    if (normalized.includes('night shift')) return '/media/project-night-shift.png';
+    if (normalized.includes('analog') || normalized.includes('archive')) return '/media/project-analog.png';
+    return index % 2 === 0 ? '/media/project-noir.png' : '/media/project-analog.png';
+  }
+
   async function refreshSelectedRun() {
     if (selectedRunId) await loadRun(selectedRunId);
   }
@@ -113,10 +121,10 @@
           aria-pressed={r.run_id === selectedRunId}
           onclick={() => selectRun(r.run_id)}
         >
-          <span class={`dc-run-card-art art-${(index % 4) + 1}`} aria-hidden="true">
+          <span class="dc-run-card-art">
+            <img src={posterForRun(r.title, index)} alt="" loading="lazy" />
             <span class="dc-run-card-art-index">{String(index + 1).padStart(2, '0')}</span>
-            <span class="dc-run-card-art-lines"></span>
-            <span class="dc-run-card-art-mark">{r.title.slice(0, 2).toUpperCase()}</span>
+            <span class="dc-run-card-art-mark">FILM / {String(index + 1).padStart(2, '0')}</span>
           </span>
           <span class="dc-run-card-copy">
             <span class="dc-run-card-kicker">Project {String(index + 1).padStart(2, '0')} / {r.status}</span>
@@ -288,35 +296,26 @@
     background: #0a0a0b;
   }
 
-  .dc-run-card-art::before,
+  .dc-run-card-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 118px;
+    object-fit: cover;
+    filter: saturate(.7) contrast(1.08);
+    opacity: .88;
+    transition: transform .3s ease, opacity .3s ease;
+  }
+
+  .dc-run-card:hover .dc-run-card-art img,
+  .dc-run-card:focus-visible .dc-run-card-art img { transform: scale(1.05); opacity: 1; }
+
   .dc-run-card-art::after {
     content: '';
     position: absolute;
-    inset: 18px 10px;
-    border: 1px solid rgba(250,250,250,.32);
-    transform: rotate(-8deg);
-  }
-
-  .dc-run-card-art::after {
-    inset: 38px 4px 8px 22px;
-    border-color: rgba(199,213,109,.5);
-    transform: rotate(12deg);
-  }
-
-  .dc-run-card-art.art-2 { background: #11120f; }
-  .dc-run-card-art.art-2::after { border-color: rgba(180, 190, 125, .55); transform: rotate(-16deg); }
-  .dc-run-card-art.art-3 { background: #101214; }
-  .dc-run-card-art.art-3::before { transform: rotate(18deg); }
-  .dc-run-card-art.art-3::after { border-color: rgba(151, 170, 190, .55); }
-  .dc-run-card-art.art-4 { background: #14110f; }
-  .dc-run-card-art.art-4::before { transform: rotate(2deg); }
-  .dc-run-card-art.art-4::after { border-color: rgba(205, 157, 108, .5); transform: rotate(-22deg); }
-
-  .dc-run-card-art-lines {
-    position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(0deg, transparent 0 9px, rgba(255,255,255,.09) 10px 11px);
-    opacity: .65;
+    background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.48));
+    pointer-events: none;
   }
 
   .dc-run-card-art-index,
@@ -324,7 +323,8 @@
     position: absolute;
     z-index: 1;
     font-family: var(--dc-font-mono);
-    color: var(--dc-text);
+    color: #f1f0ea;
+    text-shadow: 0 1px 8px rgba(0,0,0,.45);
   }
 
   .dc-run-card-art-index { top: 9px; left: 10px; font-size: 10px; letter-spacing: .12em; }
