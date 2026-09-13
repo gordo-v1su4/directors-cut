@@ -65,7 +65,7 @@
   :root {
     --dc-nav-height: 48px;
     --dc-page-pad: 24px;
-    --dc-content-max: 1680px;
+    --dc-content-max: 1280px;
     --dc-tabbar-clearance: 0px;
   }
 }
@@ -144,7 +144,7 @@ button, select, textarea { font: inherit; }
   .dc-dashboard {
     height: 100%;
     overflow-y: auto;
-    padding: 28px clamp(18px, 4vw, 48px) 48px;
+    padding: 28px clamp(24px, 3vw, 56px) 48px;
   }
 }
   .dc-dashboard-inner { max-width: var(--dc-content-max); margin: 0 auto; }
@@ -180,7 +180,7 @@ button, select, textarea { font: inherit; }
 .dc-media-card { overflow: hidden; padding: 0; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: inherit; cursor: pointer; text-align: left; transition: border-color .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease; }
 .dc-media-card:hover, .dc-media-card:focus-visible { border-color: #52525b; background: var(--dc-bg-elev-2); transform: translateY(-2px); outline: none; box-shadow: 0 10px 30px rgba(0,0,0,.22); }
 .dc-media-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
-.dc-media-frame img, .dc-media-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dc-media-frame img, .dc-media-frame video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
 .dc-media-frame video { pointer-events: none; }
 .dc-media-overlay { position: absolute; inset: auto 8px 8px auto; display: flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid rgba(255,255,255,.16); border-radius: var(--dc-radius); background: rgba(0,0,0,.65); color: #fafafa; font-size: 9px; backdrop-filter: blur(8px); }
 .dc-media-copy { padding: 10px 11px 12px; }
@@ -703,8 +703,9 @@ button, select, textarea { font: inherit; }
 .dc-slot-media video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: #000;
 }
 .dc-slot-expand {
   position: absolute;
