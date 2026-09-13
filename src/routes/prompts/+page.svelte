@@ -34,7 +34,7 @@
   onMount(async () => { allCards = await loadPromptCards(); });
 </script>
 
-<svelte:head><title>Projects — Directors Cut</title></svelte:head>
+<svelte:head><title>Prompts — Directors Cut</title></svelte:head>
 
 <div class="dc-library-page dc-projects-library">
   <main class="dc-library-main">
