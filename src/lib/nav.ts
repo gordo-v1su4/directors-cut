@@ -21,11 +21,11 @@ export const NAV_LINKS: NavLink[] = [
     match: (p) => p === '/',
   },
   {
-    href: '/prompts',
-    label: 'Library',
-    hint: 'Browse prompt cards',
-    icon: 'library',
-    match: (p) => p.startsWith('/prompts'),
+    href: '/comparisons',
+    label: 'Projects',
+    hint: 'Compare runs and outputs',
+    icon: 'projects',
+    match: (p) => p.startsWith('/comparisons'),
   },
   {
     href: '/create',
@@ -35,11 +35,11 @@ export const NAV_LINKS: NavLink[] = [
     match: (p) => p.startsWith('/create'),
   },
   {
-    href: '/comparisons',
-    label: 'Projects',
-    hint: 'Compare runs and outputs',
-    icon: 'projects',
-    match: (p) => p.startsWith('/comparisons'),
+    href: '/prompts',
+    label: 'Prompts',
+    hint: 'Browse prompt recipes',
+    icon: 'library',
+    match: (p) => p.startsWith('/prompts'),
   },
 ];
 

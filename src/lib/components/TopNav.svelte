@@ -22,13 +22,14 @@
     {/if}
 
     <div class="dc-nav-links">
-      {#each NAV_LINKS as link (link.href)}
+      {#each NAV_LINKS as link, index (link.href)}
         <a
           href={link.href}
           class:active={link.match(pathname)}
           class:featured={link.href === '/create'}
           aria-current={link.match(pathname) ? 'page' : undefined}
         >
+          <span class="dc-nav-index">0{index + 1}</span>
           {link.label}
         </a>
       {/each}
@@ -126,6 +127,7 @@
     .dc-nav-links a {
       display: flex;
       align-items: center;
+      gap: 7px;
       min-height: 36px;
       padding: 0 12px;
       border-bottom: 2px solid transparent;
@@ -134,6 +136,12 @@
       text-decoration: none;
       transition: color 0.15s ease, border-color 0.15s ease;
       white-space: nowrap;
+    }
+
+    .dc-nav-index {
+      color: var(--dc-text-dim);
+      font: 9px var(--dc-font-mono);
+      letter-spacing: .06em;
     }
 
     .dc-nav-links a:hover {
