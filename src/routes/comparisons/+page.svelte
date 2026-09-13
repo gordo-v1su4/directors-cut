@@ -105,15 +105,25 @@
     <a class="dc-create-link" href="/create">+ New prompt project</a>
   </div>
   {#if runList.length > 1}
-    <div class="dc-run-switcher">
-      {#each runList as r (r.run_id)}
+    <div class="dc-run-switcher" aria-label="Projects">
+      {#each runList as r, index (r.run_id)}
         <button
-          class="dc-badge"
-          style="cursor: pointer; padding: 6px 10px; font-size: 11px; border-radius: var(--dc-radius); border: 1px solid {r.run_id === selectedRunId ? 'var(--dc-sora)' : 'var(--dc-border)'}; color: {r.run_id === selectedRunId ? 'var(--dc-sora)' : 'var(--dc-text-muted)'}; background: {r.run_id === selectedRunId ? 'rgba(45,212,191,0.08)' : 'transparent'};"
+          class:dc-run-card-active={r.run_id === selectedRunId}
+          class="dc-run-card"
+          aria-pressed={r.run_id === selectedRunId}
           onclick={() => selectRun(r.run_id)}
         >
-          {r.title}
-          <span style="color: var(--dc-text-dim); margin-left: 4px;">({r.answer_count} ans · {r.artifact_count} art)</span>
+          <span class={`dc-run-card-art art-${(index % 4) + 1}`} aria-hidden="true">
+            <span class="dc-run-card-art-index">{String(index + 1).padStart(2, '0')}</span>
+            <span class="dc-run-card-art-lines"></span>
+            <span class="dc-run-card-art-mark">{r.title.slice(0, 2).toUpperCase()}</span>
+          </span>
+          <span class="dc-run-card-copy">
+            <span class="dc-run-card-kicker">Project {String(index + 1).padStart(2, '0')} / {r.status}</span>
+            <strong>{r.title}</strong>
+            <span class="dc-run-card-meta">{r.answer_count} answers · {r.artifact_count} artifacts</span>
+          </span>
+          <span class="dc-run-card-arrow" aria-hidden="true">↗</span>
         </button>
       {/each}
     </div>
@@ -232,37 +242,137 @@
 
 <style>
   .dc-run-switcher {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
     border-bottom: 1px solid var(--dc-border-subtle);
-    /* Phones get a swipeable row of runs instead of a wrapping pill cloud
-       that pushes the actual comparison off the first screen. */
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    margin-inline: calc(var(--dc-page-pad) * -1);
-    padding-inline: var(--dc-page-pad);
   }
 
-  .dc-run-switcher::-webkit-scrollbar { display: none; }
-
-  .dc-run-switcher :global(button) {
-    flex: 0 0 auto;
-    min-height: var(--dc-tap);
-    scroll-snap-align: start;
+  .dc-run-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 18px;
+    min-height: 118px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--dc-border);
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--dc-bg-elev), #0d0d0f);
+    color: var(--dc-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
   }
 
-  @media (min-width: 861px) {
+  .dc-run-card:hover,
+  .dc-run-card:focus-visible {
+    border-color: var(--dc-text-dim);
+    background: var(--dc-bg-elev-2);
+    transform: translateY(-2px);
+    outline: none;
+  }
+
+  .dc-run-card-active {
+    border-color: var(--dc-accent);
+    box-shadow: inset 0 0 0 1px var(--dc-accent), 0 12px 24px rgba(0,0,0,.18);
+  }
+
+  .dc-run-card-art {
+    position: relative;
+    display: block;
+    min-height: 118px;
+    overflow: hidden;
+    border-right: 1px solid var(--dc-border);
+    background: #0a0a0b;
+  }
+
+  .dc-run-card-art::before,
+  .dc-run-card-art::after {
+    content: '';
+    position: absolute;
+    inset: 18px 10px;
+    border: 1px solid rgba(250,250,250,.32);
+    transform: rotate(-8deg);
+  }
+
+  .dc-run-card-art::after {
+    inset: 38px 4px 8px 22px;
+    border-color: rgba(199,213,109,.5);
+    transform: rotate(12deg);
+  }
+
+  .dc-run-card-art.art-2 { background: #11120f; }
+  .dc-run-card-art.art-2::after { border-color: rgba(180, 190, 125, .55); transform: rotate(-16deg); }
+  .dc-run-card-art.art-3 { background: #101214; }
+  .dc-run-card-art.art-3::before { transform: rotate(18deg); }
+  .dc-run-card-art.art-3::after { border-color: rgba(151, 170, 190, .55); }
+  .dc-run-card-art.art-4 { background: #14110f; }
+  .dc-run-card-art.art-4::before { transform: rotate(2deg); }
+  .dc-run-card-art.art-4::after { border-color: rgba(205, 157, 108, .5); transform: rotate(-22deg); }
+
+  .dc-run-card-art-lines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 9px, rgba(255,255,255,.09) 10px 11px);
+    opacity: .65;
+  }
+
+  .dc-run-card-art-index,
+  .dc-run-card-art-mark {
+    position: absolute;
+    z-index: 1;
+    font-family: var(--dc-font-mono);
+    color: var(--dc-text);
+  }
+
+  .dc-run-card-art-index { top: 9px; left: 10px; font-size: 10px; letter-spacing: .12em; }
+  .dc-run-card-art-mark { right: 8px; bottom: 8px; color: var(--dc-accent); font-size: 18px; letter-spacing: -.08em; }
+
+  .dc-run-card-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    padding: 14px 12px;
+  }
+
+  .dc-run-card-copy strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.16;
+    letter-spacing: -.02em;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  .dc-run-card-kicker,
+  .dc-run-card-meta {
+    color: var(--dc-text-dim);
+    font-family: var(--dc-font-mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .dc-run-card-meta { letter-spacing: .02em; text-transform: none; }
+  .dc-run-card-arrow { align-self: start; padding-top: 12px; color: var(--dc-text-dim); font-size: 16px; }
+
+  @media (max-width: 860px) {
     .dc-run-switcher {
-      flex-wrap: wrap;
-      overflow-x: visible;
-      margin-inline: 0;
-      padding-inline: 0;
+      display: flex;
+      gap: 10px;
+      margin-inline: calc(var(--dc-page-pad) * -1);
+      padding-inline: var(--dc-page-pad);
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
     }
-
-    .dc-run-switcher :global(button) { min-height: 0; }
+    .dc-run-switcher::-webkit-scrollbar { display: none; }
+    .dc-run-card { flex: 0 0 min(84vw, 320px); scroll-snap-align: start; }
   }
 </style>
