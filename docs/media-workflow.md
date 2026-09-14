@@ -1,3 +1,5 @@
+> Public uploads now use the Robyn backend on app-vm. See [backend deployment](backend-deployment.md). The instructions below describe the local generation importer and local development workflow.
+
 # Media workflow
 
 Directors Cut keeps its existing project browser and three-column history: prompt source, shot grid, trailer versions. There is no vision judging or reference-assisted comparison table. Generation controls remain collapsed until needed.

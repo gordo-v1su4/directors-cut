@@ -60,3 +60,21 @@ Pause deployment: `sudo systemctl stop directors-cut-update.timer`.
 
 Python validation: `uv pip install -r backend/requirements.txt`, then
 `python -m unittest discover -s backend`. Frontend: `bun run check`.
+
+## Acceptance evidence — 2026-09-14
+
+Public browser sign-in and file chooser uploads passed from Projects (v1) and
+Home (v2). Duplicate re-upload created no new version. The shared RustFS worker
+completed both jobs; thumbnails appeared, the feed refreshed without deployment,
+and the uploaded 1280x720 video played with advancing time and no media error.
+The scheduled updater rejected a failing container test while leaving the prior
+container healthy, then automatically deployed corrected commit `1c81258`.
+Both ready versions survived replacement; an online SQLite backup was created.
+Temporary QA records were archived under `/opt/directors-cut/backups/` and
+removed from the live catalog, leaving the three original projects. Tiny QA
+media objects remain under the isolated `directors-cut-upload-qa` key prefix.
+
+Validation: four backend tests (also executed inside the Docker build), Svelte
+check with zero errors/warnings, Caddy config validation, public unauthenticated
+upload rejection (401), and live browser playback. Health rollback after a
+successfully built but unhealthy image was not deliberately fault-injected.
