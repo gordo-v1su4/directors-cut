@@ -36,6 +36,7 @@
       void candidate.video.play().catch(() => { /* The visible Play button remains available when autoplay is blocked. */ });
     }
   }
+  function visibilityChanged() { cancelAnimationFrame(frame); chooseVisible(); }
   function preferenceChanged() { pauseOthers(); schedule(); }
   function schedule() { if (!frame) frame = requestAnimationFrame(chooseVisible); }
   function observeVideo(node: HTMLVideoElement, options: {id: string; suspended: boolean}) {
@@ -66,12 +67,12 @@
     reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     addEventListener('scroll', schedule, {passive: true});
     addEventListener('resize', schedule);
-    document.addEventListener('visibilitychange', schedule);
+    document.addEventListener('visibilitychange', visibilityChanged);
     reducedMotion.addEventListener('change', preferenceChanged);
     schedule();
     return () => {
       removeEventListener('scroll', schedule); removeEventListener('resize', schedule);
-      document.removeEventListener('visibilitychange', schedule);
+      document.removeEventListener('visibilitychange', visibilityChanged);
       reducedMotion?.removeEventListener('change', preferenceChanged);
       cancelAnimationFrame(frame); pauseOthers();
     };
