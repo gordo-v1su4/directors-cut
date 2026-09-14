@@ -116,5 +116,5 @@
   .drop {padding:22px;border-style:dashed;}
   small {display:block;margin-top:6px;color:var(--dc-text-muted);}
   .actions {justify-content:flex-start;margin:0;}
-  @media(max-width:700px){.context-grid {grid-template-columns:1fr;}}
+  @media(max-width:700px){.context-grid {grid-template-columns:1fr;} input,textarea,select {font-size:16px;} button {min-height:44px;} .editor-dialog form {padding:16px;} .editor-dialog {width:calc(100% - 24px);} .actions button {flex:1;} }
 </style>

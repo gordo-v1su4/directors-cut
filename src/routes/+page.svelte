@@ -3,6 +3,7 @@
   import { resolve } from '$app/paths';
   import { loadComparisonsIndex, loadComparisonRun, loadLatestArtifacts } from '$lib/data/comparisons';
   import type { ComparisonArtifact, ComparisonRunDetail, ComparisonRunSummary } from '$lib/types/comparison';
+  import MobileVideoFeed from '$lib/components/MobileVideoFeed.svelte';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
   import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
   import VersionDropzone from '$lib/components/VersionDropzone.svelte';
@@ -61,7 +62,7 @@
 
   async function refreshVersions() {
     const id = selectedProject?.run_id;
-    latestMedia = await loadLatestArtifacts(8);
+    latestMedia = await loadLatestArtifacts(100);
     if (id) {
       const detail = await loadComparisonRun(id);
       if (selectedProject?.run_id === id) selectedDetail = detail;
@@ -80,7 +81,7 @@
         const signature = JSON.stringify(index);
         if (disposed || signature === lastIndex) return;
         const selectedId = projects[selectedIndex]?.run_id;
-        const media = await loadLatestArtifacts(8);
+        const media = await loadLatestArtifacts(100);
         if (disposed) return;
         projects = index.runs.filter((run) => run.status !== 'promoted')
           .sort((a, b) => b.created.localeCompare(a.created));
@@ -107,7 +108,7 @@
 <main class="dc-dashboard">
   <div class="dc-dashboard-inner">
     <header class="dc-dashboard-header">
-      <div><p class="dc-eyebrow">Directors Cut / workspace</p><h1>Works in progress</h1></div>
+      <div><p class="dc-eyebrow">Directors Cut / workspace</p><h1>{desktop.matches ? 'Works in progress' : 'Trailer feed'}</h1></div>
       <p class="dc-dashboard-intro">Follow active concepts from first answer to final frame. Select a project to inspect its versions and see how it developed.</p>
     </header>
 
@@ -115,6 +116,8 @@
       <div class="dc-project-loading">Loading active projects…</div>
     {:else if !projects.length}
       <section class="dc-empty-work"><p class="dc-eyebrow">No active work</p><h2>Start a project to see it here.</h2><a href={resolve('/create')}>Create a prompt project</a></section>
+    {:else if !desktop.matches}
+      <MobileVideoFeed items={latestMedia} {projects} suspended={!!lightboxArtifacts} onVersions={async (item) => { const detail=await loadComparisonRun(item.run_id); lightboxArtifacts=detail.artifacts.filter(a=>isVideo(a) && a.media_url).sort((a,b)=>a.created_at.localeCompare(b.created_at)); lightboxIndex=Math.max(0,lightboxArtifacts.findIndex(a=>a.artifact_id===item.artifact_id)); }} />
     {:else}
       <section class="dc-workstage" aria-label="Active projects">
         <div class="dc-workstage-heading">
@@ -159,7 +162,7 @@
       </section>
     {/if}
 
-    <section class="dc-media-section">
+    {#if desktop.matches}<section class="dc-media-section">
       <div class="dc-section-heading"><h2 class="dc-section-title">Latest media feed</h2><span class="dc-section-note">Recent trailer versions</span></div>
       <div class="dc-media-feed">
         {#each latestMedia.slice(0, 6) as item (item.artifact_id)}
@@ -169,7 +172,7 @@
           </button>
         {:else}<p class="dc-no-versions">No generated media yet.</p>{/each}
       </div>
-    </section>
+    </section>{/if}
   </div>
 </main>
 
@@ -214,6 +217,9 @@
   .dc-empty-work h2 { margin:8px 0 18px; color:var(--dc-text); }
   .dc-empty-work a { color:var(--dc-text); font-size:12px; }
   @media (max-width:860px) {
+    .dc-dashboard-header {margin-bottom:18px;}
+    .dc-dashboard-intro {display:none;}
+
     .dc-hero-layout { grid-template-columns:1fr; height:auto; }
     .dc-key-art { min-height:0; aspect-ratio:16/9; }
     .dc-key-art img, .dc-key-art video { min-height:0; aspect-ratio:16/9; }
