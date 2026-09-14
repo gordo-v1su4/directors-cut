@@ -66,7 +66,7 @@
     <dialog use:openDialog class="editor-dialog" aria-label="Edit version details" oncancel={(e)=>{e.preventDefault();if(!busy)editing=false;}}><form onsubmit={save}>
       <h3>Edit version details</h3>
       <label>Video model<input bind:value={model} list="video-models" placeholder="e.g. Sora 2" maxlength="100" disabled={busy} /></label>
-      <datalist id="video-models"><option>Sora 2</option><option>Sora 2 Pro</option><option>Seedance 2.0</option><option>Veo 3.1</option><option>Kling</option><option>Other / edited</option></datalist>
+      <datalist id="video-models"><option>Sora 2</option><option>Sora 2 Pro</option><option>Seedance 2.0</option><option>Seedance 2.5</option><option>Mini Max H3</option><option>Veo 3.1</option><option>Kling</option><option>Other / edited</option></datalist>
       <label>Prompt for this version<textarea bind:value={prompt} rows="9" maxlength="100000" placeholder="Paste the exact prompt used for this video…" disabled={busy}></textarea></label>
       <label>Shot grid<select bind:value={gridChoice} disabled={busy}>
         <option value="keep">{artifact.shot_grid_url ? 'Keep attached grid' : 'No grid attached'}</option>
