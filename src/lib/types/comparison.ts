@@ -139,6 +139,11 @@ export interface GenerationPrompt {
 export interface ComparisonArtifact {
   artifact_id: string;
   version_number?: number;
+  version_prompt?: string;
+  video_model?: string;
+  shot_grid_url?: string | null;
+  shot_grid_artifact_id?: string | null;
+  context_revision?: number;
   run_id: string;
   answer_id?: string;
   revision_id?: string;

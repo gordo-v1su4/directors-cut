@@ -1,5 +1,7 @@
 """Directors Cut catalog and upload adapter; all media processing stays in RustFS."""
 from contextlib import contextmanager
+import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -192,6 +194,80 @@ def upload(request: Request):
         with connect() as db:
             db.execute("UPDATE uploads SET status='failed',error='Storage upload failed' WHERE id=?",(uid,))
         return reply(request, {'error':'Storage upload failed. Retry this upload.','upload_id':uid},502)
+
+
+@app.post('/versions/:id/details')
+def version_details(request: Request):
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to edit this version'}, 401)
+    try:
+        if len(request.body) > 15*1000*1000:
+            raise ValueError()
+        payload = json.loads(request.body)
+        run_id = payload['run_id']
+        prompt = payload['prompt']
+        model = payload['video_model']
+        if not isinstance(prompt, str) or len(prompt)>100000 or not isinstance(model,str) or len(model)>100:
+            raise ValueError()
+        grid = payload.get('grid')
+        image = None
+        if isinstance(grid, dict) and 'data' in grid:
+            image = base64.b64decode(grid['data'], validate=True)
+            if not image or len(image)>10*1000*1000:
+                raise ValueError()
+            if image.startswith(b'\x89PNG\r\n\x1a\n'):
+                extension, mime = 'png', 'image/png'
+            elif image.startswith(b'\xff\xd8\xff'):
+                extension, mime = 'jpg', 'image/jpeg'
+            elif image.startswith(b'RIFF') and image[8:12]==b'WEBP':
+                extension, mime = 'webp', 'image/webp'
+            else:
+                raise ValueError()
+        elif grid is not None and (not isinstance(grid,dict) or not isinstance(grid.get('artifact_id'),str)):
+            raise ValueError()
+    except (ValueError, KeyError, TypeError, binascii.Error):
+        return reply(request, {'error':'Provide a prompt, video model and a PNG, JPEG or WebP grid up to 10 MB'},400)
+    artifact_id = request.path_params['id']
+    with lock, connect() as db:
+        artifacts = document(db,run_id,'artifacts') or []
+        target = next((a for a in artifacts if a['artifact_id']==artifact_id and a['artifact_type'] in ('video_result','end_video')),None)
+        if not target:
+            return reply(request, {'error':'Video version not found'},404)
+        if payload.get('revision',0) != target.get('context_revision',0):
+            return reply(request, {'error':'This version changed. Reload the project before editing.'},409)
+        linked = None
+        if grid and image is None:
+            linked = next((a for a in artifacts if a['artifact_id']==grid['artifact_id'] and a['artifact_type'] in ('shot_grid','image_result') and a.get('media_url')),None)
+            if not linked:
+                return reply(request, {'error':'Shot grid not found in this project'},400)
+    grid_url = linked['media_url'] if linked else None
+    grid_key = None
+    if image is not None:
+        # Content-addressed keys keep replacement grids and other versions intact.
+        safe_id = hashlib.sha256(artifact_id.encode()).hexdigest()[:24]
+        key = f'version-assets/{run_id}/{safe_id}/shot-grids/{hashlib.sha256(image).hexdigest()}.{extension}'
+        try:
+            with httpx.Client(timeout=120) as client:
+                response = client.post(GATEWAY+'/upload',headers={'Authorization':f'Bearer {TOKEN}'},data={'bucket':BUCKET,'userId':BUCKET,'folder':key.rsplit('/',1)[0],'preserveFilename':'true'},files={'file':(key.rsplit('/',1)[1],image,mime)})
+                response.raise_for_status()
+                media = response.json()
+                if media.get('bucket')!=BUCKET or media.get('objectKey')!=key:
+                    raise ValueError()
+                grid_url = media.get('publicUrl') or media['mediaUrl']
+                grid_key = key
+        except (httpx.HTTPError,ValueError,KeyError):
+            return reply(request, {'error':'Grid upload failed. Your version was not changed.'},502)
+    with lock, connect() as db:
+        artifacts = document(db,run_id,'artifacts') or []
+        target = next((a for a in artifacts if a['artifact_id']==artifact_id),None)
+        if not target or payload.get('revision',0)!=target.get('context_revision',0):
+            return reply(request, {'error':'This version changed. Reload the project before editing.'},409)
+        target.update(version_prompt=prompt,video_model=model.strip(),context_revision=target.get('context_revision',0)+1)
+        # Omitted grid preserves the existing attachment; null explicitly removes it.
+        if 'grid' in payload:
+            target.update(shot_grid_url=grid_url,shot_grid_object_key=grid_key,shot_grid_artifact_id=linked['artifact_id'] if linked else None)
+        db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='artifacts'",(json.dumps(artifacts),run_id))
+    return reply(request, {'artifact':target})
 
 
 @app.get('/uploads/:id')

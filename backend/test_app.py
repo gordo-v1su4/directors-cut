@@ -54,4 +54,54 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(sum(a['artifact_id']=='test-job' for a in artifacts),1)
             self.assertEqual(db.execute("SELECT status FROM uploads WHERE id='test-job'").fetchone()[0],'ready')
 
+class VersionDetailsTests(unittest.TestCase):
+    def setUp(self):
+        app.initialize()
+        self.videos=[{'artifact_id':'v1','artifact_type':'video_result','prompt_text':'original generation prompt'}, {'artifact_id':'v2','artifact_type':'video_result'}, {'artifact_id':'grid1','artifact_type':'shot_grid','media_url':'https://example.test/grid.png'}]
+        with app.connect() as db:
+            db.execute('INSERT OR REPLACE INTO documents VALUES (?,?,?)',('details-qa','artifacts',json.dumps(self.videos)))
+
+    def save(self, **overrides):
+        payload={'run_id':'details-qa','prompt':'revised take','video_model':'Sora 2','grid':{'artifact_id':'grid1'}, **overrides}
+        return app.version_details(request(json.dumps(payload),params={'id':'v1'}))
+
+    def test_version_pairing_persists_without_changing_other_versions_or_provenance(self):
+        with patch.object(app,'authorized',return_value=True):
+            self.assertEqual(self.save().status_code,200)
+        app.initialize()
+        with app.connect() as db:
+            values=app.document(db,'details-qa','artifacts')
+        self.assertEqual(values[0]['version_prompt'],'revised take')
+        self.assertEqual(values[0]['prompt_text'],'original generation prompt')
+        self.assertEqual(values[0]['video_model'],'Sora 2')
+        self.assertEqual(values[0]['shot_grid_url'],'https://example.test/grid.png')
+        self.assertEqual(values[1:],self.videos[1:])
+
+    def test_explicit_removal_and_stale_edit_conflict(self):
+        with patch.object(app,'authorized',return_value=True):
+            self.save()
+            self.assertEqual(self.save().status_code,409)
+            response=self.save(revision=1,grid=None,prompt='')
+        self.assertEqual(response.status_code,200)
+        artifact=json.loads(response.description)['artifact']
+        self.assertIsNone(artifact['shot_grid_url'])
+        self.assertEqual(artifact['version_prompt'],'')
+
+    def test_auth_and_invalid_attachment_do_not_touch_storage(self):
+        self.assertEqual(self.save().status_code,401)
+        with patch.object(app,'authorized',return_value=True),patch.object(app.httpx,'Client') as client:
+            self.assertEqual(self.save(grid={'artifact_id':'other-project-grid'}).status_code,400)
+            self.assertEqual(self.save(grid={'data':'invalid base64'}).status_code,400)
+            self.assertEqual(self.save(grid={'data':'PHN2Zz4='}).status_code,400)
+        client.assert_not_called()
+
+    def test_grid_upload_failure_does_not_save_partial_details(self):
+        import base64
+        with patch.object(app,'authorized',return_value=True),patch.object(app.httpx,'Client') as factory:
+            factory.return_value.__enter__.return_value.post.side_effect=app.httpx.ConnectError('test')
+            response=self.save(grid={'data':base64.b64encode(b'\x89PNG\r\n\x1a\ncontent').decode()})
+        self.assertEqual(response.status_code,502)
+        with app.connect() as db:
+            self.assertEqual(app.document(db,'details-qa','artifacts'),self.videos)
+
 if __name__=='__main__': unittest.main()

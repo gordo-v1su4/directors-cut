@@ -143,63 +143,30 @@
       <div class="dc-empty-state" style="opacity: 0.5;">Switching…</div>
     {/if}
     <div class="dc-run-header">
-      <div class="dc-run-title-line">
-        <h2 style="font-size: 18px; font-weight: 700; margin: 0;">{run.title}</h2>
-        <div class="dc-run-actions">
-          <CopyButton text={run.question} label="Copy prompt" size={11} />
-          <button class="dc-action-button" disabled>Edit run</button>
-        </div>
-      </div>
-      <div class="dc-run-meta">
-        <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
-          Run: {run.run_id}
-        </span>
-        <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
-          Status: {run.status}
-        </span>
-        <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
-          Answers: {run.answers.length}
-        </span>
-        <span class="dc-badge" style="border-color: var(--dc-border); color: {hasRealArtifacts ? 'var(--dc-sora)' : 'var(--dc-text-dim)'};">
-          Generated media: {mediaSummary.length}
-        </span>
-        <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
-          Attempt records: {run.artifacts.length}
-        </span>
-        {#if promptSlug}
-          <span class="dc-badge" style="border-color: var(--dc-border); color: var(--dc-text-muted);">
-            From prompt: {promptSlug}
-          </span>
-        {/if}
-      </div>
-
-      <div class="dc-brief-panel">
-        <div class="dc-brief-label">Creative brief</div>
-        <p style="margin: 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.5; white-space: pre-wrap;">{displayBrief}</p>
-      </div>
-
-      {#if displayQuestion}
-        <details class="dc-brief-panel">
-          <summary class="dc-brief-label" style="cursor: pointer;">Original prompt and source</summary>
-          <pre style="margin-top: 8px;">{displayQuestion}</pre>
-        </details>
-      {/if}
+      <h2 style="font-size:20px;margin:0;">{run.title}</h2>
+      {#if run.logline}<p style="color:var(--dc-text-muted);font-size:13px;line-height:1.6;margin:8px 0 0;">{run.logline}</p>{/if}
     </div>
-
-    <div class="dc-brief-panel"><p style="margin:0;color:var(--dc-text-muted);font-size:12px;line-height:1.6">Drop finished versions below. Videos get a thumbnail, save to this project, and appear in the feed automatically. Original prompts stay alongside the versions.</p></div>
+    <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
     {#key run.run_id}<VersionDropzone runId={run.run_id} title={run.title} onAdded={refreshSelectedRun} />{/key}
+    <p style="color:var(--dc-text-muted);font-size:12px;">Add a video, then use Edit version details to attach its shot grid, prompt and video model.</p>
+    {#if displayQuestion}
+      <details class="project-source">
+        <summary>Project source</summary>
+        <p>{displayBrief}</p>
+        <pre>{displayQuestion}</pre>
+      </details>
+    {/if}
 
-    <div class="dc-comparison-table-scroll-outer">
-      <div class="dc-comparison-table-scroll-inner">
-        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
-      </div>
-    </div>
   {:else}
     <div class="dc-empty-state">No project selected.</div>
   {/if}
 </div>
 
 <style>
+  .project-source {margin-top:24px;color:var(--dc-text-muted);font-size:12px;}
+  .project-source summary {cursor:pointer;}
+  .project-source pre {white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;line-height:1.7;}
+
   .dc-run-switcher { display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--dc-border-subtle); }
   .dc-run-card { display:flex;flex-direction:column;justify-content:flex-start;min-width:0;padding:0;overflow:hidden;border:1px solid var(--dc-border);border-radius:10px;background:var(--dc-bg-elev);color:var(--dc-text);text-align:left;cursor:pointer; }
   .dc-run-card:hover,.dc-run-card:focus-visible {border-color:var(--dc-text-dim);outline:none;}

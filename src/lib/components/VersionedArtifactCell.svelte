@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { VersionedArtifactSlot, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
+  import { videoModel } from '$lib/data/version-context';
   import CopyButton from './CopyButton.svelte';
   import PromptModal from './PromptModal.svelte';
   import MediaLightbox from './MediaLightbox.svelte';
 
   let {
     slotData,
+    activeIndex = $bindable(0),
+    hidePrompt = false,
     label = 'Artifact',
     promptsMap = new Map(),
     answersMap = new Map(),
@@ -15,6 +18,8 @@
     generateLabel = 'Generate',
   }: {
     slotData: VersionedArtifactSlot;
+    activeIndex?: number;
+    hidePrompt?: boolean;
     label?: string;
     promptsMap?: Map<string, GenerationPrompt>;
     answersMap?: Map<string, ModelAnswer>;
@@ -27,7 +32,6 @@
   let activePrompt = $state<GenerationPrompt | null>(null);
   let lightboxOpen = $state(false);
 
-  let activeIndex = $state(0);
   let active = $derived(
     slotData.versions.length > 0 ? slotData.versions[activeIndex] : null
   );
@@ -96,7 +100,7 @@
 {#if lightboxOpen}
   <MediaLightbox
     artifacts={slotData.versions}
-    activeIndex={activeIndex}
+    bind:activeIndex
     {promptsMap}
     {answersMap}
     onClose={closeLightbox}
@@ -112,7 +116,7 @@
 {/if}
 
 <div class="dc-artifact-cell"
-  role="img"
+  role="group"
   aria-label={active ? active.title : `No ${label.toLowerCase()} yet`}
 >
   <div class="dc-artifact-cell-header">
@@ -227,12 +231,12 @@
 
   {#if active}
     <div class="dc-artifact-meta">
-      <span>{active.provider}</span>
+      <span>{isVideo ? videoModel(active) : active.provider}</span>
       {#if active.created_at}
         <span>{new Date(active.created_at).toLocaleDateString()}</span>
       {/if}
     </div>
-    {#if promptPreview}
+    {#if promptPreview && !hidePrompt}
       <div class="dc-artifact-prompt-badge">
         <button
           class="dc-badge"
@@ -244,7 +248,7 @@
           {promptPreview}
         </button>
       </div>
-    {:else if active.prompt_text}
+    {:else if active.prompt_text && !hidePrompt}
       <div class="dc-artifact-actions">
         <CopyButton text={active.prompt_text} label="Prompt" size={10} />
       </div>

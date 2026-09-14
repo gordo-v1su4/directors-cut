@@ -55,3 +55,9 @@ Canonical infrastructure layout: `proxmox-home/hostinger-ops/docs/rustfs-object-
 ## Verification
 
 `bun run test:media`, `bun run check`, `bun run build`. Also verify actual browser playback, full titles, 16:9 preview frames, top-aligned cards, version switching, and duplicate-safe imports. Build success is not a substitute for playback verification.
+
+## Version-specific context
+
+On Projects, select a trailer version and choose **Edit version details**. Save the exact prompt and video model (free text with common-model suggestions), then upload a PNG/JPEG/WebP shot grid up to 10 MB or select an existing project grid. **Save version details** commits the prompt, model and attachment together. Arrows and thumbnails select the entire version context. Missing attachments remain empty; legacy grids are never guessed or automatically paired. The expanded video preview also shows that version's prompt and grid.
+
+The owner-authenticated `POST /versions/:id/details` endpoint stores `version_prompt`, `video_model`, `shot_grid_url`, and `context_revision` in the video's existing SQLite artifact record. Original generation `prompt_text` and provider metadata remain intact. An omitted grid preserves its attachment; null explicitly detaches it. Stale saves return 409 rather than overwriting newer edits. Grid files are content-addressed under `directors-cut/version-assets/<run-id>/<artifact-hash>/shot-grids/<sha>.<ext>`; replacements never overwrite a different version's files. No image model tag or processing job is needed. Local development needs `VITE_MEDIA_API_URL` pointing at the backend for editing; production uses the public API.

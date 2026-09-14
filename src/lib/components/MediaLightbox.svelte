@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { ComparisonArtifact, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
-  import CopyButton from './CopyButton.svelte';
+  import { resolve } from '$app/paths';
+  import VersionDetails from './VersionDetails.svelte';
+  import { videoModel } from '$lib/data/version-context';
 
   let {
     artifacts,
-    activeIndex = 0,
+    activeIndex = $bindable(0),
     promptsMap = new Map(),
     answersMap = new Map(),
     onClose,
@@ -16,24 +18,11 @@
     onClose: () => void;
   } = $props();
 
-  let selectedIndex = $state(0);
-  let promptExpanded = $state(false);
-
-  $effect(() => {
-    selectedIndex = activeIndex;
-  });
-  let active = $derived(artifacts[selectedIndex] ?? null);
-  let activePrompt = $derived(active?.prompt_id ? promptsMap.get(active.prompt_id) : null);
-  let promptAuthor = $derived(activePrompt?.answer_id ? answersMap.get(activePrompt.answer_id) : null);
+  let active = $derived(artifacts[activeIndex] ?? null);
   let isVideo = $derived(active?.artifact_type === 'video_result' || active?.artifact_type === 'end_video');
   let mediaUrl = $derived(active?.media_url ?? active?.thumbnail_url);
   function selectVersion(index: number) {
-    selectedIndex = index;
-    promptExpanded = false;
-  }
-
-  function togglePrompt() {
-    promptExpanded = !promptExpanded;
+    activeIndex = index;
   }
 
   function handleBackdrop(e: MouseEvent) {
@@ -41,9 +30,11 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName)) return;
+    e.stopPropagation();
     if (e.key === 'Escape') onClose();
-    if (e.key === 'ArrowLeft') selectedIndex = Math.max(0, selectedIndex - 1);
-    if (e.key === 'ArrowRight') selectedIndex = Math.min(artifacts.length - 1, selectedIndex + 1);
+    if (e.key === 'ArrowLeft') activeIndex = Math.max(0, activeIndex - 1);
+    if (e.key === 'ArrowRight') activeIndex = Math.min(artifacts.length - 1, activeIndex + 1);
   }
 
   function formatType(type: string) {
@@ -61,8 +52,7 @@
           <div class="dc-lightbox-title">{active?.title ?? 'Preview'}</div>
           <div class="dc-lightbox-subtitle">
             {#if active}
-              {formatType(active.artifact_type)} · {active.provider}
-              {#if active.target_model} · {active.target_model}{/if}
+              {isVideo ? videoModel(active) : formatType(active.artifact_type)}
             {/if}
           </div>
         </div>
@@ -70,7 +60,7 @@
       </div>
       <div style="margin-top: 8px;">
         <a
-          href={`/comparisons?run=${active?.run_id}`}
+          href={`${resolve('/comparisons')}?run=${active?.run_id}`}
           style="font-size: 11px; color: var(--dc-sora); text-decoration: none;"
           onclick={(e: MouseEvent) => { e.stopPropagation(); onClose(); }}
         >
@@ -115,7 +105,7 @@
             {#each artifacts as artifact, i (artifact.artifact_id)}
               <button
                 class="dc-lightbox-version-thumb"
-                class:dc-lightbox-version-active={i === selectedIndex}
+                class:dc-lightbox-version-active={i === activeIndex}
                 onclick={() => selectVersion(i)}
                 aria-label={`Version ${i + 1}`}
               >
@@ -138,34 +128,8 @@
         </div>
       {/if}
 
-      {#if activePrompt}
-        <div class="dc-lightbox-prompt">
-          <div class="dc-lightbox-prompt-header">
-            <span class="dc-lightbox-meta-label">Generation prompt</span>
-            <div class="dc-lightbox-prompt-meta">
-              {#if promptAuthor}
-                <span class="dc-lightbox-prompt-author">By {promptAuthor.model_name} ({promptAuthor.agent_name})</span>
-              {/if}
-              <span>{activePrompt.model} · {activePrompt.provider}</span>
-            </div>
-          </div>
-          <pre class="dc-lightbox-prompt-text" class:dc-prompt-expanded={promptExpanded}>{activePrompt.prompt_text}</pre>
-          <div class="dc-lightbox-prompt-actions">
-            <button class="dc-lightbox-prompt-toggle" onclick={togglePrompt}>{promptExpanded ? 'Collapse ↑' : 'Show full ↓'}</button>
-            <CopyButton text={activePrompt.prompt_text} label="Copy prompt" size={12} />
-          </div>
-        </div>
-      {:else if active?.prompt_text}
-        <div class="dc-lightbox-prompt">
-          <div class="dc-lightbox-prompt-header">
-            <span class="dc-lightbox-meta-label">Prompt text</span>
-          </div>
-          <pre class="dc-lightbox-prompt-text" class:dc-prompt-expanded={promptExpanded}>{active.prompt_text}</pre>
-          <div class="dc-lightbox-prompt-actions">
-            <button class="dc-lightbox-prompt-toggle" onclick={togglePrompt}>{promptExpanded ? 'Collapse ↑' : 'Show full ↓'}</button>
-            <CopyButton text={active.prompt_text} label="Copy prompt" size={12} />
-          </div>
-        </div>
+      {#if active && isVideo}
+        {#key active.artifact_id}<VersionDetails artifact={active} {promptsMap} editable={false} />{/key}
       {/if}
 
       {#if active?.notes}
@@ -357,66 +321,6 @@
     font-size: 10px;
     padding: 2px 4px;
     text-align: center;
-  }
-
-  .dc-lightbox-prompt {
-    background: var(--dc-bg);
-    border: 1px solid var(--dc-border-subtle);
-    border-radius: var(--dc-radius);
-    padding: 12px;
-  }
-
-  .dc-lightbox-prompt-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-  }
-
-  .dc-lightbox-prompt-meta {
-    display: flex;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--dc-text-muted);
-  }
-
-  .dc-lightbox-prompt-author {
-    color: var(--dc-sora);
-  }
-
-  .dc-lightbox-prompt-text {
-    margin: 0;
-    font-family: var(--dc-font-mono);
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--dc-text);
-    white-space: pre-wrap;
-    word-break: break-word;
-    /* Use a collapsible area: collapsed shows ~6 lines with a fade, expanded shows all.
-       Internal scrollbar kicks in only when expanded content is very long. */
-    max-height: var(--dc-prompt-collapsed, 160px);
-    overflow: auto;
-    transition: max-height 0.2s ease;
-  }
-  .dc-lightbox-prompt-text.dc-prompt-expanded {
-    max-height: 420px;
-  }
-  .dc-lightbox-prompt-toggle {
-    background: none;
-    border: none;
-    color: var(--dc-sora);
-    font-size: 11px;
-    cursor: pointer;
-    padding: 4px 0 0;
-    text-align: left;
-  }
-
-  .dc-lightbox-prompt-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
   }
 
   .dc-lightbox-meta-label {

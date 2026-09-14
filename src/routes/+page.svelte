@@ -6,6 +6,7 @@
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
   import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
   import VersionDropzone from '$lib/components/VersionDropzone.svelte';
+  import { videoModel } from '$lib/data/version-context';
   import { isDesktop } from '$lib/viewport.svelte';
 
   const desktop = isDesktop();
@@ -131,7 +132,7 @@
                 <video src={heroArtifact.media_url} poster={heroArtifact.thumbnail_url} muted={heroMuted} autoplay loop playsinline aria-label={heroArtifact.title}></video>
                 <button type="button" class="dc-hero-volume" aria-label={heroMuted ? 'Unmute key art video' : 'Mute key art video'} onclick={() => (heroMuted = !heroMuted)}>{heroMuted ? 'VOL 0' : 'VOL 1'}</button>
               {:else}<img src={mediaUrl(heroArtifact)} alt={heroArtifact.title} />{/if}
-              <span class="dc-art-label">Key art / {heroArtifact.provider.replaceAll('_', ' ')}</span>
+              <span class="dc-art-label">{videoModel(heroArtifact)}</span>
             {:else}
               <div class="dc-art-empty"><span>KEY ART</span><small>Awaiting generated media</small></div>
             {/if}
@@ -162,7 +163,7 @@
       <div class="dc-section-heading"><h2 class="dc-section-title">Latest media feed</h2><span class="dc-section-note">Recent trailer versions</span></div>
       <div class="dc-media-feed">
         {#each latestMedia.slice(0, 6) as item (item.artifact_id)}
-          <button type="button" class="dc-feed-card" onclick={() => { lightboxArtifacts = latestMedia; lightboxIndex = latestMedia.findIndex((a) => a.artifact_id === item.artifact_id); }}>
+          <button type="button" class="dc-feed-card" onclick={async () => { const detail = await loadComparisonRun(item.run_id); lightboxArtifacts = detail.artifacts.filter(a => isVideo(a) && a.media_url).sort((a,b)=>a.created_at.localeCompare(b.created_at)); lightboxIndex = Math.max(0, lightboxArtifacts.findIndex(a => a.artifact_id === item.artifact_id)); }}>
             <div class="dc-feed-frame"><ArtifactPreview artifact={item} /></div>
             <div class="dc-feed-copy"><strong>{projects.find((project) => project.run_id === item.run_id)?.title ?? item.title}</strong><small>{projects.find((project) => project.run_id === item.run_id)?.logline || 'Logline not added yet.'}</small></div>
           </button>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import type { ComparisonRow, ComparisonRun, ComparisonRunDetail, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
+  import VersionReview from './VersionReview.svelte';
   import ModelAnswerCell from './ModelAnswerCell.svelte';
   import VersionedArtifactCell from './VersionedArtifactCell.svelte';
   import ReferenceImageStrip from './ReferenceImageStrip.svelte';
@@ -304,6 +305,12 @@
   });
 </script>
 
+{#if 'artifacts' in run}
+  {#key run.run_id}
+    <VersionReview videos={run.artifacts.filter(a => a.media_url && ['video_result','end_video'].includes(a.artifact_type)).sort((a,b)=>a.created_at.localeCompare(b.created_at))} grids={run.artifacts.filter(a=>a.media_url && ['shot_grid','image_result'].includes(a.artifact_type))} {promptsMap} {answersMap} onSaved={onrefresh} />
+  {/key}
+{/if}
+
 {#if rows.some((row) => row.answer.ui_status !== 'missing')}
   <details class="dc-concept-gate-strip">
     <summary>Generate another take</summary>
@@ -322,6 +329,11 @@
               <span class="dc-decision-status" data-status={generationStatus.toLowerCase()}>{generationStatus}</span>
             </div>
             <div class="dc-concept-gate-card-title">{title}</div>
+            <details><summary>Generate shot grid</summary>
+              <button class="dc-action-button" disabled={!soraPromptForRow(row) || !BRIDGE_TOKEN || gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>requestGridQuote(row)}>Get image quote</button>
+              {#if gridByAnswer[row.answer.answer_id]?.quote && !gridByAnswer[row.answer.answer_id]?.submission}<button class="dc-action-button" disabled={gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>confirmGridGeneration(row)}>Confirm {gridByAnswer[row.answer.answer_id]?.quote?.credit_cost_total} credits</button>{/if}
+              {#if gridByAnswer[row.answer.answer_id]?.error}<p class="dc-decision-error">{gridByAnswer[row.answer.answer_id]?.error}</p>{/if}
+            </details>
             <div class="dc-action-group">
               <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
               <button class="dc-action-button dc-reject-button" disabled={savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
@@ -341,41 +353,7 @@
   </details>
 {/if}
 
-<div class="dc-comparison-table-wrap dc-project-history">
-  <table class="dc-comparison-table">
-    <thead><tr><th>Prompt source</th><th>Shot grid</th><th>Trailer versions</th></tr></thead>
-    <tbody>
-      {#each rows.filter(row => row.answer.ui_status !== 'missing') as row (row.answer.answer_id)}
-        {@const rowMedia = 'artifacts' in run ? run.artifacts.filter(a => a.media_url && (a.answer_id === row.answer.answer_id || (!a.answer_id && row === rows.find(r=>r.answer.ui_status !== 'missing')))) : []}
-        {@const videos = rowMedia.filter(a => ['video_result','end_video'].includes(a.artifact_type)).sort((a,b)=>a.created_at.localeCompare(b.created_at))}
-        {@const grids = rowMedia.filter(a => ['shot_grid','image_result'].includes(a.artifact_type))}
-        <tr>
-          <td data-label="Prompt source"><ModelAnswerCell answer={row.answer} /></td>
-          <td data-label="Shot grid"><VersionedArtifactCell slotData={{slot_type:'shot_grid',active_artifact_id:grids[0]?.artifact_id ?? null,versions:grids}} label="Shot grid" {promptsMap} {answersMap} />
-            <details><summary>Generate grid</summary>
-              <button class="dc-action-button" disabled={!soraPromptForRow(row) || !BRIDGE_TOKEN || gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>requestGridQuote(row)}>Get image quote</button>
-              {#if gridByAnswer[row.answer.answer_id]?.quote && !gridByAnswer[row.answer.answer_id]?.submission}<button class="dc-action-button" disabled={gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>confirmGridGeneration(row)}>Confirm {gridByAnswer[row.answer.answer_id]?.quote?.credit_cost_total} credits</button>{/if}
-              {#if gridByAnswer[row.answer.answer_id]?.error}<p class="dc-decision-error">{gridByAnswer[row.answer.answer_id]?.error}</p>{/if}
-            </details>
-          </td>
-          <td data-label="Trailer versions"><VersionedArtifactCell slotData={{slot_type:'video_result',active_artifact_id:videos[0]?.artifact_id ?? null,versions:videos}} label="Versions" {promptsMap} {answersMap} /></td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
 
 <style>
   summary {cursor:pointer;font-size:12px;color:var(--dc-text-muted);padding:8px 0;}
-  .dc-project-history {margin-top:20px;}
-  .dc-project-history .dc-comparison-table {width:100%;min-width:0;table-layout:fixed;}
-  .dc-project-history th:nth-child(1) {width:28%;}
-  .dc-project-history th:nth-child(2) {width:28%;}
-  .dc-project-history th:nth-child(3) {width:44%;}
-  .dc-project-history td {padding:18px;vertical-align:top;}
-  .dc-project-history :global(.dc-artifact-cell-header) {flex-wrap:wrap;gap:10px;}
-  .dc-project-history :global(.dc-slot-frame) {width:100%;height:auto;aspect-ratio:16/9;}
-  .dc-project-history :global(.dc-artifact-version-thumb) {width:96px;height:54px;flex:0 0 96px;}
-  .dc-project-history :global(.dc-artifact-version-strip) {gap:10px;}
-  @media(max-width:900px) {.dc-project-history td {padding:16px;}}
 </style>
