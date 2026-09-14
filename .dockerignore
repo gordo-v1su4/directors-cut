@@ -1,0 +1,9 @@
+**
+!backend/
+!backend/**
+!public/
+!public/data/
+!public/data/comparisons/
+!public/data/comparisons/**
+public/data/comparisons/**/media
+backend/**/__pycache__

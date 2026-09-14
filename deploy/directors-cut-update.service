@@ -1,0 +1,8 @@
+[Unit]
+Description=Update Directors Cut backend from main
+After=network-online.target docker.service
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/opt/directors-cut/update.sh
+TimeoutStartSec=900

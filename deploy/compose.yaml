@@ -1,0 +1,25 @@
+name: directors-cut
+services:
+  api:
+    container_name: directors-cut-api
+    image: directors-cut-api:${RELEASE_SHA:-local}
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file: /opt/directors-cut/runtime.env
+    environment:
+      RELEASE_SHA: ${RELEASE_SHA:-local}
+    ports:
+      - "127.0.0.1:18100:18100"
+    volumes:
+      - directors-cut-data:/data
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  directors-cut-data:
+    name: directors-cut-data

@@ -1,3 +1,4 @@
+import { catalogUrl } from './media-api';
 import type {
   ComparisonRun,
   ComparisonRunDetail,
@@ -46,7 +47,7 @@ export interface ComparisonIndexResult {
 
 export async function loadComparisonsIndex(): Promise<ComparisonIndexResult> {
   try {
-    const res = await fetch('/data/comparisons.index.json', { cache: 'no-store' });
+    const res = await fetch(catalogUrl('/data/comparisons.index.json'), { cache: 'no-store' });
     if (!res.ok) return { runs: [], expected_models: EXPECTED_MODELS };
     const data = (await res.json()) as ComparisonsIndex;
     return {
@@ -125,7 +126,7 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
   // Prefer the per-run run.json emitted by the build script (carries the real
   // brief, question, models_requested, target_models, tags from the run md).
   try {
-    const res = await fetch(`/data/comparisons/${runId}/run.json`, { cache: 'no-store' });
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/run.json`), { cache: 'no-store' });
     if (res.ok) {
       const run = (await res.json()) as ComparisonRun;
       if (run.run_id) return run;
@@ -135,7 +136,7 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
   }
   // Fallback: reconstruct a minimal run from the comparisons index summary.
   try {
-    const res = await fetch('/data/comparisons.index.json', { cache: 'no-store' });
+    const res = await fetch(catalogUrl('/data/comparisons.index.json'), { cache: 'no-store' });
     if (!res.ok) throw new Error('index unavailable');
     const data = (await res.json()) as ComparisonsIndex;
     const found = data.runs.find((r) => r.run_id === runId);
@@ -159,7 +160,7 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
 
 async function fetchAnswers(runId: string): Promise<ModelAnswer[]> {
   try {
-    const res = await fetch(`/data/comparisons/${runId}/answers.json`, { cache: 'no-store' });
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/answers.json`), { cache: 'no-store' });
     if (!res.ok) return [];
     return (await res.json()) as ModelAnswer[];
   } catch (e) {
@@ -170,7 +171,7 @@ async function fetchAnswers(runId: string): Promise<ModelAnswer[]> {
 
 async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {
   try {
-    const res = await fetch(`/data/comparisons/${runId}/artifacts.json`, { cache: 'no-store' });
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/artifacts.json`), { cache: 'no-store' });
     if (!res.ok) return [];
     return (await res.json()) as ComparisonArtifact[];
   } catch (e) {
@@ -181,7 +182,7 @@ async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {
 
 async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
   try {
-    const res = await fetch(`/data/comparisons/${runId}/prompts.json`, { cache: 'no-store' });
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/prompts.json`), { cache: 'no-store' });
     if (!res.ok) return [];
     return (await res.json()) as GenerationPrompt[];
   } catch (e) {
@@ -192,7 +193,7 @@ async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
 
 async function fetchDecisions(runId: string): Promise<ConceptDecision[]> {
   try {
-    const res = await fetch(`/data/comparisons/${runId}/decisions.json`, { cache: 'no-store' });
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/decisions.json`), { cache: 'no-store' });
     if (!res.ok) return [];
     return (await res.json()) as ConceptDecision[];
   } catch (e) {
@@ -400,7 +401,7 @@ export async function loadLatestArtifacts(limit = 6): Promise<ComparisonArtifact
 
   for (const run of index.runs) {
     try {
-      const res = await fetch(`/data/comparisons/${run.run_id}/artifacts.json`, { cache: 'no-store' });
+      const res = await fetch(catalogUrl(`/data/comparisons/${run.run_id}/artifacts.json`), { cache: 'no-store' });
       if (!res.ok) continue;
       const artifacts = (await res.json()) as ComparisonArtifact[];
       for (const a of artifacts) {
