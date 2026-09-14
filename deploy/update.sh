@@ -21,6 +21,7 @@ if docker ps --format '{{.Names}}' | grep -qx directors-cut-api; then
 fi
 if docker compose -f deploy/compose.yaml up -d --wait --wait-timeout 90; then
   printf '%s\n' "$next" > /opt/directors-cut/release
+  install -m 755 deploy/update.sh /opt/directors-cut/update.sh
 else
   if [[ -n "$previous" ]]; then
     git checkout --quiet --detach "$previous"

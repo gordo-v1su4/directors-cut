@@ -44,8 +44,8 @@
     dragging=false;
     if(mediaApi && !ownerToken()) {showLogin=true;message='Sign in before adding videos.';return;}
     if(uploading || !files.length) return;
-    if(files.some(f=>! /\.(mp4|mov|webm)$/i.test(f.name)) || files.reduce((n,f)=>n+f.size,0)>500*1024*1024) {
-      failed=true;message='Choose MP4, MOV or WebM videos, up to 500 MB per batch.';return;
+    if(files.some(f=>! /\.(mp4|mov|webm)$/i.test(f.name) || (mediaApi && f.size>95*1000*1000)) || files.reduce((n,f)=>n+f.size,0)>500*1024*1024) {
+      failed=true;message=mediaApi ? 'Choose MP4, MOV or WebM, up to 95 MB per file and 500 MB per batch.' : 'Choose MP4, MOV or WebM videos, up to 500 MB per batch.';return;
     }
     const projectId=runId;
     uploading=true;failed=false;message=`Saving ${files.length === 1 ? 'version' : 'versions'} to ${title}…`;

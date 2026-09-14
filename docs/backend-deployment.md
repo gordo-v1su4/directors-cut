@@ -9,7 +9,9 @@ and hashed owner sessions. Videos and thumbnails stay in bucket `directors-cut`.
 ## Upload flow
 
 Sign in as `gordo` using the shared operator app password, then drop a video
-onto the selected project. The browser uploads directly to Robyn, avoiding
+onto the selected project. Public uploads accept up to 95 MB per file (500 MB
+per batch), below the edge proxy request limit. Larger uploads need chunking
+or a direct multipart storage path. The browser uploads directly to Robyn, avoiding
 Vercel's request-body path. Robyn uses the private RustFS gateway `/upload`,
 then `/video/jobs`. The existing Stack Structure worker handles the job without
 Trigger.dev. Its first scene thumbnail becomes the version preview. The

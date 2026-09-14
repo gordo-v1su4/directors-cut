@@ -154,8 +154,8 @@ def upload(request: Request):
     body = request.body
     if isinstance(body, str):
         return reply(request, {'error':'Upload binary video data'}, 400)
-    if extension not in ('.mp4','.mov','.webm') or not body or len(body)>500*1024*1024:
-        return reply(request, {'error':'Choose MP4, MOV or WebM, up to 500 MB'}, 400)
+    if extension not in ('.mp4','.mov','.webm') or not body or len(body)>95*1000*1000:
+        return reply(request, {'error':'Choose MP4, MOV or WebM, up to 95 MB'}, 400)
     sha = hashlib.sha256(body).hexdigest()
     with lock, connect() as db:
         run = document(db,run_id,'run')
