@@ -1,0 +1,11 @@
+[
+  {
+    "decision_id": "decision_16ee851c-faa0-4bc0-a6fb-f59ac515273f",
+    "run_id": "20260914-the-last-prescription",
+    "answer_id": "notion-last-prescription",
+    "decision": "approved",
+    "decided_at": "2026-09-14T05:53:33.287Z",
+    "prompt_sha256": "356d8aa5efe4d3e1a19901e205124509841a9fc6bf5d2dbde821e7d9e06fb8e1",
+    "source": "directors_cut_ui"
+  }
+]

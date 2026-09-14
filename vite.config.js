@@ -8,6 +8,7 @@ export default defineConfig({
     port: 5190,
     strictPort: false,
     host: '127.0.0.1',
-    allowedHosts: true,
+    allowedHosts: ['localhost', '127.0.0.1'],
+    proxy: { '/api/media': { target: 'http://127.0.0.1:8788', changeOrigin: false, timeout: 240000 } },
   },
 });

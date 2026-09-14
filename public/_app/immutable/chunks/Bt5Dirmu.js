@@ -1,1 +1,0 @@
-import{t as C}from"./C-90nDGl.js";import{E as a,h}from"./BhaQtAV3.js";function L(i,b,t,l,f,r){var g=i[a];if(h||g!==t||g===void 0){var o=C(t,l,r);(!h||o!==i.getAttribute("class"))&&(o==null?i.removeAttribute("class"):i.className=o),i[a]=t}else if(r&&f!==r)for(var u in r){var A=!!r[u];(f==null||A!==!!f[u])&&i.classList.toggle(u,A)}return r}export{L as s};

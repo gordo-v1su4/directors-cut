@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { resolve } from '$app/paths';
+  import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
+  import VersionDropzone from '$lib/components/VersionDropzone.svelte';
   import { page } from '$app/stores';
   import type { ComparisonRunDetail, ComparisonRun, ComparisonArtifact } from '$lib/types/comparison';
   import { loadComparisonRun, loadComparisonsIndex, getRunGenerationStatus, getGeneratedMediaSummary, type GeneratedMediaSummaryItem } from '$lib/data/comparisons';
@@ -9,7 +12,7 @@
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
 
-  let runList = $state<{ run_id: string; title: string; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
+  let runList = $state<{ run_id: string; title: string; logline?: string; preview?: ComparisonArtifact | null; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
   let selectedRunId = $state('');
   let run = $state<ComparisonRunDetail | null>(null);
   let loading = $state(true);
@@ -23,17 +26,6 @@
   let parsedRun = $derived(parseRunQuestion(displayQuestion));
   let displayBrief = $derived(run?.brief?.trim() || parsedRun.creativeBrief || 'No creative brief saved for this run.');
   let hasRealArtifacts = $derived(mediaSummary.length > 0);
-  let currentModelRows = $derived(run?.rows.filter((row) => {
-    const label = row.answer.model_name.toLowerCase();
-    return row.answer.ui_status !== 'missing'
-      && (label.includes('chatgpt') || label.startsWith('gpt-') || label.includes('claude'));
-  }) ?? []);
-  let readyModelRows = $derived(currentModelRows.filter((row) =>
-    [...row.promptOnlyVideoSeedanceSlot.versions, ...row.promptOnlyVideoSoraSlot.versions]
-      .some((artifact) => artifact.status === 'generated' && !!artifact.media_url)
-  ));
-  let judgingUnlocked = $derived(currentModelRows.length === 2 && readyModelRows.length === 2);
-
   async function loadRun(id: string) {
     switching = true;
     error = '';
@@ -58,7 +50,8 @@
           error = `Prompt card "${promptSlug}" not found.`;
         }
       } else {
-        run = await loadComparisonRun(id);
+        const detail = await loadComparisonRun(id);
+        if (selectedRunId === id) run = detail;
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -74,24 +67,28 @@
     loadRun(id);
   }
 
-  function posterForRun(title: string, index: number) {
-    const normalized = title.toLowerCase();
-    if (normalized.includes('pink room')) return '/media/project-pink-room.png';
-    if (normalized.includes('night shift')) return '/media/project-night-shift.png';
-    if (normalized.includes('analog') || normalized.includes('archive')) return '/media/project-analog.png';
-    return index % 2 === 0 ? '/media/project-noir.png' : '/media/project-analog.png';
-  }
-
   async function refreshSelectedRun() {
     if (selectedRunId) await loadRun(selectedRunId);
   }
 
-  onMount(async () => {
+  onMount(() => {
+    let busy = false;
+    const timer = setInterval(async () => {
+      if (busy || !selectedRunId) return;
+      busy = true;
+      const id = selectedRunId;
+      try {
+        const detail = await loadComparisonRun(id);
+        if (selectedRunId === id && JSON.stringify(detail) !== JSON.stringify(run)) run = detail;
+        runList = (await loadComparisonsIndex()).runs.sort((a,b)=>b.created.localeCompare(a.created));
+      } finally { busy = false; }
+    }, 10000);
+    void (async () => {
     promptSlug = $page.url.searchParams.get('prompt') || '';
     const urlRun = $page.url.searchParams.get('run') || '';
     try {
       const idx = await loadComparisonsIndex();
-      runList = idx.runs;
+      runList = idx.runs.sort((a,b)=>b.created.localeCompare(a.created));
       const startId = urlRun || (runList[0]?.run_id ?? '');
       selectedRunId = startId;
       if (startId || promptSlug) await loadRun(startId);
@@ -100,6 +97,8 @@
     } finally {
       loading = false;
     }
+    })();
+    return () => clearInterval(timer);
   });
 </script>
 
@@ -110,7 +109,7 @@
 <div class="dc-page dc-page-shell">
   <div class="dc-projects-intro">
     <div><p class="dc-eyebrow">Prompt experiments and output review</p><h1>Projects</h1></div>
-    <a class="dc-create-link" href="/create">+ New prompt project</a>
+    <a class="dc-create-link" href={resolve('/create')}>+ New prompt project</a>
   </div>
   {#if runList.length > 1}
     <div class="dc-run-switcher" aria-label="Projects">
@@ -119,17 +118,15 @@
           class:dc-run-card-active={r.run_id === selectedRunId}
           class="dc-run-card"
           aria-pressed={r.run_id === selectedRunId}
+          aria-describedby={`logline-${r.run_id}`}
           onclick={() => selectRun(r.run_id)}
         >
           <span class="dc-run-card-art">
-            <img src={posterForRun(r.title, index)} alt="" loading="lazy" />
-            <span class="dc-run-card-art-index">{String(index + 1).padStart(2, '0')}</span>
-            <span class="dc-run-card-art-mark">FILM / {String(index + 1).padStart(2, '0')}</span>
+            {#if r.preview}<ArtifactPreview artifact={r.preview} />{:else}<span class="dc-run-card-empty">No generated media yet</span>{/if}
+            <span class="dc-run-card-meta" id={`logline-${r.run_id}`}>{r.logline || 'Logline not added yet.'}</span>
           </span>
           <span class="dc-run-card-copy">
-            <span class="dc-run-card-kicker">Project {String(index + 1).padStart(2, '0')} / {r.status}</span>
             <strong>{r.title}</strong>
-            <span class="dc-run-card-meta">{r.answer_count} answers · {r.artifact_count} artifacts</span>
           </span>
           <span class="dc-run-card-arrow" aria-hidden="true">↗</span>
         </button>
@@ -138,7 +135,7 @@
   {/if}
 
   {#if loading}
-    <div class="dc-empty-state">Loading comparison run…</div>
+    <div class="dc-empty-state">Loading project…</div>
   {:else if error}
     <div class="dc-empty-state dc-error">{error}</div>
   {:else if run}
@@ -183,196 +180,37 @@
 
       {#if displayQuestion}
         <details class="dc-brief-panel">
-          <summary class="dc-brief-label" style="cursor: pointer;">Raycast input package (what ChatGPT/Claude received)</summary>
+          <summary class="dc-brief-label" style="cursor: pointer;">Original prompt and source</summary>
           <pre style="margin-top: 8px;">{displayQuestion}</pre>
         </details>
       {/if}
     </div>
 
-    {#if currentModelRows.length > 0}
-      <div class="dc-next-steps">
-        <div class="dc-brief-label">What to do next</div>
-        <ol>
-          <li><strong>Pick a concept</strong> — scroll to the table below and click <strong>Approve idea</strong> on ChatGPT or Claude (pinned right column).</li>
-          <li><strong>Generate grid</strong> (optional) — click <strong>Generate grid</strong> in the Shot grid column for a Nano Banana storyboard.</li>
-          <li><strong>Generate video</strong> — after approval, use <strong>Get live Higgsfield quote</strong>. The local bridge submits, polls, downloads, records provenance, rebuilds the index, and returns the playable result here.</li>
-        </ol>
-      </div>
-    {/if}
-
-    <GenerationStatusBanner status={genStatus} artifacts={run.artifacts} />
-
-    <div class="dc-review-progress" data-ready={judgingUnlocked}>
-      <div><span>Serial video review</span><strong>{readyModelRows.length}/2 videos ready</strong></div>
-      <p>{judgingUnlocked ? 'Judging unlocked.' : 'Approve, quote, and generate each model independently. Judging remains locked until both videos are playable.'}</p>
-    </div>
-
-    {#if hasRealArtifacts}
-      <div class="dc-gen-media-summary" style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--dc-border-subtle); border-radius: var(--dc-radius); background: var(--dc-bg-elev);">
-        <div class="dc-brief-label" style="margin-bottom: 8px;">Generated Media ({mediaSummary.length} artifact{mediaSummary.length === 1 ? '' : 's'})</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;">
-          {#each mediaSummary as item (item.artifact_id)}
-            <div style="border: 1px solid var(--dc-border-subtle); border-radius: var(--dc-radius); overflow: hidden; background: var(--dc-bg);">
-              <div style="aspect-ratio: 16 / 9; overflow: hidden; background: var(--dc-bg-elev-2);">
-                {#if item.thumbnail_url || item.media_url}
-                  {#if item.artifact_type === 'video_result' || item.artifact_type === 'end_video'}
-                    <video src={item.media_url} preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                  {:else}
-                    <img src={item.thumbnail_url ?? item.media_url} alt={item.title} loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                  {/if}
-                {/if}
-              </div>
-              <div style="padding: 6px 8px;">
-                <div style="font-size: 11px; color: var(--dc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{item.title}</div>
-                <div style="font-size: 9px; color: var(--dc-text-dim); margin-top: 2px;">{item.provider} · {item.artifact_type.replace(/_/g, ' ')} · {item.status ?? 'generated'}</div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    <p class="dc-table-scroll-hint">Each model below is one card — scroll down through <strong>prompt source</strong>, the generated slots, then <strong>concept gate</strong> to approve.</p>
+    <div class="dc-brief-panel"><p style="margin:0;color:var(--dc-text-muted);font-size:12px;line-height:1.6">Drop finished versions below. Videos get a thumbnail, save to this project, and appear in the feed automatically. Original prompts stay alongside the versions.</p></div>
+    {#key run.run_id}<VersionDropzone runId={run.run_id} title={run.title} onAdded={refreshSelectedRun} />{/key}
 
     <div class="dc-comparison-table-scroll-outer">
       <div class="dc-comparison-table-scroll-inner">
-        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} {judgingUnlocked} />
-      </div>
-      <!-- Edge cue overlay: visible when table is wider than viewport -->
-      <div class="dc-table-edge-cue" style="position: absolute; right: 0; top: 0; bottom: 0; width: 32px; pointer-events: none; background: linear-gradient(to left, var(--dc-bg-elev), transparent); display: flex; align-items: center; justify-content: flex-end; padding-right: 4px;">
-        <span style="writing-mode: vertical-rl; text-orientation: mixed; font-size: 9px; color: var(--dc-text-dim); pointer-events: auto;">→ more</span>
+        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
       </div>
     </div>
   {:else}
-    <div class="dc-empty-state">No comparison run selected.</div>
+    <div class="dc-empty-state">No project selected.</div>
   {/if}
 </div>
 
 <style>
-  .dc-run-switcher {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
-    gap: 12px;
-    margin-bottom: 22px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--dc-border-subtle);
-  }
-
-  .dc-run-card {
-    position: relative;
-    display: grid;
-    grid-template-columns: 92px minmax(0, 1fr) 18px;
-    min-height: 118px;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--dc-border);
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--dc-bg-elev), #0d0d0f);
-    color: var(--dc-text);
-    text-align: left;
-    cursor: pointer;
-    transition: border-color .18s ease, transform .18s ease, background .18s ease;
-  }
-
-  .dc-run-card:hover,
-  .dc-run-card:focus-visible {
-    border-color: var(--dc-text-dim);
-    background: var(--dc-bg-elev-2);
-    transform: translateY(-2px);
-    outline: none;
-  }
-
-  .dc-run-card-active {
-    border-color: var(--dc-accent);
-    box-shadow: inset 0 0 0 1px var(--dc-accent), 0 12px 24px rgba(0,0,0,.18);
-  }
-
-  .dc-run-card-art {
-    position: relative;
-    display: block;
-    min-height: 118px;
-    overflow: hidden;
-    border-right: 1px solid var(--dc-border);
-    background: #0a0a0b;
-  }
-
-  .dc-run-card-art img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 118px;
-    object-fit: cover;
-    filter: saturate(.7) contrast(1.08);
-    opacity: .88;
-    transition: transform .3s ease, opacity .3s ease;
-  }
-
-  .dc-run-card:hover .dc-run-card-art img,
-  .dc-run-card:focus-visible .dc-run-card-art img { transform: scale(1.05); opacity: 1; }
-
-  .dc-run-card-art::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.48));
-    pointer-events: none;
-  }
-
-  .dc-run-card-art-index,
-  .dc-run-card-art-mark {
-    position: absolute;
-    z-index: 1;
-    font-family: var(--dc-font-mono);
-    color: #f1f0ea;
-    text-shadow: 0 1px 8px rgba(0,0,0,.45);
-  }
-
-  .dc-run-card-art-index { top: 9px; left: 10px; font-size: 10px; letter-spacing: .12em; }
-  .dc-run-card-art-mark { right: 8px; bottom: 8px; color: var(--dc-accent); font-size: 18px; letter-spacing: -.08em; }
-
-  .dc-run-card-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    justify-content: center;
-    gap: 7px;
-    padding: 14px 12px;
-  }
-
-  .dc-run-card-copy strong {
-    display: -webkit-box;
-    overflow: hidden;
-    font-size: 14px;
-    line-height: 1.16;
-    letter-spacing: -.02em;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-  }
-
-  .dc-run-card-kicker,
-  .dc-run-card-meta {
-    color: var(--dc-text-dim);
-    font-family: var(--dc-font-mono);
-    font-size: 9px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-
-  .dc-run-card-meta { letter-spacing: .02em; text-transform: none; }
-  .dc-run-card-arrow { align-self: start; padding-top: 12px; color: var(--dc-text-dim); font-size: 16px; }
-
-  @media (max-width: 860px) {
-    .dc-run-switcher {
-      display: flex;
-      gap: 10px;
-      margin-inline: calc(var(--dc-page-pad) * -1);
-      padding-inline: var(--dc-page-pad);
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
-      scrollbar-width: none;
-    }
-    .dc-run-switcher::-webkit-scrollbar { display: none; }
-    .dc-run-card { flex: 0 0 min(84vw, 320px); scroll-snap-align: start; }
-  }
+  .dc-run-switcher { display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--dc-border-subtle); }
+  .dc-run-card { display:flex;flex-direction:column;justify-content:flex-start;min-width:0;padding:0;overflow:hidden;border:1px solid var(--dc-border);border-radius:10px;background:var(--dc-bg-elev);color:var(--dc-text);text-align:left;cursor:pointer; }
+  .dc-run-card:hover,.dc-run-card:focus-visible {border-color:var(--dc-text-dim);outline:none;}
+  .dc-run-card-active {border-color:var(--dc-accent);}
+  .dc-run-card-art {position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;background:#0a0a0b;}
+  .dc-run-card-empty {display:grid;place-items:center;height:100%;padding:12px;color:var(--dc-text-dim);font-size:10px;}
+  .dc-run-card-copy {display:flex;flex-direction:column;gap:7px;padding:14px 12px;}
+  .dc-run-card-copy strong {font-size:14px;line-height:1.25;}
+  .dc-run-card-meta {position:absolute;inset:0;display:flex;align-items:center;padding:18px;background:rgba(8,8,10,.92);color:var(--dc-text);font-size:12px;line-height:1.5;opacity:0;transition:opacity .15s ease;overflow:auto;}
+  .dc-run-card:hover .dc-run-card-meta,.dc-run-card:focus-visible .dc-run-card-meta {opacity:1;}
+  @media(prefers-reduced-motion:reduce) {.dc-run-card-meta {transition:none;}}
+  .dc-run-card-arrow {display:none;}
+  @media(max-width:860px) {.dc-run-switcher {display:flex;overflow-x:auto;} .dc-run-card {flex:0 0 280px;}}
 </style>

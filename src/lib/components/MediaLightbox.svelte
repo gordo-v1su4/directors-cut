@@ -70,11 +70,11 @@
       </div>
       <div style="margin-top: 8px;">
         <a
-          href="/comparisons"
+          href={`/comparisons?run=${active?.run_id}`}
           style="font-size: 11px; color: var(--dc-sora); text-decoration: none;"
           onclick={(e: MouseEvent) => { e.stopPropagation(); onClose(); }}
         >
-          Go to comparison table →
+          Open project →
         </a>
       </div>
     </div>
@@ -86,6 +86,8 @@
             {#if isVideo}
               <video
                 src={mediaUrl}
+                poster={active.thumbnail_url}
+                playsinline
                 controls
                 autoplay
                 style="width: 100%; max-height: 56vh; border-radius: var(--dc-radius); display: block;"

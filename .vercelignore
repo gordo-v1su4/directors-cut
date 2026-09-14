@@ -1,0 +1,10 @@
+.git
+.local
+.env
+.env.*
+node_modules
+.svelte-kit
+content/comparisons/*/media
+public/data/comparisons/*/media
+public/_app
+public/index.html

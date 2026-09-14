@@ -28,6 +28,8 @@ interface ComparisonsIndex {
   runs: {
     run_id: string;
     title: string;
+    logline?: string;
+    preview?: ComparisonArtifact | null;
     status: ComparisonRun['status'];
     answer_count: number;
     artifact_count: number;
@@ -398,11 +400,11 @@ export async function loadLatestArtifacts(limit = 6): Promise<ComparisonArtifact
 
   for (const run of index.runs) {
     try {
-      const res = await fetch(`/data/comparisons/${run.run_id}/artifacts.json`);
+      const res = await fetch(`/data/comparisons/${run.run_id}/artifacts.json`, { cache: 'no-store' });
       if (!res.ok) continue;
       const artifacts = (await res.json()) as ComparisonArtifact[];
       for (const a of artifacts) {
-        if (a.media_url || a.thumbnail_url) {
+        if (['video_result', 'end_video'].includes(a.artifact_type) && ['generated', 'selected'].includes(a.status ?? '') && a.media_url) {
           items.push(a);
         }
       }

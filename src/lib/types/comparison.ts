@@ -8,6 +8,7 @@
 export interface ComparisonRun {
   run_id: string;
   title: string;
+  logline?: string;
   brief?: string;
   question: string;
   created: string;
@@ -137,6 +138,7 @@ export interface GenerationPrompt {
 
 export interface ComparisonArtifact {
   artifact_id: string;
+  version_number?: number;
   run_id: string;
   answer_id?: string;
   revision_id?: string;
@@ -219,6 +221,7 @@ export interface ComparisonRunDetail extends ComparisonRun {
 }
 
 export interface ComparisonRunSummary {
+  logline?: string;
   run_id: string;
   title: string;
   status: ComparisonRun['status'];

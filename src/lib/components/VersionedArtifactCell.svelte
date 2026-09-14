@@ -153,10 +153,12 @@
           <div class="dc-slot-media" style="position: relative;">
             <video
               src={active.media_url}
-              preload="auto"
+              poster={active.thumbnail_url}
+              playsinline
+              preload="metadata"
               muted
               style="width: 100%; height: 100%; object-fit: cover; display: block;"
-              onmouseenter={(e) => e.currentTarget.play()}
+              onmouseenter={(e) => { void e.currentTarget.play().catch(() => undefined); }}
               onmouseleave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
             ></video>
             <button

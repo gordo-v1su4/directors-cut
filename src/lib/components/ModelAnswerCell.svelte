@@ -25,16 +25,14 @@
   {#if concept}
     <div class="dc-concept-package">
       <h3>{displayTitle}</h3>
-      {#if concept.sora_prompt}
-        <pre class="dc-sora-prompt-primary">{concept.sora_prompt}</pre>
-      {/if}
+      <p class="dc-concept-logline">{concept.logline}</p>
       <details class="dc-concept-meta">
-        <summary>Logline & hook</summary>
-        <p class="dc-concept-logline">{concept.logline}</p>
+        <summary>Prompt & hook</summary>
+        <pre class="dc-sora-prompt-primary">{concept.sora_prompt}</pre>
         <p class="dc-concept-summary">{concept.summary}</p>
       </details>
       <details class="dc-concept-meta">
-        <summary>Raw Raycast capture</summary>
+        <summary>Original source</summary>
         <pre>{answer.answer_text}</pre>
       </details>
     </div>

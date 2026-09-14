@@ -1,0 +1,29 @@
+[
+  {
+    "artifact_id": "higgsfield-ab29cfc9-341f-46f3-932c-999d538ebd72",
+    "run_id": "20260914-the-last-prescription",
+    "answer_id": "notion-last-prescription",
+    "artifact_type": "video_result",
+    "provider": "higgsfield",
+    "target_model": "sora-2",
+    "title": "The Last Prescription",
+    "prompt_text": "Text-only 16:9 cinematic live-action teaser, grounded contemporary crime drama, realistic performances, restrained suspense, humid small-town atmosphere, muted institutional greens and faded beige contrasted with deep amber practical light, subtle handheld camera, natural skin texture, no glamour, no exaggerated action, coherent recurring characters: MARCUS REID, an 18-year-old bored high-school graduate with messy dark hair, gray work polo, and plastic name tag; OSCAR HENDRICKS, an elderly resident with silver hair, intelligent eyes, oxygen tubing, and a faded cardigan.\n0:00-0:02 — slow tracking shot through a quiet nursing-home medication corridor at dusk; Marcus pushes a metal cart past closed doors as fluorescent lights buzz, pill bottles rattle, and distant televisions murmur.\n0:02-0:04 — hard cut to Oscar's room; intimate close-up as Oscar slides a small brass key across the table toward Marcus and whispers, \"Everything is written down,\" while a locked black diary sits beneath his hand.\n0:04-0:06 — rapid but realistic inserts: Marcus discreetly removes several prescription bottles from a delivery bag, hides them inside his jacket, and looks at his reflection in a dark medication-room window; low bass pulse begins.\n0:06-0:07 — hard cut to morning; Marcus opens Oscar's door and freezes beside the bed, sunlight slicing across Oscar's still face; all sound drops into one beat of complete silence.\n0:07-0:09 — close-up of Marcus unlocking the diary; pages reveal handwritten names, addresses, dosage codes, and a crude map of the town as footsteps approach outside the room.\n0:09-0:11 — handheld push-in as Marcus looks through the doorway toward several silent residents watching him from the corridor; one elderly woman slowly closes the medication room blinds.\n0:11-0:12 — hard cut to black, then a sharp amber title hit: THE LAST PRESCRIPTION; beneath it, the sound of the diary snapping shut and Marcus's terrified whisper, \"What did you leave me?\" No subtitles, no logos, no disconnected shots, no fantasy elements, no graphic violence.",
+    "prompt_sha256": "356d8aa5efe4d3e1a19901e205124509841a9fc6bf5d2dbde821e7d9e06fb8e1",
+    "created_at": "2026-09-14T05:57:58.963Z",
+    "source": "generated",
+    "status": "generated",
+    "job_id": "ab29cfc9-341f-46f3-932c-999d538ebd72",
+    "media_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/09_14/20260914-the-last-prescription/generations/ab29cfc9-341f-46f3-932c-999d538ebd72/original/7ea5443395286806d6f00a1eec79c2218206ca6c8a8bc1b2509ad606e74856fc.mp4",
+    "local_path": "media/ab29cfc9-341f-46f3-932c-999d538ebd72.mp4",
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_2x2ysOb5q5Tw0qQqsK66mA3mJ9U/hf_20260914_055758_ab29cfc9-341f-46f3-932c-999d538ebd72.mp4",
+    "width": 1280,
+    "height": 720,
+    "duration_seconds": 12.1,
+    "aspect_ratio": "16:9",
+    "thumbnail_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/09_14/20260914-the-last-prescription/generations/ab29cfc9-341f-46f3-932c-999d538ebd72/preview/39de4bec277913ba8bd4f64cba56afc06d9ce6f250547bbfac547471e664af69.jpg",
+    "storage_bucket": "directors-cut",
+    "object_key": "media-uploads/2026/09_14/20260914-the-last-prescription/generations/ab29cfc9-341f-46f3-932c-999d538ebd72/original/7ea5443395286806d6f00a1eec79c2218206ca6c8a8bc1b2509ad606e74856fc.mp4",
+    "thumbnail_key": "media-uploads/2026/09_14/20260914-the-last-prescription/generations/ab29cfc9-341f-46f3-932c-999d538ebd72/preview/39de4bec277913ba8bd4f64cba56afc06d9ce6f250547bbfac547471e664af69.jpg",
+    "media_sha256": "7ea5443395286806d6f00a1eec79c2218206ca6c8a8bc1b2509ad606e74856fc"
+  }
+]

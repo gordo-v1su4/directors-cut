@@ -12,15 +12,20 @@
     "created_at": "2026-07-10T06:51:00Z",
     "source": "generated",
     "status": "generated",
-    "media_url": "/data/comparisons/2026-07-pink-room-two-part-teaser-001/media/sora-2-001.mp4",
-    "thumbnail_url": null,
+    "media_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/30804753-25b2-4f46-aaac-3dc365e63147/original/ed9c178508e25f3d3519612da231585fb73f0c9037a2ef05cdb4a545e4347217.mp4",
+    "thumbnail_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/30804753-25b2-4f46-aaac-3dc365e63147/preview/15aaf320ef42adea741299ad66c9aa652d00389cf6d74f383ab278c785148056.jpg",
     "width": 1280,
     "height": 720,
     "duration_seconds": 12.1,
     "job_id": "30804753-25b2-4f46-aaac-3dc365e63147",
     "job_set_type": "sora2_video",
     "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_2x2ysOb5q5Tw0qQqsK66mA3mJ9U/hf_20260710_065100_30804753-25b2-4f46-aaac-3dc365e63147.mp4",
-    "notes": "Ingested from Gordo Higgsfield UI Sora 2 text-to-video. Local file + CloudFront URL preserved. Job set type sora2_video."
+    "notes": "Ingested from Gordo Higgsfield UI Sora 2 text-to-video. Local file + CloudFront URL preserved. Job set type sora2_video.",
+    "local_path": "media/sora-2-001.mp4",
+    "storage_bucket": "directors-cut",
+    "object_key": "media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/30804753-25b2-4f46-aaac-3dc365e63147/original/ed9c178508e25f3d3519612da231585fb73f0c9037a2ef05cdb4a545e4347217.mp4",
+    "thumbnail_key": "media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/30804753-25b2-4f46-aaac-3dc365e63147/preview/15aaf320ef42adea741299ad66c9aa652d00389cf6d74f383ab278c785148056.jpg",
+    "media_sha256": "ed9c178508e25f3d3519612da231585fb73f0c9037a2ef05cdb4a545e4347217"
   },
   {
     "artifact_id": "artifact-pink-room-seedance-2-pending",
@@ -50,12 +55,18 @@
     "created_at": "2026-07-10T07:22:02Z",
     "source": "generated",
     "status": "generated",
-    "media_url": "/data/comparisons/2026-07-pink-room-two-part-teaser-001/media/sora-2-002.mp4",
+    "media_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/8df14434-bcee-455d-8586-9b7d55799778/original/d8f2910c023a8b5e25c43f9751a79270b970772eb99b873bca6ce9b0588c1e4e.mp4",
     "job_id": "8df14434-bcee-455d-8586-9b7d55799778",
     "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_2x2ysOb5q5Tw0qQqsK66mA3mJ9U/hf_20260710_070512_8df14434-bcee-455d-8586-9b7d55799778.mp4",
     "duration_seconds": 12.3,
     "width": 1280,
     "height": 720,
-    "notes": "Second Sora 2 take from Downloads; was briefly mislabeled as Seedance and corrected."
+    "notes": "Second Sora 2 take from Downloads; was briefly mislabeled as Seedance and corrected.",
+    "thumbnail_url": "https://s3.v1su4.dev/directors-cut/media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/8df14434-bcee-455d-8586-9b7d55799778/preview/3e8315e66d054c47497ffcc2a1b57d89f27c536af517356e35fa4d9debb4fab0.jpg",
+    "local_path": "media/sora-2-002.mp4",
+    "storage_bucket": "directors-cut",
+    "object_key": "media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/8df14434-bcee-455d-8586-9b7d55799778/original/d8f2910c023a8b5e25c43f9751a79270b970772eb99b873bca6ce9b0588c1e4e.mp4",
+    "thumbnail_key": "media-uploads/2026/07_10/2026-07-pink-room-two-part-teaser-001/generations/8df14434-bcee-455d-8586-9b7d55799778/preview/3e8315e66d054c47497ffcc2a1b57d89f27c536af517356e35fa4d9debb4fab0.jpg",
+    "media_sha256": "d8f2910c023a8b5e25c43f9751a79270b970772eb99b873bca6ce9b0588c1e4e"
   }
 ]

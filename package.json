@@ -4,12 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run build:comparisons && vite dev",
+    "build:posters": "bun scripts/build-video-posters.ts && bun run build:comparisons",
+    "dev": "bun scripts/dev.ts",
     "build": "bun run build:comparisons && vite build",
     "build:comparisons": "bun scripts/build-comparisons-index.ts",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "media:track": "bun --env-file=.env.local scripts/sync-media.ts track",
+    "media:sync": "bun --env-file=.env.local scripts/sync-media.ts sync",
+    "media:watch": "bun --env-file=.env.local scripts/sync-media.ts watch",
+    "test:media": "bun test scripts/lib/media-catalog.test.ts",
+    "media:server": "bun --env-file=.env.local scripts/media-server.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.0",

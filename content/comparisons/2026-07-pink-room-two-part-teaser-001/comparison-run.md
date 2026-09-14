@@ -1,6 +1,7 @@
 ---
 run_id: 2026-07-pink-room-two-part-teaser-001
 title: THE PINK ROOM — Sora 2 vs Seedance 2.0 teaser
+logline: A college kid is pulled into a hidden pink-lit Guaracha underworld ruled by a mysterious female boss.
 question: >-
   Create a 12-second text-only teaser for THE PINK ROOM: savage-cut montage of Colombian nightlife / Guaracha house culture and a hidden pink-lit underworld ruled by a mysterious female boss, with a clean college kid pulled in too deep. No shot grid, no references — one row with prompt-only Sora 2 and Seedance 2.0 slots at 720p.
 created: 2026-07-10T00:38:11Z

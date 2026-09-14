@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions, type CaptureHandoffMode } from '$lib/create/brief';
-  import { callBridgeTool } from '$lib/bridge/types';
+  import { callBridgeTool, bridgeHealth } from '$lib/bridge/types';
   import type {
     CreateComparisonRunInput,
     CreateComparisonRunOutput,
@@ -35,6 +35,7 @@
   let titleManuallyEdited = $state(false);
   let busy = $state(false);
   let error = $state('');
+  let bridgeConnected = $state(false);
   let automatedRun = $state<CreateComparisonRunOutput | null>(null);
   let capturePrepared = $state<PrepareConceptCaptureOutput | null>(null);
   let captureRunning = $state(false);
@@ -43,6 +44,7 @@
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
+  onMount(() => { void bridgeHealth(BRIDGE_URL).then((connected) => bridgeConnected = connected); });
 
   let titleOptions = $derived(suggestTitleOptions(idea, format, sampleSource));
   let effectiveTitle = $derived(resolveProjectTitle(projectTitle, idea, format, sampleSource));
@@ -364,12 +366,14 @@
             {busy ? 'Working…' : handoffMode === 'manual' ? 'Prepare Raycast concept run' : 'Start automated concept run'}
           </button>
           <div class="dc-connection-note">
-            <span class="dc-status-dot" class:dc-status-live={!!BRIDGE_TOKEN}></span>
+            <span class="dc-status-dot" class:dc-status-live={bridgeConnected && !!BRIDGE_TOKEN}></span>
             <span>
               {#if handoffMode === 'manual'}
                 Next: copy the brief and run “Start Directors Cut Concept Run” in Raycast.
-              {:else if BRIDGE_TOKEN}
+              {:else if BRIDGE_TOKEN && bridgeConnected}
                 Bridge connected. Automated mode drives Raycast via computer use and streams answers here.
+              {:else if BRIDGE_TOKEN}
+                Generation service is offline. Start the local bridge to continue.
               {:else}
                 Set <code>VITE_RAYCAST_BRIDGE_TOKEN</code> in <code>.env.local</code> for automated capture, or switch to Manual.
               {/if}

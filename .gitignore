@@ -13,3 +13,10 @@ build/
 
 # Local workflow coordination
 content/comparisons/**/.capture.lock
+
+# Private local catalog, receipts and worker lock
+.local/
+
+.vercel/
+.vercel
+.env*
