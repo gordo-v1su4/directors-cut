@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 TEMP=tempfile.TemporaryDirectory()
-os.environ.update(DATA_DIR=TEMP.name,SEED_DIR=str(Path(__file__).resolve().parents[1]/'public/data/comparisons'),MEDIA_GATEWAY_URL='http://invalid',MEDIA_GATEWAY_TOKEN='test',DIRECTORS_CUT_OWNER_PASSWORD='test')
+os.environ.update(DATA_DIR=TEMP.name,SEED_DIR=str((Path(__file__).resolve().parents[1]/'public/data/comparisons') if (Path(__file__).resolve().parents[1]/'public/data/comparisons').exists() else Path('/app/seed')),MEDIA_GATEWAY_URL='http://invalid',MEDIA_GATEWAY_TOKEN='test',DIRECTORS_CUT_OWNER_PASSWORD='test')
 import app
 
 
