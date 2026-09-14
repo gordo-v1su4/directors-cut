@@ -18,6 +18,7 @@
   let login = $state(false);
   let picker = $state<HTMLInputElement>();
   const savedPrompt = $derived(versionPrompt(artifact, promptsMap));
+  function openDialog(node: HTMLDialogElement) { node.showModal(); }
   function edit() {
     prompt = savedPrompt;
     model = videoModel(artifact) === 'Model not set' ? '' : videoModel(artifact);
@@ -62,7 +63,8 @@
 <section class="version-details" aria-label="Version details">
   <div class="heading"><span class="model">{videoModel(artifact)}</span>{#if mediaApi && editable}<button class="edit" onclick={edit}>Edit version details</button>{/if}</div>
   {#if editing}
-    <form onsubmit={save}>
+    <dialog use:openDialog class="editor-dialog" aria-label="Edit version details" oncancel={(e)=>{e.preventDefault();if(!busy)editing=false;}}><form onsubmit={save}>
+      <h3>Edit version details</h3>
       <label>Video model<input bind:value={model} list="video-models" placeholder="e.g. Sora 2" maxlength="100" disabled={busy} /></label>
       <datalist id="video-models"><option>Sora 2</option><option>Sora 2 Pro</option><option>Seedance 2.0</option><option>Veo 3.1</option><option>Kling</option><option>Other / edited</option></datalist>
       <label>Prompt for this version<textarea bind:value={prompt} rows="9" maxlength="100000" placeholder="Paste the exact prompt used for this video…" disabled={busy}></textarea></label>
@@ -76,28 +78,33 @@
       <button type="button" class="drop" disabled={busy} onclick={()=>picker?.click()} ondragover={(e)=>e.preventDefault()} ondrop={(e)=>{e.preventDefault();if(!busy)choose(Array.from(e.dataTransfer?.files || []));}}>{file ? file.name : 'Drop shot grid here or choose image'}<small>PNG, JPEG or WebP · up to 10 MB</small></button>
       {#if login}<label>Owner password<input type="password" bind:value={password} autocomplete="current-password" required disabled={busy} /></label>{/if}
       <div class="actions"><button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save version details'}</button><button type="button" disabled={busy} onclick={()=>{editing=false;message='';}}>Cancel</button></div>
-    </form>
-  {:else}
+      <p class="save-status" role="status">{message || (busy ? 'Saving…' : 'Changes apply to this video version.')}</p>
+    </form></dialog>
+  {/if}
     <div class="context-grid">
       <div><div class="heading"><h3>Prompt</h3>{#if savedPrompt}<CopyButton text={savedPrompt} label="Copy" />{/if}</div>
         {#if savedPrompt}<p class="prompt">{savedPrompt}</p>{:else}<p class="empty">No prompt saved for this version.</p>{/if}
       </div>
       <div><h3>Shot grid</h3>{#if artifact.shot_grid_url}<a href={artifact.shot_grid_url} target="_blank" rel="noreferrer" aria-label="Open shot grid"><img src={artifact.shot_grid_url} alt="Shot grid for this video version" /></a>{:else}<div class="empty-grid">No shot grid attached to this version.</div>{/if}</div>
     </div>
-  {/if}
-  {#if message}<p role="status">{message}</p>{/if}
+  <p class="save-status" role="status">{!editing ? message : ''}</p>
 </section>
 
 <style>
   .version-details {min-width:0; color:var(--dc-text);}
-  .heading,.actions {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .heading,.actions {min-height:30px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
   .model {font-size:11px;padding:4px 8px;border:1px solid var(--dc-border);border-radius:var(--dc-radius);}
   h3 {margin:0 0 12px;font-size:11px;font-weight:500;color:var(--dc-text-muted);text-transform:uppercase;letter-spacing:.06em;}
   .heading h3 {margin:0;}
   .context-grid {display:grid;grid-template-columns:1fr 1fr;gap:24px;}
   .context-grid > div {min-width:0;}
-  .prompt {white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;margin:0;max-height:330px;overflow:auto;}
+  .prompt {white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;margin:0;height:330px;overflow:auto;}
   img {width:100%;aspect-ratio:16/9;object-fit:contain;object-position:top;background:var(--dc-bg);display:block;}
+  .empty {height:330px;margin:0;}
+  .save-status {min-height:20px;margin:8px 0 0;font-size:12px;color:var(--dc-text-muted);}
+  .editor-dialog {width:min(680px,calc(100% - 40px));padding:0;border:0;border-radius:var(--dc-radius);background:var(--dc-bg-elev);color:var(--dc-text);max-height:calc(100dvh - 40px);}
+  .editor-dialog::backdrop {background:rgba(0,0,0,.8);}
+  .editor-dialog form {width:100%;max-height:calc(100dvh - 40px);overflow:auto;box-sizing:border-box;background:var(--dc-bg-elev);border:1px solid var(--dc-border);border-radius:var(--dc-radius);padding:24px;}
   .empty,.empty-grid {font-size:12px;line-height:1.6;color:var(--dc-text-muted);}
   .empty-grid {aspect-ratio:16/9;border:1px dashed var(--dc-border);display:grid;place-items:center;text-align:center;padding:12px;box-sizing:border-box;}
   form {display:flex;flex-direction:column;gap:14px;}

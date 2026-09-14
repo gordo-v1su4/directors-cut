@@ -139,9 +139,6 @@
   {:else if error}
     <div class="dc-empty-state dc-error">{error}</div>
   {:else if run}
-    {#if switching}
-      <div class="dc-empty-state" style="opacity: 0.5;">Switching…</div>
-    {/if}
     <div class="dc-run-header">
       <h2 style="font-size:20px;margin:0;">{run.title}</h2>
       {#if run.logline}<p style="color:var(--dc-text-muted);font-size:13px;line-height:1.6;margin:8px 0 0;">{run.logline}</p>{/if}

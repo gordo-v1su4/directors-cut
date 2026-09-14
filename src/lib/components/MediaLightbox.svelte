@@ -30,7 +30,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName)) return;
+    if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
     e.stopPropagation();
     if (e.key === 'Escape') onClose();
     if (e.key === 'ArrowLeft') activeIndex = Math.max(0, activeIndex - 1);
