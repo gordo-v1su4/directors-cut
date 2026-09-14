@@ -102,7 +102,7 @@
   img {width:100%;aspect-ratio:16/9;object-fit:contain;object-position:top;background:var(--dc-bg);display:block;}
   .empty {height:330px;margin:0;}
   .save-status {min-height:20px;margin:8px 0 0;font-size:12px;color:var(--dc-text-muted);}
-  .editor-dialog {width:min(680px,calc(100% - 40px));padding:0;border:0;border-radius:var(--dc-radius);background:var(--dc-bg-elev);color:var(--dc-text);max-height:calc(100dvh - 40px);}
+  .editor-dialog {margin:auto;inset:0;box-sizing:border-box;max-width:calc(100vw - 24px);width:min(680px,calc(100vw - 40px));padding:0;border:0;border-radius:var(--dc-radius);background:var(--dc-bg-elev);color:var(--dc-text);max-height:calc(100dvh - 40px);}
   .editor-dialog::backdrop {background:rgba(0,0,0,.8);}
   .editor-dialog form {width:100%;max-height:calc(100dvh - 40px);overflow:auto;box-sizing:border-box;background:var(--dc-bg-elev);border:1px solid var(--dc-border);border-radius:var(--dc-radius);padding:24px;}
   .empty,.empty-grid {font-size:12px;line-height:1.6;color:var(--dc-text-muted);}
@@ -116,5 +116,5 @@
   .drop {padding:22px;border-style:dashed;}
   small {display:block;margin-top:6px;color:var(--dc-text-muted);}
   .actions {justify-content:flex-start;margin:0;}
-  @media(max-width:700px){.context-grid {grid-template-columns:1fr;} input,textarea,select {font-size:16px;} button {min-height:44px;} .editor-dialog form {padding:16px;} .editor-dialog {width:calc(100% - 24px);} .actions button {flex:1;} }
+  @media(max-width:700px){.context-grid {grid-template-columns:1fr;} input,textarea,select {font-size:16px;} button {min-height:44px;} .editor-dialog form {padding:16px;} .editor-dialog {width:calc(100vw - 24px);} .actions button {flex:1;} }
 </style>
