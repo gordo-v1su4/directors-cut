@@ -1,10 +1,15 @@
-.git
-.local
+.git/
+.vercel/
+node_modules/
+.svelte-kit/
+build/
+.agents/
+skillset/
+
+# Local production media — not part of the comparison site output
+bloodrush/
+content/comparisons/
+
 .env
 .env.*
-node_modules
-.svelte-kit
-content/comparisons/*/media
-public/data/comparisons/*/media
-public/_app
-public/index.html
+*.log

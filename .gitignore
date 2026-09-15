@@ -23,3 +23,10 @@ content/comparisons/**/.capture.lock
 
 __pycache__/
 !backend/.env.example
+
+# Local media that should not ship with Vercel deploys
+bloodrush/output/
+bloodrush/assets/**/*.mp4
+bloodrush/assets/**/*.wav
+content/comparisons/**/media/
+
