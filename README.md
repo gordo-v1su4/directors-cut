@@ -2,7 +2,7 @@
 
 Creative intelligence workspace for AI video: ideate concepts, compare ChatGPT and Claude answers via Raycast, approve winners, generate Sora video, and promote specs into a reusable library.
 
-**Dev app:** `http://localhost:5190` · `bun run dev`  
+**Dev app:** `http://127.0.0.1:5191` · `bun run dev` (reads the live server catalog)
 **Companion repo:** [raycast-pro-bridge](https://github.com/) — Raycast Script Commands + HTTP bridge on `:8787`
 
 Full project map and status: [`docs/STATUS.md`](docs/STATUS.md)
@@ -108,7 +108,8 @@ Invalid: shot lists, multiple prompt options, or claims that video was already g
 src/                 SvelteKit app
 content/cards/       Prompt library (target: Sora video specs)
 content/comparisons/ Raycast-captured comparison runs
-public/data/         Generated indexes (rebuilt on dev/build)
+public/data/         Generated build indexes (not the live project catalog)
+static/data/         Generated copy for SvelteKit assets (no symlink required)
 docs/                STATUS, plans, handoffs
 schemas/             JSON schemas for cards and runs
 ```

@@ -10,6 +10,7 @@
  * Writes: public/data/comparisons.index.json
  *         public/data/comparisons/<run-id>/answers.json
  *         public/data/comparisons/<run-id>/artifacts.json (empty array if missing)
+ * Mirrors public/data/ to static/data/ for SvelteKit development and builds.
  */
 
 import {
@@ -42,6 +43,7 @@ const EXPECTED_MODELS = [
 ];
 
 function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
+  content = content.replace(/\r\n/g, '\n');
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: content };
 
@@ -315,3 +317,23 @@ function buildComparisonsIndex(): void {
 }
 
 buildComparisonsIndex();
+
+// Use a real directory: Git can check out directory symlinks as plain text
+// files on Windows. Keep public/data for the media tools and deployment output.
+function copyDevAssets(sourceDir: string, destinationDir: string): void {
+  mkdirSync(destinationDir, { recursive: true });
+  for (const entry of readdirSync(sourceDir)) {
+    const source = join(sourceDir, entry);
+    const destination = join(destinationDir, entry);
+    const sourceStat = statSync(source);
+    if (sourceStat.isDirectory()) {
+      copyDevAssets(source, destination);
+    } else if (!existsSync(destination) ||
+      sourceStat.size !== statSync(destination).size ||
+      Math.abs(sourceStat.mtimeMs - statSync(destination).mtimeMs) > 1) {
+      cpSync(source, destination, { force: true, preserveTimestamps: true });
+    }
+  }
+}
+
+copyDevAssets(OUTPUT_DIR, join(ROOT, 'static', 'data'));

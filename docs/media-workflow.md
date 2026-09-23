@@ -6,9 +6,19 @@ Directors Cut keeps its existing project browser and three-column history: promp
 
 ## Run locally
 
-Use `bun run dev`. It starts Vite plus the loopback media worker on port 8788. The worker checks completed Higgsfield jobs every 30 seconds; the Home feed and project view refresh every 10 seconds. A static production build alone cannot run this local worker or accept uploads.
+Run `bun run dev` and open **http://127.0.0.1:5191**. Use that exact address:
+`localhost` is a different browser origin. Development and production both read
+projects and versions from `https://media.v1su4.dev/directors-cut`; there is no
+repository-data fallback or environment override. The live backend stores uploaded
+versions independently of Git. Normal startup runs only Vite, without rebuilding
+local indexes or starting the local media importer. Vite fails if port 5191 is
+occupied instead of silently switching origins.
 
-Drag MP4/MOV/WebM files onto the project's **Drop new versions here** control, or click to choose files. Each batch attaches to the project selected when the upload starts, assigns v2/v3/etc., normalizes video for browser playback, creates a frame thumbnail, and stores the assets in RustFS. Duplicate files are skipped. Batch limit: 500 MB, eight videos. Keep the tab open until saving completes. Uploads never start paid generations.
+Browser uploads also use the live backend; see [backend deployment](backend-deployment.md)
+for its upload limits and processing behavior. The local importer commands below
+are separate operator tools and are not started by the app.
+
+Drag MP4/MOV/WebM files onto the project's **Drop new versions here** control, or click to choose files. Each batch attaches to the project selected when the upload starts. Keep the tab open until saving completes. Uploads never start paid generations.
 
 ## Generated videos
 

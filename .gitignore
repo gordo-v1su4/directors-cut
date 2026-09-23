@@ -7,6 +7,8 @@ node_modules/
 .svelte-kit/
 build/
 .vite/
+# Generated dev assets; populated by build:comparisons without symlinks.
+/static/data/
 .env
 .env.*
 !.env.example

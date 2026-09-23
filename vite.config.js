@@ -5,10 +5,10 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   server: {
-    port: 5190,
-    strictPort: false,
+    // The live catalog authorizes http://127.0.0.1:5191 for local development.
+    port: 5191,
+    strictPort: true,
     host: '127.0.0.1',
     allowedHosts: ['localhost', '127.0.0.1'],
-    proxy: { '/api/media': { target: 'http://127.0.0.1:8788', changeOrigin: false, timeout: 240000 } },
   },
 });
