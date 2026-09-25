@@ -105,3 +105,30 @@ class VersionDetailsTests(unittest.TestCase):
             self.assertEqual(app.document(db,'details-qa','artifacts'),self.videos)
 
 if __name__=='__main__': unittest.main()
+
+
+class RunDetailsTests(unittest.TestCase):
+    def setUp(self):
+        app.initialize()
+        with app.connect() as db:
+            db.execute("INSERT OR REPLACE INTO documents VALUES ('rename-me','run','{\"title\":\"THE PINK ROOM \u2014 long subtitle\",\"status\":\"draft\"}')")
+
+    def test_rename_requires_sign_in(self):
+        result=app.run_details(request(json.dumps({'title':'The Pink Room'}),params={'run_id':'rename-me'}))
+        self.assertEqual(result.status_code,401)
+
+    def test_rename_updates_only_the_title(self):
+        with patch.object(app,'authorized',return_value=True):
+            result=app.run_details(request(json.dumps({'title':'  The Pink Room  '}),params={'run_id':'rename-me'}))
+        self.assertEqual(result.status_code,200)
+        with app.connect() as db:
+            run=app.document(db,'rename-me','run')
+        self.assertEqual(run['title'],'The Pink Room')
+        self.assertEqual(run['status'],'draft')
+
+    def test_rename_rejects_blank_and_unknown(self):
+        with patch.object(app,'authorized',return_value=True):
+            blank=app.run_details(request(json.dumps({'title':'   '}),params={'run_id':'rename-me'}))
+            missing=app.run_details(request(json.dumps({'title':'x'}),params={'run_id':'nope'}))
+        self.assertEqual(blank.status_code,400)
+        self.assertEqual(missing.status_code,404)

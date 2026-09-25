@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { VersionedArtifactSlot, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
   import { videoModel } from '$lib/data/version-context';
   import CopyButton from './CopyButton.svelte';
@@ -16,6 +17,7 @@
     generateDisabled = false,
     generateBusy = false,
     generateLabel = 'Generate',
+    headerAction,
   }: {
     slotData: VersionedArtifactSlot;
     activeIndex?: number;
@@ -27,6 +29,8 @@
     generateDisabled?: boolean;
     generateBusy?: boolean;
     generateLabel?: string;
+    /** Extra control shown at the right end of the header row. */
+    headerAction?: Snippet;
   } = $props();
 
   let activePrompt = $state<GenerationPrompt | null>(null);
@@ -121,29 +125,17 @@
 >
   <div class="dc-artifact-cell-header">
     <span class="dc-artifact-cell-label">{label}</span>
-    {#if slotData.versions.length > 1}
-      <div class="dc-version-controls">
-        <button class="dc-version-arrow" onclick={() => setActive(activeIndex - 1)} aria-label="Previous version">
-          ‹
-        </button>
-        <select
-          class="dc-version-select"
-          value={activeIndex}
-          onchange={(e) => setActive(Number((e.currentTarget as HTMLSelectElement).value))}
-        >
-          {#each slotData.versions as v, i (v.artifact_id)}
-            <option value={i}>v{i + 1} {v.status ? `(${v.status})` : ''}</option>
-          {/each}
-        </select>
-        <button class="dc-version-arrow" onclick={() => setActive(activeIndex + 1)} aria-label="Next version">
-          ›
-        </button>
-      </div>
-    {:else if slotData.versions.length === 1}
-      <span class="dc-version-label">v1</span>
-    {:else}
-      <span class="dc-version-label dc-pending">pending</span>
-    {/if}
+    <span class="dc-artifact-cell-end">
+      {#if slotData.versions.length > 1}
+        <!-- The thumbnail strip picks the version; the header just says which. -->
+        <span class="dc-version-label">v{activeIndex + 1} of {slotData.versions.length}</span>
+      {:else if slotData.versions.length === 1}
+        <span class="dc-version-label">v1</span>
+      {:else}
+        <span class="dc-version-label dc-pending">pending</span>
+      {/if}
+      {@render headerAction?.()}
+    </span>
   </div>
 
   <div
@@ -170,7 +162,7 @@
               onclick={openLightbox}
               aria-label="Expand preview"
             >
-              ▶
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
             </button>
           </div>
         {:else}
@@ -181,7 +173,7 @@
               onclick={openLightbox}
               aria-label="Expand preview"
             >
-              ⛶
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
             </button>
           </div>
         {/if}
@@ -216,10 +208,12 @@
           aria-label={`Version ${i + 1}`}
         >
           {#if v.thumbnail_url || v.media_url}
-            {#if v.artifact_type === 'video_result' || v.artifact_type === 'end_video'}
-              <video src={v.media_url} preload="metadata" muted playsinline aria-label={v.title}></video>
+            {#if v.thumbnail_url}
+              <img src={v.thumbnail_url} alt={v.title} loading="lazy" />
+            {:else if v.artifact_type === 'video_result' || v.artifact_type === 'end_video'}
+              <video src={`${v.media_url}#t=0.5`} preload="metadata" muted playsinline aria-label={v.title}></video>
             {:else}
-              <img src={v.thumbnail_url ?? v.media_url} alt={v.title} loading="lazy" />
+              <img src={v.media_url} alt={v.title} loading="lazy" />
             {/if}
           {:else}
             <div class="dc-artifact-version-placeholder">{i + 1}</div>

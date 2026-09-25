@@ -3,6 +3,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions, type CaptureHandoffMode } from '$lib/create/brief';
   import { callBridgeTool, bridgeHealth } from '$lib/bridge/types';
+  import { loadLatestArtifacts } from '$lib/data/comparisons';
   import type {
     CreateComparisonRunInput,
     CreateComparisonRunOutput,
@@ -278,176 +279,288 @@
   }
 
   onDestroy(stopPolling);
+  const FORMATS = [
+    { value: 'trailer', label: 'Trailer or teaser' },
+    { value: 'music video', label: 'Music video' },
+    { value: 'commercial', label: 'Commercial' },
+    { value: 'short film scene', label: 'Short film scene' },
+    { value: 'visual concept', label: 'Visual concept' },
+  ];
+  const formatLabel = $derived(FORMATS.find((f) => f.value === format)?.label ?? format);
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // A blown-out frame of the latest render lights the room, as on the home page.
+  let backdrop = $state('');
+  onMount(() => {
+    void loadLatestArtifacts(12)
+      .then((items) => (backdrop = items.find((item) => item.thumbnail_url)?.thumbnail_url ?? ''))
+      .catch(() => undefined);
+  });
 </script>
 
 <svelte:head><title>Create — Directors Cut</title></svelte:head>
 
-<div class="dc-create-page">
-  <div class="dc-create-shell">
-    <header class="dc-create-header">
-      <div><p class="dc-eyebrow">New prompt project</p><h1>What do you want to make?</h1></div>
-      <p>Start with a rough idea. Choose manual Raycast Script Commands or automated capture via Cursor computer use + the bridge.</p>
+<div class="pitch">
+  {#if backdrop}
+    <div class="pitch-glow" style:background-image={`url("${backdrop}")`} aria-hidden="true"></div>
+  {/if}
+
+  <div class="pitch-wrap">
+    <header class="pitch-head">
+      <h1>What are we making?</h1>
+      <p>
+        Write the idea the way you'd pitch it. ChatGPT and Claude each develop their own concept from it,
+        and both land in Projects for you to compare.
+      </p>
+      <div class="modes" role="tablist" aria-label="Project workflow">
+        <button type="button" role="tab" aria-selected={mode === 'create'} class:active={mode === 'create'} onclick={() => switchMode('create')}>
+          New concept
+        </button>
+        <button type="button" role="tab" aria-selected={mode === 'ingest'} class:active={mode === 'ingest'} onclick={() => switchMode('ingest')}>
+          Import a finished cut
+        </button>
+      </div>
     </header>
 
-    <div class="dc-create-tabs" role="tablist" aria-label="Project workflow">
-      <button class:dc-create-tab-active={mode === 'create'} type="button" role="tab" aria-selected={mode === 'create'} onclick={() => switchMode('create')}>Create</button>
-      <button class="dc-create-tab-ingest" class:dc-create-tab-active={mode === 'ingest'} type="button" role="tab" aria-selected={mode === 'ingest'} onclick={() => switchMode('ingest')}>Ingest</button>
-    </div>
-
     {#if mode === 'create'}
-    <section class="dc-create-form">
-        <div class="dc-quick-starts">
-          <span class="dc-quick-starts-label">Quick start</span>
-          <div class="dc-quick-start-row">
-            {#each QUICK_START_PRESETS as preset (preset.id)}
-              <button class="dc-quick-start-chip" type="button" onclick={() => applyPreset(preset)}>{preset.label}</button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="dc-field dc-field-idea">
-          <div class="dc-field-heading"><label for="creative-idea">Creative idea</label><button class="dc-wand" type="button" onclick={useSamplePrompt} aria-label="Use a sample prompt from the library" title="Use a library sample"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5L8.5 20.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L15 4Zm-1 3 3 3M6 3v3M4.5 4.5h3M19 15v4M17 17h4M18 2v2M17 3h2"/></svg><span>Try an example</span></button></div>
-          <div class="dc-idea-wrap"><textarea id="creative-idea" bind:value={idea} rows="8" placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal..."></textarea></div>
-          {#if sampleSource}<span class="dc-sample-source">Adapted from <strong>{sampleSource}</strong> · click the wand again for another</span>{/if}
-        </div>
-
-        <label class="dc-field">
-          <span>Project title</span>
-          <input
-            class="dc-text-input"
-            bind:value={projectTitle}
-            placeholder="Auto-generated from your idea"
-            oninput={() => { titleManuallyEdited = true; }}
-          />
-          {#if titleOptions.length}
-            <div class="dc-title-options">
-              {#each titleOptions as option (option)}
+      <div class="desk">
+        <section class="desk-form" aria-label="Concept brief">
+          <div class="block">
+            <h2 class="block-title">Start from a template</h2>
+            <div class="presets">
+              {#each QUICK_START_PRESETS as preset (preset.id)}
                 <button
-                  class="dc-title-option"
-                  class:dc-title-option-active={projectTitle === option}
                   type="button"
-                  onclick={() => selectTitle(option)}
-                >{option}</button>
+                  class="preset"
+                  class:active={sampleSource === preset.label}
+                  onclick={() => applyPreset(preset)}
+                >
+                  <span class="preset-kind">{preset.label}</span>
+                  <span class="preset-title">{preset.title.replace(/\s+—.*$/, '')}</span>
+                  <span class="preset-idea">{preset.idea}</span>
+                </button>
               {/each}
             </div>
+          </div>
+
+          <div class="block">
+            <div class="block-row">
+              <label class="block-title" for="creative-idea">The idea</label>
+              <button class="link-btn" type="button" onclick={useSamplePrompt}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5L8.5 20.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L15 4Zm-1 3 3 3M6 3v3M4.5 4.5h3M19 15v4M17 17h4" /></svg>
+                Try an example
+              </button>
+            </div>
+            <textarea
+              id="creative-idea"
+              class="treatment"
+              bind:value={idea}
+              rows="9"
+              placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal…"
+            ></textarea>
+            {#if sampleSource}
+              <p class="hint">Adapted from {sampleSource}. Try another example for a different starting point.</p>
+            {/if}
+          </div>
+
+          <div class="block">
+            <label class="block-title" for="project-title">Working title</label>
+            <input
+              id="project-title"
+              class="title-input"
+              bind:value={projectTitle}
+              placeholder="Named from your idea as you type"
+              oninput={() => { titleManuallyEdited = true; }}
+            />
+            {#if titleOptions.length}
+              <div class="title-options" role="group" aria-label="Suggested titles">
+                {#each titleOptions as option (option)}
+                  <button type="button" class:active={projectTitle === option} onclick={() => selectTitle(option)}>{option}</button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="block">
+            <h2 class="block-title">Format</h2>
+            <div class="formats" role="radiogroup" aria-label="Format">
+              {#each FORMATS as option (option.value)}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={format === option.value}
+                  class:active={format === option.value}
+                  onclick={() => (format = option.value)}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </div>
+            <p class="hint">Every run is 12 seconds for now, targeting Sora 2.</p>
+          </div>
+
+          <div class="block">
+            <h2 class="block-title">How to run it</h2>
+            <div class="choices">
+              <label class="choice" class:active={handoffMode === 'automated'}>
+                <input type="radio" name="handoff-mode" value="automated" bind:group={handoffMode} />
+                <strong>Automated</strong>
+                <span>The bridge creates the run and captures ChatGPT and Claude for you.</span>
+              </label>
+              <label class="choice" class:active={handoffMode === 'manual'}>
+                <input type="radio" name="handoff-mode" value="manual" bind:group={handoffMode} />
+                <strong>Manual</strong>
+                <span>Copy the brief and run it from Raycast yourself.</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="block block-split">
+            <label class="toggle">
+              <input type="checkbox" bind:checked={includeAudio} />
+              <span class="toggle-track" aria-hidden="true"></span>
+              <span class="toggle-copy">
+                <strong>Sound in the prompt</strong>
+                <span>Music, ambience, dialogue and effects are written into the video prompt.</span>
+              </span>
+            </label>
+
+            <label class="reference" class:filled={!!referenceUrl}>
+              <input type="file" accept="image/*" onchange={handleReference} />
+              {#if referenceUrl}
+                <img src={referenceUrl} alt="Selected visual reference" />
+                <span class="toggle-copy">
+                  <strong>{referenceName}</strong>
+                  <span>Stays on this device for now. Click to swap it.</span>
+                </span>
+              {:else}
+                <span class="reference-plus" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                </span>
+                <span class="toggle-copy">
+                  <strong>Add a reference image</strong>
+                  <span>A character, product, location or mood frame.</span>
+                </span>
+              {/if}
+            </label>
+          </div>
+        </section>
+
+        <!-- The slate fills in as the brief takes shape. -->
+        <aside class="slate-col">
+          <div class="slate">
+            <div class="slate-sticks" aria-hidden="true"></div>
+            <div class="slate-body">
+              <p class="slate-label">Production</p>
+              <p class="slate-title" class:empty={!idea.trim()}>{idea.trim() ? effectiveTitle : 'Untitled'}</p>
+              <dl class="slate-grid">
+                <div><dt>Format</dt><dd>{formatLabel}</dd></div>
+                <div><dt>Length</dt><dd>12 sec</dd></div>
+                <div><dt>Sound</dt><dd>{includeAudio ? 'On' : 'Off'}</dd></div>
+                <div><dt>Writers</dt><dd>ChatGPT, Claude</dd></div>
+                <div><dt>Camera</dt><dd>Sora 2</dd></div>
+                <div><dt>Date</dt><dd>{today}</dd></div>
+              </dl>
+
+              <button class="slate-go" type="button" disabled={!canSubmit} onclick={startConceptRun}>
+                {busy ? 'Starting…' : handoffMode === 'manual' ? 'Prepare the brief' : 'Start concept run'}
+              </button>
+
+              <p class="slate-status">
+                <span class="dot" class:live={handoffMode === 'manual' || (bridgeConnected && !!BRIDGE_TOKEN)}></span>
+                <span>
+                  {#if handoffMode === 'manual'}
+                    Next, copy the brief and run “Start Directors Cut Concept Run” in Raycast.
+                  {:else if BRIDGE_TOKEN && bridgeConnected}
+                    Bridge connected. Answers stream in here as they're captured.
+                  {:else if BRIDGE_TOKEN}
+                    The bridge is offline. Start it on port 8787 to run automatically.
+                  {:else}
+                    Automated runs need <code>VITE_RAYCAST_BRIDGE_TOKEN</code> in <code>.env.local</code>. Switch to Manual to go without it.
+                  {/if}
+                </span>
+              </p>
+              {#if error}<p class="slate-error" role="alert">{error}</p>{/if}
+            </div>
+          </div>
+        </aside>
+      </div>
+    {:else}
+      <section class="import" aria-labelledby="import-title">
+        <h2 id="import-title" class="visually-hidden">Import a finished cut</h2>
+        <label class="import-drop" class:filled={!!ingestFile}>
+          <input type="file" accept="video/*" onchange={handleIngestFile} />
+          {#if ingestFile}
+            <video src={ingestUrl} muted controls playsinline aria-label="Selected video preview"></video>
+          {:else}
+            <span class="reference-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+            </span>
+            <strong>Drop a finished video here</strong>
+            <span>MP4, WebM or MOV. 16:9 works best.</span>
           {/if}
         </label>
 
-        <div class="dc-create-options">
-          <label class="dc-field"><span>Output</span><select bind:value={format}><option value="trailer">Trailer / teaser</option><option value="music video">Music video</option><option value="commercial">Commercial</option><option value="short film scene">Short film scene</option><option value="visual concept">Visual concept</option></select></label>
-          <label class="dc-field"><span>Duration</span><select bind:value={duration} disabled><option value="12">12 seconds</option></select></label>
-        </div>
-
-        <fieldset class="dc-handoff-mode">
-          <legend>Raycast handoff</legend>
-          <label class:dc-handoff-active={handoffMode === 'automated'}>
-            <input type="radio" name="handoff-mode" value="automated" bind:group={handoffMode} />
-            <span><strong>Automated</strong><small>Bridge creates the run · Cursor agent captures ChatGPT + Claude with computer use</small></span>
-          </label>
-          <label class:dc-handoff-active={handoffMode === 'manual'}>
-            <input type="radio" name="handoff-mode" value="manual" bind:group={handoffMode} />
-            <span><strong>Manual</strong><small>Copy the canonical brief · run Raycast Script Commands yourself</small></span>
-          </label>
-        </fieldset>
-
-        <fieldset class="dc-targets">
-          <legend>First vertical slice</legend>
-          <label><input type="checkbox" bind:checked={targetSora} disabled /> <span><strong>Sora · 12 seconds</strong><small>ChatGPT and Claude each develop one independent concept through Raycast</small></span></label>
-          <label><input type="checkbox" bind:checked={includeAudio} /> <span><strong>Integrated sound</strong><small>Music, ambience, dialogue, rhythm, and SFX stay inside the video prompt</small></span></label>
-        </fieldset>
-
-        <label class="dc-reference-drop">
-          <input type="file" accept="image/*" onchange={handleReference} />
-          {#if referenceUrl}<img src={referenceUrl} alt="Selected visual reference" /><div><strong>{referenceName}</strong><span>Reference stays local until a prompt-agent connection is added.</span></div>{:else}<div class="dc-reference-icon">+</div><div><strong>Add a visual reference</strong><span>Character, product, location, frame, or mood image</span></div>{/if}
-        </label>
-
-        <div class="dc-submit-row">
-          <button class="dc-prepare-button" disabled={!canSubmit} onclick={startConceptRun}>
-            {busy ? 'Working…' : handoffMode === 'manual' ? 'Prepare Raycast concept run' : 'Start automated concept run'}
+        <div class="import-side">
+          {#if ingestFile}
+            <p class="import-file"><strong>{ingestFile.name}</strong> {(ingestFile.size / 1024 / 1024).toFixed(1)} MB</p>
+          {/if}
+          <label class="block-title" for="ingest-prompt">The prompt that made it</label>
+          <textarea
+            id="ingest-prompt"
+            class="treatment"
+            bind:value={ingestPrompt}
+            rows="9"
+            placeholder="Paste the prompt used for this video. It's used to name, sort and describe the project."
+          ></textarea>
+          <button
+            class="slate-go"
+            type="button"
+            disabled={!ingestFile || !ingestPrompt.trim() || ingestBusy}
+            onclick={ingestProject}
+          >
+            {ingestBusy ? 'Preparing project…' : ingestReady ? 'Project ready' : 'Add to projects'}
           </button>
-          <div class="dc-connection-note">
-            <span class="dc-status-dot" class:dc-status-live={bridgeConnected && !!BRIDGE_TOKEN}></span>
-            <span>
-              {#if handoffMode === 'manual'}
-                Next: copy the brief and run “Start Directors Cut Concept Run” in Raycast.
-              {:else if BRIDGE_TOKEN && bridgeConnected}
-                Bridge connected. Automated mode drives Raycast via computer use and streams answers here.
-              {:else if BRIDGE_TOKEN}
-                Generation service is offline. Start the local bridge to continue.
-              {:else}
-                Set <code>VITE_RAYCAST_BRIDGE_TOKEN</code> in <code>.env.local</code> for automated capture, or switch to Manual.
-              {/if}
-            </span>
-          </div>
+          {#if ingestReady}
+            <p class="slate-status"><span class="dot live"></span><span>Import staged. The prompt will fill in the project card and category.</span></p>
+          {:else}
+            <p class="hint">You only need the video and its prompt. Everything else can be edited later from the project.</p>
+          {/if}
         </div>
-        {#if error}<p class="dc-create-error">{error}</p>{/if}
-    </section>
-    {:else}
-    <section class="dc-ingest-panel" aria-labelledby="ingest-title">
-      <div class="dc-ingest-copy">
-        <p class="dc-eyebrow">Existing work</p>
-        <h2 id="ingest-title">Bring a finished video into the workspace.</h2>
-        <p>Upload the finished cut and its prompt. The project record, category, title, and comparison entry can be enriched from there.</p>
-      </div>
-
-      <label class="dc-ingest-drop" class:dc-ingest-drop-ready={!!ingestFile}>
-        <input type="file" accept="video/*" onchange={handleIngestFile} />
-        {#if ingestFile}
-          <video src={ingestUrl} muted controls playsinline aria-label="Selected video preview"></video>
-          <div class="dc-ingest-file"><strong>{ingestFile.name}</strong><span>{(ingestFile.size / 1024 / 1024).toFixed(1)} MB · ready to ingest</span></div>
-        {:else}
-          <span class="dc-ingest-plus">+</span>
-          <strong>Drop a finished video here</strong>
-          <span>MP4, WebM, or MOV · 16:9 preferred</span>
-        {/if}
-      </label>
-
-      <label class="dc-field dc-ingest-prompt">
-        <span>Original prompt</span>
-        <textarea bind:value={ingestPrompt} rows="7" placeholder="Paste the prompt used to make this video. The AI will use it to name, categorize, and describe the project."></textarea>
-      </label>
-
-      <div class="dc-ingest-actions">
-        <button class="dc-prepare-button" type="button" disabled={!ingestFile || !ingestPrompt.trim() || ingestBusy} onclick={ingestProject}>{ingestBusy ? 'Preparing project…' : ingestReady ? 'Project ready' : 'Analyze and add to projects'}</button>
-        <p class="dc-connection-note">Video and prompt are the only required inputs. Metadata can be edited from the comparison table after ingest.</p>
-      </div>
-      {#if ingestReady}
-        <div class="dc-ingest-result"><span class="dc-status-dot dc-status-live"></span><strong>Ingest staged</strong><span>AI enrichment will use the supplied prompt to populate the project card and category.</span></div>
-      {/if}
-    </section>
+      </section>
     {/if}
 
     {#if automatedRun}
-      <section class="dc-request-panel dc-automated-panel">
-        <div class="dc-request-header">
-          <div><span class="dc-column-kicker">Automated run created</span><h2>{automatedRun.title}</h2></div>
-          <button onclick={openProjects}>Open Projects</button>
+      <section class="result" aria-labelledby="run-title">
+        <div class="result-head">
+          <div>
+            <p class="block-title">Run started</p>
+            <h2 id="run-title">{automatedRun.title}</h2>
+          </div>
+          <button class="btn" type="button" onclick={openProjects}>Open in Projects</button>
         </div>
-        <div class="dc-automated-meta">
-          <div><span>Run ID</span><strong>{automatedRun.run_id}</strong></div>
-          <div><span>Status</span><strong>{captureStatus?.run_status ?? automatedRun.run_status}</strong></div>
-          <div><span>Captured</span><strong>{captureStatus?.captured_valid_count ?? 0} / 2 valid</strong></div>
-          <div><span>Computer use</span><strong>{captureRunning ? 'running…' : captureStatus?.capture_job_status ?? 'idle'}</strong></div>
-        </div>
+        <dl class="result-facts">
+          <div><dt>Run</dt><dd>{automatedRun.run_id}</dd></div>
+          <div><dt>Status</dt><dd>{captureStatus?.run_status ?? automatedRun.run_status}</dd></div>
+          <div><dt>Captured</dt><dd>{captureStatus?.captured_valid_count ?? 0} of 2</dd></div>
+          <div><dt>Capture</dt><dd>{captureRunning ? 'Running' : captureStatus?.capture_job_status ?? 'Idle'}</dd></div>
+        </dl>
         {#if captureStatus}
-          <ul class="dc-capture-model-list">
+          <ul class="result-models">
             {#each captureStatus.models as model (model.label)}
               <li data-status={model.status}>
-                <span>{model.label}</span>
+                <strong>{model.label}</strong>
                 <span>{model.raycast_agent}</span>
-                <span>{model.status}</span>
+                <span class="result-state">{model.status}</span>
               </li>
             {/each}
           </ul>
         {/if}
         {#if captureStatus?.answers?.length}
-          <div class="dc-captured-answers">
+          <div class="result-answers">
             {#each captureStatus.answers as answer (answer.answer_id)}
               <article data-status={answer.structure_status}>
-                <header>
-                  <strong>{answer.model_name}</strong>
-                  <span>{answer.structure_status}</span>
-                </header>
+                <header><strong>{answer.model_name}</strong><span>{answer.structure_status}</span></header>
                 {#if answer.title}<h3>{answer.title}</h3>{/if}
                 {#if answer.logline}<p>{answer.logline}</p>{/if}
               </article>
@@ -455,136 +568,919 @@
           </div>
         {/if}
         {#if captureRunning}
-          <p class="dc-agent-prompt">Computer use is driving Raycast (<strong>Sora 2 - ChatGPT</strong>, then <strong>Sora 2 - Haiku</strong>). Answers will appear above when captured.</p>
+          <p class="hint">Computer use is driving Raycast: Sora 2 - ChatGPT first, then Sora 2 - Haiku. Answers appear above as they're captured.</p>
         {:else if capturePrepared && !captureStatus?.ready_for_projects}
-          <p class="dc-agent-prompt">Capture finished or stalled. Check Raycast is open and Accessibility is granted to Raycast / Cursor.</p>
+          <p class="hint">Capture stopped before both answers came back. Check that Raycast is open and has Accessibility access.</p>
         {:else if captureStatus?.ready_for_projects}
-          <p class="dc-agent-prompt">Both concepts captured. Open Projects to compare and approve.</p>
+          <p class="hint">Both concepts are in. Open Projects to compare and approve them.</p>
         {/if}
       </section>
     {/if}
 
     {#if request && handoffMode === 'manual'}
-      <section class="dc-request-panel">
-        <div class="dc-request-header"><div><span class="dc-column-kicker">Ready for Raycast</span><h2>Canonical concept brief</h2></div><button onclick={copyRequest}>{copied ? 'Copied' : 'Copy for Raycast'}</button></div>
-        <pre>{request}</pre>
+      <section class="result" aria-labelledby="brief-title">
+        <div class="result-head">
+          <div>
+            <p class="block-title">Ready for Raycast</p>
+            <h2 id="brief-title">Concept brief</h2>
+          </div>
+          <button class="btn" type="button" onclick={copyRequest}>{copied ? 'Copied' : 'Copy brief'}</button>
+        </div>
+        <pre class="brief">{request}</pre>
       </section>
     {/if}
   </div>
 </div>
 
 <style>
-  /* Mobile scrolls the document; desktop keeps the fixed-height workspace. */
-  .dc-create-page { padding: 22px var(--dc-page-pad) 44px; }
-  @media (min-width: 861px) { .dc-create-page { height: 100%; overflow-y: auto; padding: 34px clamp(18px,4vw,52px) 52px; } }
-  .dc-create-shell { max-width: 860px; margin: 0 auto; }
-  .dc-create-header { padding-bottom: 25px; border-bottom: 1px solid var(--dc-border); }
-  .dc-create-header h1 { margin: 0; font-size: clamp(30px,5vw,48px); letter-spacing: -.05em; line-height: 1; }
-  .dc-create-header > p { max-width: 650px; margin: 14px 0 0; color: var(--dc-text-muted); font-size: 12px; line-height: 1.6; }
-  .dc-create-form { display: flex; flex-direction: column; gap: 18px; padding-top: 26px; }
-  .dc-quick-starts { display: flex; flex-direction: column; gap: 8px; }
-  .dc-quick-starts-label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-  .dc-quick-start-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .dc-quick-start-chip { padding: 8px 10px; border: 1px solid var(--dc-border); border-radius: 999px; background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 10px; cursor: pointer; }
-  .dc-quick-start-chip:hover { border-color: #71717a; color: var(--dc-text); }
-  .dc-title-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
-  .dc-title-option { padding: 6px 8px; border: 1px solid var(--dc-border); border-radius: 999px; background: #0d0d0f; color: var(--dc-text-dim); font-size: 9px; cursor: pointer; }
-  .dc-title-option:hover { border-color: #52525b; color: var(--dc-text-muted); }
-  .dc-title-option-active { border-color: #a1a1aa; color: var(--dc-text); }
-  .dc-field { display: flex; flex-direction: column; gap: 7px; }
-  .dc-field > span, .dc-targets legend, .dc-handoff-mode legend, .dc-field-heading label { color: var(--dc-text-muted); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-  .dc-field-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .dc-wand { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
-  .dc-wand:hover { border-color: #52525b; color: var(--dc-text); }
-  .dc-wand svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
-  .dc-field textarea, .dc-field select, .dc-text-input { width: 100%; box-sizing: border-box; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); color: var(--dc-text); outline: none; }
-  .dc-text-input { padding: 11px 12px; font-size: 13px; }
-  .dc-field textarea { min-height: 190px; padding: 16px; resize: vertical; font-size: 15px; line-height: 1.55; }
-  .dc-field select { padding: 9px 10px; font-size: 11px; }
-  .dc-field textarea:focus, .dc-field select:focus, .dc-text-input:focus { border-color: #52525b; }
-  .dc-sample-source { color: var(--dc-text-dim); font-size: 9px; letter-spacing: 0; text-transform: none; }
-  .dc-sample-source strong { color: var(--dc-text-muted); font-weight: 600; }
-  .dc-create-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .dc-handoff-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; border: 0; }
-  .dc-handoff-mode legend { margin-bottom: 8px; }
-  .dc-handoff-mode label { display: flex; gap: 9px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); cursor: pointer; min-height: 44px; }
-  .dc-handoff-active { border-color: #71717a; }
-  .dc-handoff-mode input { accent-color: #fafafa; }
-  .dc-handoff-mode span { display: flex; flex-direction: column; gap: 3px; }
-  .dc-handoff-mode strong { color: var(--dc-text); font-size: 11px; }
-  .dc-handoff-mode small { color: var(--dc-text-dim); font-size: 9px; line-height: 1.3; }
-  .dc-targets { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0; padding: 0; border: 0; }
-  .dc-targets legend { margin-bottom: 8px; }
-  .dc-targets label { display: flex; gap: 9px; padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: var(--dc-bg-elev); cursor: pointer; min-height: 44px; }
-  .dc-targets input { accent-color: #fafafa; }
-  .dc-targets span { display: flex; flex-direction: column; gap: 3px; }
-  .dc-targets strong { color: var(--dc-text); font-size: 11px; }
-  .dc-targets small { color: var(--dc-text-dim); font-size: 9px; line-height: 1.3; }
-  .dc-reference-drop { display: flex; align-items: center; gap: 12px; min-height: 74px; padding: 10px; border: 1px dashed #3f3f46; border-radius: var(--dc-radius); background: #0d0d0f; cursor: pointer; }
-  .dc-reference-drop input { display: none; }
-  .dc-reference-drop img { width: 88px; height: 58px; border-radius: var(--dc-radius); object-fit: cover; }
-  .dc-reference-drop > div:not(.dc-reference-icon) { display: flex; flex-direction: column; gap: 3px; }
-  .dc-reference-drop strong { color: var(--dc-text); font-size: 11px; }
-  .dc-reference-drop span { color: var(--dc-text-dim); font-size: 9px; }
-  .dc-reference-icon { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--dc-border); border-radius: 50%; color: var(--dc-text-muted); font-size: 20px; }
-  .dc-submit-row { display: grid; grid-template-columns: 220px 1fr; align-items: center; gap: 14px; padding-top: 2px; }
-  .dc-prepare-button { min-height: 44px; padding: 12px 16px; border: 0; border-radius: var(--dc-radius); background: var(--dc-text); color: var(--dc-bg); font-size: 12px; font-weight: 750; cursor: pointer; }
-  .dc-prepare-button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
-  .dc-connection-note { display: flex; align-items: flex-start; gap: 8px; color: var(--dc-text-dim); font-size: 9px; line-height: 1.5; }
-  .dc-connection-note code { font-family: var(--dc-font-mono); color: var(--dc-text-muted); }
-  .dc-status-dot { flex: 0 0 auto; width: 6px; height: 6px; margin-top: 4px; border-radius: 50%; background: #f59e0b; }
-  .dc-status-live { background: #22c55e; }
-  .dc-create-error { margin: 0; color: #f87171; font-size: 11px; line-height: 1.5; }
-  .dc-request-panel { margin-top: 28px; padding: 18px; border: 1px solid var(--dc-border); border-radius: 8px; background: var(--dc-bg-elev); }
-  .dc-request-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--dc-border); }
-  .dc-request-header h2 { margin: 4px 0 0; font-size: 15px; }
-  .dc-request-header button { padding: 6px 9px; border: 1px solid var(--dc-border); border-radius: 4px; background: transparent; color: var(--dc-text-muted); font-size: 9px; cursor: pointer; }
-  .dc-request-panel pre { max-height: 440px; overflow: auto; margin: 16px 0 0; color: var(--dc-text-muted); font-family: var(--dc-font-mono); font-size: 10px; line-height: 1.6; white-space: pre-wrap; }
-  .dc-automated-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
-  .dc-automated-meta div { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
-  .dc-automated-meta span { color: var(--dc-text-dim); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
-  .dc-automated-meta strong { color: var(--dc-text); font-size: 11px; word-break: break-word; }
-  .dc-capture-model-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
-  .dc-capture-model-list li { display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; padding: 8px 10px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); font-size: 10px; color: var(--dc-text-muted); }
-  .dc-capture-model-list li[data-status='captured'] { border-color: #166534; }
-  .dc-capture-model-list li[data-status='invalid'] { border-color: #991b1b; }
-  .dc-captured-answers { display: grid; gap: 10px; margin-top: 16px; }
-  .dc-captured-answers article { padding: 12px; border: 1px solid var(--dc-border); border-radius: var(--dc-radius); background: #0d0d0f; }
-  .dc-captured-answers article[data-status='valid'] { border-color: #166534; }
-  .dc-captured-answers article[data-status='invalid'] { border-color: #991b1b; }
-  .dc-captured-answers header { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 10px; color: var(--dc-text-muted); text-transform: uppercase; letter-spacing: .06em; }
-  .dc-captured-answers h3 { margin: 0 0 6px; font-size: 13px; color: var(--dc-text); }
-  .dc-captured-answers p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--dc-text-muted); }
-  .dc-agent-prompt { margin: 14px 0 0; color: var(--dc-text-muted); font-size: 11px; line-height: 1.5; }
-  @media(max-width:700px){.dc-targets,.dc-handoff-mode{grid-template-columns:1fr}.dc-submit-row,.dc-automated-meta{grid-template-columns:1fr}.dc-create-options{grid-template-columns:1fr}}
+  /*
+   * The pitch room. Same language as the home page: black room, colour only
+   * from footage (a blown-out frame of the latest render), Instrument Serif
+   * for titles, Courier Prime for anything that reads like a script.
+   * The slate is the one loud element.
+   */
+  .pitch {
+    --pad: var(--dc-gutter-x);
+    --ink: #e7e5e4;
+    --ink-2: #bdb7b1;
+    --ink-3: #938d87;
+    --line: rgba(255, 255, 255, 0.1);
+    --line-2: rgba(255, 255, 255, 0.22);
+    --raise: #0e0e0e;
 
-  @media (max-width: 860px) {
-    .dc-create-header { padding-bottom: 18px; }
-    .dc-create-header h1 { font-size: clamp(28px, 8vw, 36px); }
-    .dc-create-header > p { font-size: 13px; }
+    position: relative;
+    min-height: 100%;
+    padding: clamp(20px, 3vw, 36px) 0 clamp(40px, 6vw, 80px);
+    overflow-x: clip;
+    background: #000;
+    color: var(--ink);
+  }
 
-    /* Anything under 16px makes iOS Safari zoom the viewport on focus, which
-       leaves the form off-centre and needs a pinch to recover. */
-    .dc-field textarea,
-    .dc-field select,
-    .dc-text-input { font-size: 16px; }
-    .dc-field select { min-height: var(--dc-tap); }
-    .dc-field textarea { min-height: 150px; }
+  @media (min-width: 861px) {
+    .pitch {
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
 
-    /* Chips and toggles need real thumb targets. */
-    .dc-quick-start-chip,
-    .dc-title-option,
-    .dc-wand { min-height: 38px; padding-inline: 13px; font-size: 12px; }
-    .dc-quick-start-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--dc-page-pad) * -1); padding-inline: var(--dc-page-pad); }
-    .dc-quick-start-row::-webkit-scrollbar { display: none; }
-    .dc-quick-start-chip { flex: 0 0 auto; }
+  .pitch-glow {
+    position: absolute;
+    inset: -20% -10% auto;
+    height: 520px;
+    background-position: center;
+    background-size: cover;
+    filter: blur(110px) saturate(1.4);
+    opacity: 0.35;
+    pointer-events: none;
+    mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  }
 
-    .dc-prepare-button { width: 100%; font-size: 15px; }
-    .dc-request-header { align-items: flex-start; flex-direction: column; }
-    .dc-request-header button { min-height: 38px; padding-inline: 14px; font-size: 12px; }
-    .dc-request-panel { padding: 14px; }
-    .dc-request-panel pre { max-height: 300px; font-size: 11px; }
-    .dc-capture-model-list li { grid-template-columns: 1fr; font-size: 12px; }
-    .dc-connection-note { font-size: 11px; }
+  .pitch-wrap {
+    position: relative;
+    max-width: calc(var(--dc-page-max) + 2 * var(--pad));
+    margin: 0 auto;
+    padding: 0 max(var(--pad), var(--dc-safe-r)) 0 max(var(--pad), var(--dc-safe-l));
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────── */
+
+  .pitch-head h1 {
+    margin: 0;
+    overflow: hidden;
+    font: 400 clamp(28px, 2.6vw, 36px) / 1.15 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pitch-head > p {
+    max-width: 56ch;
+    margin: 6px 0 0;
+    color: var(--dc-text-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .modes {
+    display: inline-flex;
+    gap: 4px;
+    margin-top: 18px;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .modes button {
+    min-height: 28px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 550;
+    cursor: pointer;
+  }
+
+  .modes button:hover {
+    color: var(--ink);
+  }
+
+  .modes button.active {
+    background: rgba(255, 255, 255, 0.7);
+    color: #000;
+  }
+
+  /* ── Desk: form + slate ──────────────────────────────────────── */
+
+  .desk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(24px, 3vw, 40px);
+    margin-top: clamp(24px, 3vw, 36px);
+  }
+
+  @media (min-width: 1000px) {
+    .desk {
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+      align-items: start;
+    }
+
+    .slate-col {
+      position: sticky;
+      top: 24px;
+    }
+  }
+
+  .desk-form {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(22px, 2.6vw, 30px);
+    min-width: 0;
+  }
+
+  .block {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .block-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .block-title {
+    margin: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .hint {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--ink-2);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .link-btn:hover {
+    color: var(--ink);
+  }
+
+  /* Templates, dealt out like pitch cards */
+  .presets {
+    display: grid;
+    grid-auto-columns: minmax(220px, 1fr);
+    grid-auto-flow: column;
+    gap: 12px;
+    margin: 0 calc(-1 * var(--pad));
+    padding: 0 var(--pad) 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--pad);
+    scrollbar-width: none;
+  }
+
+  .presets::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Beside the slate there's room for all three; no need to bleed or scroll. */
+  @media (min-width: 1000px) {
+    .presets {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .preset {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding: 18px;
+    border: 0;
+    border-radius: 6px;
+    background: linear-gradient(160deg, #141414, #0a0a0a);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .preset:hover {
+    border-color: var(--line-2);
+    transform: translateY(-2px);
+  }
+
+  .preset.active {
+    border-color: transparent;
+    background: #1c1c1c;
+    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .preset-kind {
+    color: var(--ink-2);
+    font-size: 12px;
+  }
+
+  .preset-title {
+    overflow: hidden;
+    font: 400 20px / 1.15 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preset-idea {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--ink-3);
+    font-size: 12px;
+    line-height: 1.5;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Script-style writing surfaces */
+  .treatment {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 220px;
+    padding: clamp(18px, 2.4vw, 28px);
+    border: 0;
+    border-radius: 6px;
+    background: var(--raise);
+    color: var(--ink);
+    font: 14px / 1.7 var(--dc-font-sans);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .treatment::placeholder,
+  .title-input::placeholder {
+    color: var(--ink-3);
+  }
+
+  .treatment:focus {
+    background: #141414;
+  }
+
+  .title-input:focus {
+    border-bottom-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .title-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 0 10px;
+    border: 0;
+    border-bottom: 1px solid var(--line-2);
+    background: transparent;
+    color: var(--ink);
+    font: 400 clamp(22px, 2vw, 28px) / 1.2 var(--dc-font-serif);
+    outline: none;
+  }
+
+  .title-options,
+  .formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title-options button,
+  .formats button {
+    min-height: 28px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 4px;
+    background: #161616;
+    color: var(--ink-2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+
+  .title-options button:hover,
+  .formats button:hover {
+    background: #222;
+    color: var(--ink);
+  }
+
+  .title-options button.active,
+  .formats button.active {
+    background: rgba(255, 255, 255, 0.7);
+    color: #000;
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 12px;
+  }
+
+  .choice {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 18px 18px 48px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--raise);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .choice:hover {
+    border-color: var(--line-2);
+  }
+
+  .choice.active {
+    border-color: transparent;
+    background: #1a1a1a;
+  }
+
+  .choice input {
+    position: absolute;
+    top: 20px;
+    left: 18px;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--ink);
+  }
+
+  .choice strong {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .choice span {
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .block-split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 12px;
+  }
+
+  .toggle,
+  .reference {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 88px;
+    padding: 16px 18px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--raise);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .toggle:hover,
+  .reference:hover {
+    border-color: var(--line-2);
+  }
+
+  .toggle input,
+  .reference input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .toggle-track {
+    position: relative;
+    flex: 0 0 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: #3f3f46;
+    transition: background 0.2s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #d6d3d1;
+    transition: transform 0.2s ease;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--ink);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    background: #000;
+    transform: translateX(16px);
+  }
+
+  .toggle input:focus-visible + .toggle-track {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .toggle-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .toggle-copy strong {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .toggle-copy span {
+    color: var(--ink-2);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .reference {
+    border-style: dashed;
+  }
+
+  .reference.filled {
+    border-style: solid;
+  }
+
+  .reference img {
+    flex: 0 0 96px;
+    width: 96px;
+    aspect-ratio: 16 / 9;
+    border-radius: 3px;
+    object-fit: cover;
+  }
+
+  .reference-plus {
+    display: grid;
+    flex: 0 0 40px;
+    place-items: center;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    color: var(--ink);
+  }
+
+  .reference-plus svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* ── The slate ───────────────────────────────────────────────── */
+
+  .slate {
+    overflow: hidden;
+    border: 0;
+    border-radius: 8px;
+    background: #0e0e0e;
+    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Clapper sticks */
+  .slate-sticks {
+    height: 28px;
+    background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.7) 0 22px, #000 22px 44px);
+  }
+
+  .slate-body {
+    padding: 22px 22px 24px;
+  }
+
+  .slate-label {
+    margin: 0;
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+
+  .slate-title {
+    margin: 6px 0 0;
+    overflow: hidden;
+    font: 400 clamp(24px, 2.2vw, 30px) / 1.15 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slate-title.empty {
+    color: var(--ink-3);
+  }
+
+  .slate-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    margin: 20px 0 0;
+  }
+
+  .slate-grid div {
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 3px;
+    background: #161616;
+  }
+
+  .slate-grid dt,
+  .result-facts dt {
+    color: var(--ink-3);
+    font-size: 11px;
+  }
+
+  .slate-grid dd,
+  .result-facts dd {
+    margin: 3px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .slate-go {
+    width: 100%;
+    min-height: 32px;
+    margin-top: 20px;
+    border: 0;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    color: #000;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .slate-go:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .slate-go:disabled {
+    background: #27272a;
+    color: #71717a;
+    cursor: not-allowed;
+  }
+
+  .slate-go:focus-visible,
+  .btn:focus-visible,
+  .preset:focus-visible,
+  .formats button:focus-visible,
+  .title-options button:focus-visible,
+  .modes button:focus-visible,
+  .link-btn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .slate-status {
+    display: flex;
+    gap: 10px;
+    margin: 16px 0 0;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .slate-status code {
+    color: var(--ink);
+    font-family: var(--dc-font-mono);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .dot {
+    flex: 0 0 8px;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+  }
+
+  .dot.live {
+    background: #22c55e;
+  }
+
+  .slate-error {
+    margin: 12px 0 0;
+    color: #fca5a5;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── Import ──────────────────────────────────────────────────── */
+
+  .import {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(24px, 3vw, 40px);
+    margin-top: clamp(40px, 5vw, 72px);
+  }
+
+  @media (min-width: 1000px) {
+    .import {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+
+  .import-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 0;
+    border-radius: 8px;
+    background: var(--raise);
+    color: var(--ink-2);
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .import-drop strong {
+    color: var(--ink);
+    font: 400 clamp(20px, 2vw, 26px) / 1.2 var(--dc-font-serif);
+  }
+
+  .import-drop.filled {
+    border-style: solid;
+    background: #000;
+  }
+
+  .import-drop input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .import-drop video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .import-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .import-side .slate-go {
+    margin-top: 4px;
+  }
+
+  .import-file {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .import-file strong {
+    color: var(--ink);
+  }
+
+  /* ── Run results ─────────────────────────────────────────────── */
+
+  .result {
+    margin-top: clamp(40px, 5vw, 64px);
+    padding: clamp(20px, 2.5vw, 32px);
+    border: 0;
+    border-radius: 8px;
+    background: var(--raise);
+  }
+
+  .result-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .result-head h2 {
+    margin: 4px 0 0;
+    overflow: hidden;
+    font: 400 clamp(22px, 2.2vw, 30px) / 1.15 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn {
+    min-height: 28px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    border-color: var(--ink);
+  }
+
+  .result-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+    gap: 16px;
+    margin: 24px 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+
+  .result-models {
+    display: grid;
+    gap: 8px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .result-models li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 4px;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+
+  .result-models strong {
+    color: var(--ink);
+  }
+
+  .result-state {
+    text-transform: capitalize;
+  }
+
+  .result-models li[data-status='captured'],
+  .result-answers article[data-status='valid'] {
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+
+  .result-models li[data-status='invalid'],
+  .result-answers article[data-status='invalid'] {
+    border-color: rgba(248, 113, 113, 0.5);
+  }
+
+  .result-answers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .result-answers article {
+    padding: 18px;
+    border: 0;
+    border-radius: 6px;
+    background: #000;
+  }
+
+  .result-answers header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+
+  .result-answers header strong {
+    color: var(--ink);
+  }
+
+  .result-answers h3 {
+    margin: 10px 0 6px;
+    font: 400 20px / 1.2 var(--dc-font-serif);
+  }
+
+  .result-answers p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .result .hint {
+    margin-top: 16px;
+  }
+
+  .brief {
+    max-height: 460px;
+    margin: 20px 0 0;
+    padding: clamp(18px, 2.4vw, 28px);
+    overflow: auto;
+    border: 0;
+    border-radius: 6px;
+    background: #000;
+    color: #d6d3d1;
+    font: 13px / 1.7 var(--dc-font-sans);
+    white-space: pre-wrap;
+  }
+
+  @media (max-width: 420px) {
+    .slate-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .modes {
+      display: flex;
+    }
+
+    .modes button {
+      flex: 1;
+      padding: 0 10px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .preset,
+    .toggle-track,
+    .toggle-track::after {
+      transition: none;
+    }
   }
 </style>

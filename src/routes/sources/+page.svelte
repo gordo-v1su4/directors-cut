@@ -24,95 +24,148 @@
     [...sourceMap.entries()].sort((a, b) => b[1].length - a[1].length),
   );
 
+  function repoName(url: string) {
+    const parts = url.replace(/^https?:\/\//, '').split('/').filter(Boolean);
+    return parts.length >= 3 ? parts[2].replace(/[-_]+/g, ' ') : parts.at(-1) ?? url;
+  }
+
+  function hostPath(url: string) {
+    return url.replace(/^https?:\/\//, '');
+  }
+
   onMount(async () => {
     cards = await loadPromptCards();
   });
 </script>
 
-<div class="dc-page-shell">
-  <h1 class="dc-sources-title">Source Map</h1>
-  <p class="dc-sources-intro">Where the library came from — each source linked to its citing cards.</p>
+<div class="dc-room">
+  <div class="dc-room-inner">
+    <header class="dc-room-head">
+      <div>
+        <h1 class="dc-room-title">Sources</h1>
+        <p class="dc-room-lede">Where the prompt library came from, and how many cards cite each source.</p>
+      </div>
+    </header>
 
-  <!-- Mobile: one card per source. A three-column URL table cannot survive 375px. -->
-  <div class="dc-card-list">
-    {#each sortedSources as [url, citing] (url)}
-      <a class="dc-list-card dc-source-card" href={url} target="_blank" rel="noopener">
-        <span class="dc-list-card-title dc-source-url">{url}</span>
-        <span class="dc-list-card-meta">
-          {#each [...new Set(citing.map((c) => c.model_family))] as fam}
-            <Badge label={fam} color={FAMILY_COLORS[fam] ?? 'var(--dc-general)'} />
-          {/each}
-        </span>
-        <span class="dc-list-card-foot">
-          <span>{citing.length} card{citing.length === 1 ? '' : 's'} cite this</span>
-          <span aria-hidden="true">↗</span>
-        </span>
-      </a>
-    {/each}
-  </div>
-
-  <table class="dc-table dc-desk-table" style="max-width: 900px;">
-    <thead>
-      <tr>
-        <th style="min-width: 300px">Source URL</th>
-        <th style="min-width: 60px">Cards</th>
-        <th style="min-width: 80px">Families</th>
-      </tr>
-    </thead>
-    <tbody>
+    <ul class="sources">
       {#each sortedSources as [url, citing] (url)}
-        <tr>
-          <td>
-            <a href={url} target="_blank" rel="noopener" style="color: var(--dc-sora); font-size: 12px; text-decoration: none;">{url}</a>
-          </td>
-          <td style:text-align="right">{citing.length}</td>
-          <td>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+        <li>
+          <a class="source" href={url} target="_blank" rel="noopener">
+            <span class="source-name">
+              <strong>{repoName(url)}</strong>
+              <span>{hostPath(url)}</span>
+            </span>
+            <span class="source-families">
               {#each [...new Set(citing.map((c) => c.model_family))] as fam}
                 <Badge label={fam} color={FAMILY_COLORS[fam] ?? 'var(--dc-general)'} />
               {/each}
-            </div>
-          </td>
-        </tr>
+            </span>
+            <span class="source-count">{citing.length} {citing.length === 1 ? 'card' : 'cards'}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </a>
+        </li>
       {/each}
-    </tbody>
-  </table>
+    </ul>
+  </div>
 </div>
 
 <style>
-  .dc-sources-title {
-    margin: 0 0 8px;
+  .sources {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sources li + li {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .source {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 80px 18px;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 0;
     color: var(--dc-text);
-    font-size: 26px;
-    font-weight: 650;
-    letter-spacing: -0.035em;
-  }
-
-  .dc-sources-intro {
-    margin: 0 0 20px;
-    color: var(--dc-text-dim);
-    font-size: 13px;
-  }
-
-  .dc-source-card {
     text-decoration: none;
   }
 
-  /* Long URLs must wrap rather than widen the card past the viewport. */
-  .dc-source-url {
-    display: block;
-    color: var(--dc-sora);
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
+  .source-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
 
-  .dc-source-card .dc-list-card-meta { display: flex; }
-  .dc-source-card .dc-list-card-foot { display: flex; }
+  .source-name strong {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-  @media (min-width: 861px) {
-    .dc-sources-title { font-size: 18px; font-weight: 600; }
-    .dc-sources-intro { font-size: 12px; }
+  .source-name span {
+    overflow: hidden;
+    color: var(--dc-text-dim);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .source-families {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 6px;
+  }
+
+  .source-count {
+    color: var(--dc-text-muted);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .source svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--dc-text-dim);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.15s ease, transform 0.15s ease;
+  }
+
+  .source:hover strong {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .source:hover svg {
+    stroke: var(--dc-text);
+    transform: translate(2px, -2px);
+  }
+
+  .source:focus-visible {
+    outline: 2px solid var(--dc-text);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 700px) {
+    .source {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 16px;
+    }
+
+    .source-families {
+      grid-column: 1;
+      justify-content: start;
+    }
+
+    .source svg {
+      display: none;
+    }
   }
 </style>

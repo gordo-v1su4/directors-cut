@@ -100,14 +100,14 @@
 <style>
   form { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
   label { font-size:12px; flex:1; }
-  input { display:block; width:100%; padding:8px; background:var(--dc-bg); color:var(--dc-text); border:1px solid var(--dc-border); }
+  input { display:block; width:100%; padding:8px 10px; background:#141414; color:var(--dc-text); border:0; border-radius:4px; }
   form button { width:auto; }
   .version-upload { margin-top:14px; }
-  button { display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; padding:16px 12px; border:1px dashed var(--dc-border); background:transparent; color:var(--dc-text-muted); cursor:pointer; }
-  button:hover, button.dragging, button:focus-visible { border-color:var(--dc-text); background:var(--dc-bg); outline:none; }
+  button { display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; padding:18px 12px; border:0; border-radius:6px; background:#0e0e0e; color:var(--dc-text-muted); cursor:pointer; transition:background .15s ease; }
+  button:hover, button.dragging, button:focus-visible { background:#1a1a1a; color:var(--dc-text); outline:none; }
   button:disabled { opacity:.6;cursor:wait; }
-  strong { font-size:12px; font-weight:500; }
-  span, p { font-size:11px;line-height:1.4; }
+  strong { font-size:13px; font-weight:600; color:var(--dc-text); }
+  span, p { font-size:12px;line-height:1.4; }
   p { margin:8px 0 0;color:var(--dc-text-muted); }
   p.error { color:#f59b9b; }
 </style>

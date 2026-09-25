@@ -85,7 +85,7 @@
       {/if}
 
       <div class="dc-drawer-badges">
-        <Badge label={card.model_family} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} active />
+        <Badge label={card.model_family} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} />
         {#each card.model_targets as target}
           <Badge label={target} color={FAMILY_COLORS[card.model_family] ?? 'var(--dc-general)'} />
         {/each}
@@ -173,10 +173,14 @@
     margin-bottom: 12px;
   }
 
+  .dc-drawer-heading {
+    flex: 1;
+    min-width: 0;
+  }
+
   .dc-drawer-heading h2 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 650;
+    font: 400 24px / 1.15 var(--dc-font-serif);
     color: var(--dc-text);
     line-height: 1.25;
   }
@@ -192,19 +196,20 @@
   .dc-drawer-button {
     display: inline-flex;
     align-items: center;
-    min-height: 36px;
+    min-height: 28px;
     padding: 0 12px;
-    border: 1px solid var(--dc-border);
-    border-radius: var(--dc-radius);
-    background: var(--dc-bg);
+    border: 0;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
     color: var(--dc-text);
-    font-size: 12px;
+    font-size: 13px;
     text-decoration: none;
     cursor: pointer;
   }
 
-  .dc-drawer-link-badge {
-    color: var(--dc-text-muted);
+  .dc-drawer-link-badge:hover,
+  .dc-drawer-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
   }
 
   .dc-drawer-toolbar {
@@ -215,13 +220,13 @@
   }
 
   .dc-drawer-close {
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--dc-border);
-    border-radius: var(--dc-radius);
-    background: var(--dc-bg);
-    color: var(--dc-text-muted);
-    font-size: 22px;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--dc-text);
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
   }
@@ -236,10 +241,10 @@
   .dc-drawer-panel {
     margin-bottom: 12px;
     padding: 12px;
-    border: 1px solid var(--dc-border);
-    border-radius: var(--dc-radius);
-    background: var(--dc-bg);
-    font-size: 12px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 13px;
   }
 
   .dc-drawer-panel p {
@@ -269,10 +274,9 @@
 
   .dc-drawer-section h3 {
     margin: 0 0 8px;
-    font-size: 11px;
-    text-transform: uppercase;
-    color: var(--dc-text-dim);
-    letter-spacing: 0.06em;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dc-text);
   }
 
   .dc-drawer-dl {
@@ -301,8 +305,8 @@
   }
 
   .dc-drawer-sources a {
-    color: var(--dc-sora);
-    font-size: 12px;
+    color: var(--dc-text-muted);
+    font-size: 13px;
     text-decoration: none;
     word-break: break-all;
   }
@@ -317,10 +321,10 @@
     margin: 0;
     max-height: 260px;
     overflow-y: auto;
-    font-family: var(--dc-font-mono);
-    font-size: 11px;
-    line-height: 1.5;
-    color: var(--dc-text-muted);
+    font-family: var(--dc-font-sans);
+    font-size: 13px;
+    line-height: 1.6;
+    color: #d6d3d1;
     white-space: pre-wrap;
   }
 
@@ -335,9 +339,4 @@
     text-align: center;
   }
 
-  @media (min-width: 961px) {
-    .dc-drawer-close {
-      display: none;
-    }
-  }
 </style>

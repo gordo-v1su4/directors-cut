@@ -1,16 +1,19 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { resolve } from '$app/paths';
   import { loadComparisonsIndex, loadComparisonRun, loadLatestArtifacts } from '$lib/data/comparisons';
-  import type { ComparisonArtifact, ComparisonRunDetail, ComparisonRunSummary } from '$lib/types/comparison';
-  import MobileVideoFeed from '$lib/components/MobileVideoFeed.svelte';
+  import type {
+    ComparisonArtifact,
+    ComparisonRunDetail,
+    ComparisonRunSummary,
+    CreativeConceptPackage,
+  } from '$lib/types/comparison';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
   import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
-  import VersionDropzone from '$lib/components/VersionDropzone.svelte';
   import { videoModel } from '$lib/data/version-context';
-  import { isDesktop } from '$lib/viewport.svelte';
+  import { showTitle } from '$lib/data/titles';
 
-  const desktop = isDesktop();
   let projects = $state<ComparisonRunSummary[]>([]);
   let latestMedia = $state<ComparisonArtifact[]>([]);
   let selectedIndex = $state(0);
@@ -19,22 +22,77 @@
   let lightboxIndex = $state(0);
   let loading = $state(true);
   let heroMuted = $state(true);
+  let heroVideo = $state<HTMLVideoElement | null>(null);
+  let latestRow = $state<HTMLDivElement | null>(null);
 
   const selectedProject = $derived(projects[selectedIndex]);
   const selectedMedia = $derived(
     latestMedia.filter((item) => item.run_id === selectedProject?.run_id && (item.media_url || item.thumbnail_url)),
   );
-  const projectVersions = $derived(selectedDetail?.artifacts.filter((item) => ['video_result', 'end_video'].includes(item.artifact_type) && !!item.media_url) ?? []);
-  const heroArtifact = $derived(selectedMedia[0] ?? projectVersions[0]);
-  const concept = $derived(selectedDetail?.answers.find((answer) => answer.answer_id === heroArtifact?.answer_id)?.structured_prompt ?? selectedDetail?.answers.find((answer) => answer.structure_status === 'valid')?.structured_prompt);
-  const logline = $derived(selectedDetail?.logline || (concept && typeof concept === 'object' && 'logline' in concept ? String(concept.logline) : '') || 'Logline not added yet.');
-
-  function mediaUrl(item: ComparisonArtifact | undefined) {
-    return item?.thumbnail_url ?? item?.media_url ?? '';
-  }
+  const projectVersions = $derived(
+    selectedDetail?.artifacts
+      .filter((item) => isVideo(item) && !!item.media_url)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at)) ?? [],
+  );
+  const heroArtifact = $derived(selectedMedia[0] ?? projectVersions.at(-1));
+  const heroTake = $derived(
+    Math.max(1, projectVersions.findIndex((v) => v.artifact_id === heroArtifact?.artifact_id) + 1),
+  );
+  const concept = $derived(
+    selectedDetail?.answers.find((answer) => answer.answer_id === heroArtifact?.answer_id)?.structured_prompt ??
+      selectedDetail?.answers.find((answer) => answer.structure_status === 'valid')?.structured_prompt,
+  );
+  const logline = $derived(
+    selectedDetail?.logline ||
+      (concept && typeof concept === 'object' && 'logline' in concept ? String(concept.logline) : '') ||
+      selectedProject?.logline ||
+      'Logline not added yet.',
+  );
 
   function isVideo(item: ComparisonArtifact) {
     return item.artifact_type === 'video_result' || item.artifact_type === 'end_video';
+  }
+
+  function modelOf(item: ComparisonArtifact | undefined) {
+    return item ? videoModel(item) : 'Model not set';
+  }
+
+  function plural(count: number, noun: string) {
+    return `${count} ${noun}${count === 1 ? '' : 's'}`;
+  }
+
+  function statusLabel(status: string | undefined) {
+    const text = (status ?? 'active').replace(/_/g, ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  function shortDate(value: string | undefined) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value.slice(0, 10)
+      : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function thumbForRun(runId: string) {
+    return latestMedia.find((m) => m.run_id === runId && (m.media_url || m.thumbnail_url));
+  }
+
+  async function openClip(item: ComparisonArtifact) {
+    const detail = await loadComparisonRun(item.run_id);
+    lightboxArtifacts = detail.artifacts
+      .filter((a) => isVideo(a) && a.media_url)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    lightboxIndex = Math.max(0, lightboxArtifacts.findIndex((a) => a.artifact_id === item.artifact_id));
+  }
+
+  function openTake(index: number) {
+    lightboxArtifacts = projectVersions;
+    lightboxIndex = index;
+  }
+
+  function scrollRow(row: HTMLElement | null, direction: number) {
+    row?.scrollBy({ left: direction * row.clientWidth * 0.85, behavior: 'smooth' });
   }
 
   async function selectProject(index: number) {
@@ -49,25 +107,9 @@
 
   function move(direction: number) {
     if (!projects.length) return;
-    selectedIndex = (selectedIndex + direction + projects.length) % projects.length;
-    void selectProject(selectedIndex);
+    void selectProject((selectedIndex + direction + projects.length) % projects.length);
   }
 
-  function openVersions() {
-    if (projectVersions.length) {
-      lightboxArtifacts = projectVersions;
-      lightboxIndex = 0;
-    }
-  }
-
-  async function refreshVersions() {
-    const id = selectedProject?.run_id;
-    latestMedia = await loadLatestArtifacts(100);
-    if (id) {
-      const detail = await loadComparisonRun(id);
-      if (selectedProject?.run_id === id) selectedDetail = detail;
-    }
-  }
 
   onMount(() => {
     let disposed = false;
@@ -95,143 +137,678 @@
         lastIndex = signature;
       } finally { busy = false; if (!disposed) loading = false; }
     }
+
+    // Stop the hero from playing (and draining battery) in a background tab.
+    const onVisibility = () => {
+      if (document.hidden) heroVideo?.pause();
+      else if (heroVideo && !lightboxArtifacts) void heroVideo.play().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     void refresh();
     const interval = setInterval(() => { void refresh(); }, 10000);
-    return () => { disposed = true; clearInterval(interval); };
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  });
+
+  // The lightbox plays its own video; keep the hero quiet underneath it.
+  $effect(() => {
+    if (!heroVideo) return;
+    if (lightboxArtifacts) heroVideo.pause();
+    else void heroVideo.play().catch(() => {});
   });
 </script>
 
 {#if lightboxArtifacts}
-  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={() => lightboxArtifacts = null} />
+  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={() => (lightboxArtifacts = null)} />
 {/if}
 
-<main class="dc-dashboard">
-  <div class="dc-dashboard-inner">
-    <header class="dc-dashboard-header">
-      <div><p class="dc-eyebrow">Directors Cut / workspace</p><h1>{desktop.matches ? 'Works in progress' : 'Trailer feed'}</h1></div>
-      <p class="dc-dashboard-intro">Follow active concepts from first answer to final frame. Select a project to inspect its versions and see how it developed.</p>
-    </header>
-
-    {#if loading}
-      <div class="dc-project-loading">Loading active projects…</div>
-    {:else if !projects.length}
-      <section class="dc-empty-work"><p class="dc-eyebrow">No active work</p><h2>Start a project to see it here.</h2><a href={resolve('/create')}>Create a prompt project</a></section>
-    {:else if !desktop.matches}
-      <MobileVideoFeed items={latestMedia} {projects} suspended={!!lightboxArtifacts} onVersions={async (item) => { const detail=await loadComparisonRun(item.run_id); lightboxArtifacts=detail.artifacts.filter(a=>isVideo(a) && a.media_url).sort((a,b)=>a.created_at.localeCompare(b.created_at)); lightboxIndex=Math.max(0,lightboxArtifacts.findIndex(a=>a.artifact_id===item.artifact_id)); }} />
-    {:else}
-      <section class="dc-workstage" aria-label="Active projects">
-        <div class="dc-workstage-heading">
-          <div><p class="dc-eyebrow">Active project {selectedIndex + 1} / {projects.length}</p><h2>{selectedProject?.title}</h2></div>
-          <div class="dc-carousel-controls">
-            <button type="button" aria-label="Previous project" onclick={() => move(-1)}>←</button>
-            <button type="button" aria-label="Next project" onclick={() => move(1)}>→</button>
-          </div>
-        </div>
-
-        <div class="dc-hero-layout">
-          <div class="dc-key-art" class:has-art={!!heroArtifact}>
-            {#if heroArtifact}
-              {#if isVideo(heroArtifact)}
-                <video src={heroArtifact.media_url} poster={heroArtifact.thumbnail_url} muted={heroMuted} autoplay loop playsinline aria-label={heroArtifact.title}></video>
-                <button type="button" class="dc-hero-volume" aria-label={heroMuted ? 'Unmute key art video' : 'Mute key art video'} onclick={() => (heroMuted = !heroMuted)}>{heroMuted ? 'VOL 0' : 'VOL 1'}</button>
-              {:else}<img src={mediaUrl(heroArtifact)} alt={heroArtifact.title} />{/if}
-              <span class="dc-art-label">{videoModel(heroArtifact)}</span>
+<div class="home">
+  {#if loading}
+    <div class="home-wrap"><p class="home-state">Loading projects…</p></div>
+  {:else if !projects.length}
+    <div class="home-wrap">
+      <section class="home-state">
+        <h1>Nothing in the edit yet</h1>
+        <p>Create a project and its renders will show up here.</p>
+        <a class="btn btn-solid" href={resolve('/create')}>Create a project</a>
+      </section>
+    </div>
+  {:else}
+    <!-- ── Now playing: the video runs edge to edge ──────────────── -->
+    <section class="hero" aria-label="Now playing">
+      <div class="screen">
+        {#if heroArtifact}
+          {#key heroArtifact.artifact_id}
+            {#if isVideo(heroArtifact) && heroArtifact.media_url}
+              <video
+                bind:this={heroVideo}
+                src={heroArtifact.media_url}
+                poster={heroArtifact.thumbnail_url}
+                muted={heroMuted}
+                autoplay
+                loop
+                playsinline
+                aria-label={heroArtifact.title}
+                transition:fade={{ duration: 400 }}
+              ></video>
             {:else}
-              <div class="dc-art-empty"><span>KEY ART</span><small>Awaiting generated media</small></div>
+              <ArtifactPreview artifact={heroArtifact} />
+            {/if}
+          {/key}
+        {:else}
+          <p class="screen-empty">No render for this project yet</p>
+        {/if}
+        <div class="screen-scrim" aria-hidden="true"></div>
+
+        {#if heroArtifact && isVideo(heroArtifact)}
+          <button
+            type="button"
+            class="icon-btn screen-sound"
+            aria-label={heroMuted ? 'Turn sound on' : 'Turn sound off'}
+            aria-pressed={!heroMuted}
+            onclick={() => (heroMuted = !heroMuted)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4z" />
+              {#if heroMuted}
+                <path d="m17 9 5 5m0-5-5 5" />
+              {:else}
+                <path d="M17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12" />
+              {/if}
+            </svg>
+          </button>
+        {/if}
+      </div>
+
+      {#key selectedProject?.run_id}
+        <div class="card" in:fade={{ duration: 350 }}>
+          <h1 class="card-title" title={selectedProject?.title}>{showTitle(selectedProject?.title)}</h1>
+          <p class="card-logline">{logline}</p>
+          <p class="card-facts">
+            <span>Take {heroTake} of {projectVersions.length || 1}</span>
+            <span>{modelOf(heroArtifact)}</span>
+            <span>{statusLabel(selectedProject?.status)}</span>
+          </p>
+          <div class="card-actions">
+            <a class="btn btn-solid" href={`${resolve('/comparisons')}?run=${selectedProject?.run_id}`}>
+              Open project
+            </a>
+            <button
+              type="button"
+              class="btn"
+              onclick={() => openTake(Math.max(0, heroTake - 1))}
+              disabled={!projectVersions.length}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
+              Watch takes
+            </button>
+            {#if projects.length > 1}
+              <div class="card-switch">
+                <button type="button" class="icon-btn" aria-label="Previous project" onclick={() => move(-1)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+                </button>
+                <span>{selectedIndex + 1} / {projects.length}</span>
+                <button type="button" class="icon-btn" aria-label="Next project" onclick={() => move(1)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                </button>
+              </div>
             {/if}
           </div>
-          <div class="dc-project-panel">
-            <p class="dc-project-question">{logline}</p>
-            <div class="dc-version-strip">
-              {#each projectVersions.slice(0, 4) as version, i (version.artifact_id)}
-                <button type="button" class="dc-version-thumb" aria-label="Open version {i + 1}" onclick={() => { lightboxArtifacts = projectVersions; lightboxIndex = i; }}>
-                  <ArtifactPreview artifact={version} /><span class="dc-version-label">{version.version_number ? `v${version.version_number}` : `v${i + 1}`}</span>
-                </button>
-              {:else}<span class="dc-no-versions">Versions will appear here as media lands.</span>{/each}
-            </div>
-            {#if selectedProject}{#key selectedProject.run_id}<VersionDropzone runId={selectedProject.run_id} title={selectedProject.title} onAdded={refreshVersions} />{/key}{/if}
-            <div class="dc-project-actions">
-              <a class="dc-primary-action" href={`${resolve('/comparisons')}?run=${selectedProject?.run_id}`}>Open project</a>
-              <button class="dc-secondary-action" type="button" onclick={openVersions} disabled={!projectVersions.length}>View all versions</button>
-            </div>
+        </div>
+      {/key}
+    </section>
+
+    <!-- ── Latest renders: one row, however many clips there are ──── -->
+    {#if latestMedia.length}
+      <section class="section" aria-labelledby="latest-title">
+        <div class="home-wrap row-head">
+          <h2 id="latest-title">Latest renders</h2>
+          <div class="row-arrows">
+            <button type="button" class="icon-btn" aria-label="Scroll latest renders back" onclick={() => scrollRow(latestRow, -1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+            </button>
+            <button type="button" class="icon-btn" aria-label="Scroll latest renders forward" onclick={() => scrollRow(latestRow, 1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+            </button>
           </div>
         </div>
-        <div class="dc-carousel-dots" aria-label="Choose project">
-          {#each projects as project, i (project.run_id)}<button class:active={i === selectedIndex} type="button" aria-label="Show {project.title}" onclick={() => selectProject(i)}></button>{/each}
+
+        <div class="row row-clips" bind:this={latestRow}>
+          {#each latestMedia as item (item.artifact_id)}
+            {@const project = projects.find((p) => p.run_id === item.run_id)}
+            <button type="button" class="clip" onclick={() => openClip(item)}>
+              <span class="clip-media">
+                <ArtifactPreview artifact={item} />
+                {#if item.version_number}<span class="clip-badge">v{item.version_number}</span>{/if}
+              </span>
+              <span class="clip-title">{showTitle(project?.title ?? item.title)}</span>
+              <span class="clip-meta">{modelOf(item)}, {shortDate(item.created_at)}</span>
+            </button>
+          {/each}
         </div>
       </section>
     {/if}
 
-    {#if desktop.matches}<section class="dc-media-section">
-      <div class="dc-section-heading"><h2 class="dc-section-title">Latest media feed</h2><span class="dc-section-note">Recent trailer versions</span></div>
-      <div class="dc-media-feed">
-        {#each latestMedia.slice(0, 6) as item (item.artifact_id)}
-          <button type="button" class="dc-feed-card" onclick={async () => { const detail = await loadComparisonRun(item.run_id); lightboxArtifacts = detail.artifacts.filter(a => isVideo(a) && a.media_url).sort((a,b)=>a.created_at.localeCompare(b.created_at)); lightboxIndex = Math.max(0, lightboxArtifacts.findIndex(a => a.artifact_id === item.artifact_id)); }}>
-            <div class="dc-feed-frame"><ArtifactPreview artifact={item} /></div>
-            <div class="dc-feed-copy"><strong>{projects.find((project) => project.run_id === item.run_id)?.title ?? item.title}</strong><small>{projects.find((project) => project.run_id === item.run_id)?.logline || 'Logline not added yet.'}</small></div>
-          </button>
-        {:else}<p class="dc-no-versions">No generated media yet.</p>{/each}
+    <!-- ── Projects row ──────────────────────────────────────────── -->
+    <section class="section" aria-labelledby="projects-title">
+      <div class="home-wrap row-head">
+        <h2 id="projects-title">Projects</h2>
+        <a class="row-link" href={resolve('/comparisons')}>See all</a>
       </div>
-    </section>{/if}
-  </div>
-</main>
+
+      <div class="row row-posters">
+        {#each projects as project, i (project.run_id)}
+          {@const thumb = thumbForRun(project.run_id)}
+          <button
+            type="button"
+            class="poster"
+            class:active={i === selectedIndex}
+            aria-pressed={i === selectedIndex}
+            onclick={() => selectProject(i)}
+          >
+            <span class="poster-media">{#if thumb}<ArtifactPreview artifact={thumb} />{/if}</span>
+            <span class="poster-copy">
+              <span class="poster-title" title={project.title}>{showTitle(project.title)}</span>
+              <span class="poster-meta">{plural(project.artifact_count, 'render')}, {statusLabel(project.status)}</span>
+            </span>
+          </button>
+        {/each}
+      </div>
+    </section>
+  {/if}
+</div>
 
 <style>
-  .dc-workstage { border-top: 1px solid var(--dc-border); padding-top: 18px; }
-  .dc-workstage-heading { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:14px; }
-  .dc-workstage-heading > div:first-child { flex:1; min-width:0; }
-  .dc-workstage-heading h2 { margin:0; overflow-wrap:anywhere; font-size:clamp(21px, 3vw, 32px); letter-spacing:-.04em; line-height:1.05; white-space:normal; }
-  .dc-carousel-controls { display:flex; flex:0 0 auto; gap:6px; }
-  .dc-carousel-controls button { width:38px; height:38px; border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:var(--dc-text); cursor:pointer; }
-  .dc-hero-layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(280px, .8fr); align-items:start; border:1px solid var(--dc-border); background:var(--dc-bg-elev); }
-  .dc-key-art { position:relative; width:100%; aspect-ratio:16/9; min-height:0; background:linear-gradient(135deg, #151518, #09090b); overflow:hidden; }
-  .dc-key-art img, .dc-key-art video { width:100%; height:100%; object-fit:cover; display:block; }
-  .dc-key-art:not(.has-art) { display:grid; place-items:center; }
-  .dc-art-empty { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--dc-text-dim); letter-spacing:.18em; font-size:11px; font-family:var(--dc-font-sans); text-transform:uppercase; }
-  .dc-art-empty small { letter-spacing:0; font-size:10px; text-transform:none; }
-  .dc-art-label { position:absolute; left:12px; bottom:12px; padding:5px 8px; background:rgba(0,0,0,.72); color:var(--dc-text-muted); font-size:10px; text-transform:capitalize; }
-  .dc-hero-volume { position:absolute; right:12px; bottom:12px; min-width:50px; min-height:30px; padding:0 8px; border:1px solid rgba(255,255,255,.24); background:rgba(0,0,0,.72); color:var(--dc-text); font:10px var(--dc-font-mono); cursor:pointer; }
-  .dc-hero-volume:hover, .dc-hero-volume:focus-visible { border-color:var(--dc-text); outline:none; }
-  .dc-project-panel { display:flex; align-self:stretch; min-height:0; flex-direction:column; padding:24px; border-left:1px solid var(--dc-border); }
-  .dc-project-question { display:-webkit-box; margin:0 0 20px; overflow:hidden; color:var(--dc-text); font-size:17px; line-height:1.35; line-clamp:5; -webkit-box-orient:vertical; -webkit-line-clamp:5; }
-  .dc-version-strip { display:flex; gap:7px; min-height:54px; overflow-x:auto; padding-bottom:4px; }
-  .dc-version-thumb { position:relative; flex:0 0 72px; aspect-ratio:16/9; align-self:flex-start; padding:0; overflow:hidden; border:1px solid var(--dc-border); background:var(--dc-bg); cursor:pointer; }
-  .dc-version-label { position:absolute;right:2px;bottom:2px;padding:1px 4px;background:#000b;color:white;font-size:9px; }
-  .dc-no-versions { color:var(--dc-text-dim); font-size:11px; }
-  .dc-project-actions { display:flex; flex-direction:row; gap:8px; margin-top:auto; padding-top:18px; }
-  .dc-primary-action, .dc-secondary-action { min-height:34px; flex:1; display:inline-flex; justify-content:center; align-items:center; padding:0 10px; border:1px solid var(--dc-border); font-size:10px; text-decoration:none; cursor:pointer; }
-  .dc-primary-action { background:var(--dc-text); color:var(--dc-bg); font-weight:700; }
-  .dc-secondary-action { background:transparent; color:var(--dc-text-muted); }
-  .dc-secondary-action:disabled { opacity:.45; cursor:not-allowed; }
-  .dc-carousel-dots { display:flex; justify-content:center; gap:6px; padding:14px 0 0; }
-  .dc-carousel-dots button { width:20px; height:3px; border:0; padding:0; background:var(--dc-border); cursor:pointer; }
-  .dc-carousel-dots button.active { background:var(--dc-text); }
-  .dc-media-section { margin-top:38px; }
-  .dc-media-feed { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
-  .dc-feed-card { display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; min-width:0; padding:0; border:1px solid var(--dc-border); background:var(--dc-bg-elev); color:inherit; text-align:left; cursor:pointer; }
-  .dc-feed-frame { width:100%; flex:none; aspect-ratio:16/9; background:var(--dc-bg); overflow:hidden; display:grid; place-items:center; color:var(--dc-text-dim); font-size:10px; }
-  .dc-feed-copy { display:flex; flex-direction:column; gap:4px; padding:9px; }
-  .dc-feed-copy strong { overflow-wrap:anywhere; white-space:normal; font-size:11px; font-weight:600; }
-  .dc-feed-copy small { color:var(--dc-text-dim); font-size:11px; line-height:1.4; text-transform:none; }
-  .dc-project-loading, .dc-empty-work { padding:72px 24px; border:1px solid var(--dc-border); color:var(--dc-text-muted); }
-  .dc-empty-work h2 { margin:8px 0 18px; color:var(--dc-text); }
-  .dc-empty-work a { color:var(--dc-text); font-size:12px; }
-  @media (max-width:860px) {
-    .dc-dashboard-header {margin-bottom:18px;}
-    .dc-dashboard-intro {display:none;}
+  /*
+   * Directors Cut home. One layout from phone to widescreen: columns come
+   * from minmax/auto-fit and type from clamp(). The hero reads its own width
+   * (container query) to decide whether the copy sits over the video or
+   * under it. Colour comes from the footage; the chrome stays black/white.
+   * Every title is one line.
+   */
+  .home {
+    --pad: var(--dc-gutter-x);
+    --max: calc(var(--dc-page-max) + 2 * var(--pad));
+    --ink: #e7e5e4;
+    --ink-2: #bdb7b1;
+    --ink-3: #938d87;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-2: rgba(255, 255, 255, 0.18);
+    --raise: #0e0e0e;
 
-    .dc-hero-layout { grid-template-columns:1fr; height:auto; }
-    .dc-key-art { min-height:0; aspect-ratio:16/9; }
-    .dc-key-art img, .dc-key-art video { min-height:0; aspect-ratio:16/9; }
-    .dc-project-panel { min-height:340px; border-left:0; border-top:1px solid var(--dc-border); padding:18px; }
-    .dc-project-question { margin-top:20px; font-size:16px; }
-    .dc-media-feed { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:6px; }
-    .dc-feed-card { flex:0 0 72vw; scroll-snap-align:start; }
+    padding-bottom: clamp(40px, 6vw, 80px);
+    overflow-x: clip;
+    background: #000;
+    color: var(--ink);
   }
-  @media (max-width:520px) {
-    .dc-workstage-heading { align-items:start; }
 
-    .dc-carousel-controls button { width:40px; height:40px; }
-    .dc-project-actions { padding-top:18px; }
+  @media (min-width: 861px) {
+    .home {
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+
+  .home-wrap {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding-right: max(var(--pad), var(--dc-safe-r));
+    padding-left: max(var(--pad), var(--dc-safe-l));
+  }
+
+  .home-state {
+    margin: 40px 0 0;
+    color: var(--ink-2);
+    font-size: 15px;
+  }
+
+  .home-state h1 {
+    margin: 0 0 8px;
+    color: var(--ink);
+    font: 400 40px / 1.1 var(--dc-font-serif);
+  }
+
+  .home-state p {
+    margin: 0 0 20px;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ── Controls ────────────────────────────────────────────────── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.15s ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .btn-solid {
+    background: rgba(255, 255, 255, 0.7);
+    color: #000;
+  }
+
+  .btn-solid:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--ink);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.15s ease;
+  }
+
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .btn:focus-visible,
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* ── Hero ────────────────────────────────────────────────────── */
+
+  .hero {
+    position: relative;
+    container-type: inline-size;
+  }
+
+  .screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: calc(100dvh - var(--dc-nav-height) - 64px);
+    min-height: 210px;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .screen video,
+  .screen :global(img),
+  .screen :global(video) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .screen-empty {
+    display: grid;
+    height: 100%;
+    margin: 0;
+    place-items: center;
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+
+  .screen-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0) 26%);
+  }
+
+  .screen-sound {
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    right: max(14px, var(--dc-safe-r));
+  }
+
+  .card {
+    position: relative;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 4px var(--pad) 0;
+  }
+
+  .card-title {
+    max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+    font: 400 clamp(28px, 3.2cqi, 44px) / 1.15 var(--dc-font-serif);
+    letter-spacing: -0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-logline {
+    display: -webkit-box;
+    max-width: 62ch;
+    margin: 8px 0 0;
+    overflow: hidden;
+    color: #d6d3d1;
+    font-size: 14px;
+    line-height: 1.55;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .card-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 10px 0 0;
+    color: var(--ink-2);
+    font-size: 12px;
+  }
+
+  .card-facts span:first-child {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .card-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Wide enough to be a screen: the copy sits over the video, lower left. */
+  @container (min-width: 760px) {
+    .screen-scrim {
+      background:
+        linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0.5) 32%, rgba(0, 0, 0, 0) 60%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 55%);
+    }
+
+    .card {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding-bottom: clamp(20px, 3cqi, 44px);
+    }
+
+    .card-title,
+    .card-logline {
+      max-width: min(62%, 900px);
+    }
+  }
+
+  /* ── Sections ────────────────────────────────────────────────── */
+
+  .section {
+    margin-top: clamp(36px, 4.5vw, 64px);
+  }
+
+  /* ── Rows ────────────────────────────────────────────────────── */
+
+  .row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .row-head h2 {
+    margin: 0;
+    font: 400 clamp(20px, 1.7vw, 24px) / 1.15 var(--dc-font-serif);
+    white-space: nowrap;
+  }
+
+  .row-arrows {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Touch screens swipe; the arrows only earn their space with a mouse. */
+  @media (hover: none) {
+    .row-arrows {
+      display: none;
+    }
+  }
+
+  .row-link {
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .row-link:hover {
+    color: var(--ink);
+  }
+
+  /* Rows sit inside the page margins, flush with the headings and arrows. */
+  .row {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 12px;
+    max-width: calc(var(--max) - 2 * var(--pad));
+    margin: 0 max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
+    padding: 4px 0 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .row-clips {
+    grid-auto-columns: clamp(200px, 18vw, 270px);
+  }
+
+  .row-posters {
+    grid-auto-columns: clamp(240px, 26vw, 380px);
+  }
+
+  .clip {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+  }
+
+  .clip-media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 4px;
+    background: #111;
+  }
+
+  .clip-media :global(img),
+  .clip-media :global(video),
+  .poster-media :global(img),
+  .poster-media :global(video) {
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .clip:hover .clip-media :global(img),
+  .clip:hover .clip-media :global(video),
+  .poster:hover .poster-media :global(img),
+  .poster:hover .poster-media :global(video) {
+    transform: scale(1.05);
+  }
+
+  .clip-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .clip-title {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .clip-meta {
+    margin-top: -2px;
+    overflow: hidden;
+    color: var(--ink-2);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .poster {
+    position: relative;
+    display: block;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 6px;
+    background: #111;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+  }
+
+  .poster-media {
+    position: absolute;
+    inset: 0;
+    filter: brightness(0.7);
+    transition: filter 0.2s ease;
+  }
+
+  .poster:hover .poster-media,
+  .poster.active .poster-media {
+    filter: none;
+  }
+
+  /* The project on screen gets a bar, not a box. */
+  .poster.active::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .poster-copy {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 40px 16px 14px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 25%, transparent);
+  }
+
+  .poster-title {
+    overflow: hidden;
+    font: 400 clamp(18px, 1.5vw, 22px) / 1.2 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .poster-meta {
+    overflow: hidden;
+    color: var(--ink-2);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .clip:focus-visible,
+  .poster:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clip-media :global(img),
+    .clip-media :global(video),
+    .poster-media :global(img),
+    .poster-media :global(video) {
+      transition: none;
+    }
   }
 </style>

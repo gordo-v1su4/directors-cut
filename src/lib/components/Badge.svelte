@@ -28,11 +28,12 @@
   let { label, color = 'var(--dc-text-muted)', active = false }: { label: string; color?: string; active?: boolean } = $props();
 </script>
 
+<!-- Filled chips, never outlined: a soft tint of the family colour. -->
 <span
   class="dc-badge"
-  style:color={active ? 'var(--dc-bg)' : color}
-  style:background={active ? color : 'transparent'}
-  style:border-color={color}
+  style:color={active ? '#000' : color}
+  style:background={active ? color : `color-mix(in srgb, ${color} 16%, transparent)`}
+  style:border-color="transparent"
 >
-  {label}
+  {label.replace(/_/g, ' ')}
 </span>

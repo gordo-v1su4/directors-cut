@@ -23,6 +23,14 @@ SHA256 deduplication. Processing failure has a retry button. A gateway restart
 can lose its in-memory job; Directors Cut retains the source and allows retry.
 No paid generation is submitted by this backend.
 
+## Renaming projects
+
+`POST /runs/:run_id` with `{"title": "..."}` (and optionally `"logline"`)
+updates the stored project record. It requires the same owner session as
+uploads. Titles are 1–120 characters, loglines up to 600. The UI shows a short
+display name (subtitle and parentheticals dropped, all-caps titles set in title
+case) but saves exactly what the owner types.
+
 ## Configuration
 
 Runtime `/opt/directors-cut/runtime.env` is root-owned, mode 0600.

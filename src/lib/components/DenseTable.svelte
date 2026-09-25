@@ -77,21 +77,21 @@
       >
         <span class="dc-list-card-title">{c.title}</span>
         <span class="dc-list-card-meta">
-          <Badge label={c.model_family} color={FAMILY_COLORS[c.model_family] ?? 'var(--dc-general)'} active />
+          <Badge label={c.model_family} color={FAMILY_COLORS[c.model_family] ?? 'var(--dc-general)'} />
           <Badge label={c.confidence} color={CONFIDENCE_COLORS[c.confidence] ?? 'var(--dc-text-dim)'} />
           {#if c.tested_by_us}<Badge label="✓ tested" color="var(--dc-conf-high)" />{/if}
         </span>
         {#if c.use_cases.length}
-          <span class="dc-list-card-sub">{c.use_cases.join(' · ')}</span>
+          <span class="dc-list-card-sub">{c.use_cases.map((u) => u.replace(/[-_]/g, ' ')).join(', ')}</span>
         {/if}
       </button>
       <div class="dc-list-card-foot">
-        <span>{c.prompt_mode} · {c.aspect_ratio} · {c.source_count} src</span>
+        <span>{c.prompt_mode.replace(/_/g, ' ')}, {c.aspect_ratio}, {c.source_count} sources</span>
         {#if c.generation_prompts?.length || c.prompt_pattern}
           <button class="dc-list-card-action" onclick={() => openPrompt(c)}>
             {c.generation_prompts?.length
               ? `${c.generation_prompts.length} prompt${c.generation_prompts.length === 1 ? '' : 's'}`
-              : 'View pattern'}
+              : 'View prompt'}
           </button>
         {/if}
       </div>
@@ -99,72 +99,42 @@
   {/each}
 </div>
 
-<table class="dc-table dc-desk-table">
+<div class="dc-table-frame dc-desk-table">
+<table class="dc-table">
   <thead>
     <tr>
-      <th style="min-width: 120px">Prompt</th>
-      <th style="min-width: 200px">Title</th>
-      <th style="min-width: 90px">Family</th>
-      <th style="min-width: 120px">Use Case</th>
-      <th style="min-width: 100px">Mode</th>
-      <th style="min-width: 60px">Aspect</th>
-      <th style="min-width: 55px">Conf</th>
-      <th style="min-width: 40px; text-align: right">Src</th>
-      <th style="min-width: 55px">Tested</th>
-      <th style="min-width: 80px">Updated</th>
+      <th>Title</th>
+      <th>Family</th>
+      <th>Use case</th>
+      <th>Confidence</th>
+      <th><span class="visually-hidden">Prompt</span></th>
     </tr>
   </thead>
   <tbody>
     {#each data as c (c.id)}
       <tr class:selected={c.id === selectedId} onclick={() => onselect?.(c.id)}>
+        <td class="dc-table-title">{c.title}</td>
         <td>
-          {#if c.generation_prompts?.length}
-            <button
-              class="dc-badge"
-              style:color="var(--dc-text)"
-              style:border-color="var(--dc-border)"
-              style:font-size="10px"
-              onclick={(e) => { e.stopPropagation(); openPrompt(c); }}
-            >
-              {c.generation_prompts.length} prompt{c.generation_prompts.length === 1 ? '' : 's'}
-            </button>
-          {:else if c.prompt_pattern}
-            <button
-              class="dc-badge"
-              style:color="var(--dc-text-muted)"
-              style:border-color="var(--dc-border)"
-              style:font-size="10px"
-              onclick={(e) => { e.stopPropagation(); openPrompt(c); }}
-            >
-              View pattern
-            </button>
-          {:else}
-            <span style="color: var(--dc-text-dim)">—</span>
-          {/if}
+          <Badge label={c.model_family} color={FAMILY_COLORS[c.model_family] ?? 'var(--dc-general)'} />
         </td>
-        <td>{c.title}</td>
-        <td>
-          <Badge label={c.model_family} color={FAMILY_COLORS[c.model_family] ?? 'var(--dc-general)'} active />
-        </td>
-        <td>{c.use_cases.join(', ')}</td>
-        <td>{c.prompt_mode}</td>
-        <td>{c.aspect_ratio}</td>
+        <td class="dc-table-muted">{c.use_cases.map((u) => u.replace(/[-_]/g, ' ')).join(', ')}</td>
         <td>
           <Badge label={c.confidence} color={CONFIDENCE_COLORS[c.confidence] ?? 'var(--dc-text-dim)'} />
         </td>
-        <td style="text-align: right">{c.source_count}</td>
-        <td>
-          {#if c.tested_by_us}
-            <Badge label="✓" color="var(--dc-conf-high)" />
-          {:else}
-            <span style="color: var(--dc-text-dim)">—</span>
+        <td class="dc-table-action">
+          {#if c.generation_prompts?.length || c.prompt_pattern}
+            <button class="dc-badge" onclick={(e) => { e.stopPropagation(); openPrompt(c); }}>
+              {c.generation_prompts?.length
+                ? `${c.generation_prompts.length} prompt${c.generation_prompts.length === 1 ? '' : 's'}`
+                : 'View prompt'}
+            </button>
           {/if}
         </td>
-        <td style="color: var(--dc-text-dim)">{c.updated.slice(0, 10)}</td>
       </tr>
     {/each}
   </tbody>
 </table>
+</div>
 
 <style>
   /* The whole card body is one tap target; the footer action sits outside it

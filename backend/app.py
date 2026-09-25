@@ -270,6 +270,38 @@ def version_details(request: Request):
     return reply(request, {'artifact':target})
 
 
+@app.post('/runs/:run_id')
+def run_details(request: Request):
+    """Rename a project or rewrite its logline after the fact."""
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to edit this project'}, 401)
+    try:
+        payload = json.loads(request.body)
+        changes = {}
+        if 'title' in payload:
+            title = payload['title']
+            if not isinstance(title, str) or not title.strip() or len(title.strip()) > 120:
+                raise ValueError()
+            changes['title'] = title.strip()
+        if 'logline' in payload:
+            logline = payload['logline']
+            if not isinstance(logline, str) or len(logline) > 600:
+                raise ValueError()
+            changes['logline'] = logline.strip()
+        if not changes:
+            raise ValueError()
+    except (ValueError, TypeError):
+        return reply(request, {'error': 'Provide a title up to 120 characters or a logline up to 600'}, 400)
+    run_id = request.path_params['run_id']
+    with lock, connect() as db:
+        run = document(db, run_id, 'run')
+        if run is None:
+            return reply(request, {'error': 'Project not found'}, 404)
+        run.update(changes)
+        db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), run_id))
+    return reply(request, {'run': run})
+
+
 @app.get('/uploads/:id')
 def upload_status(request: Request):
     if not authorized(request):

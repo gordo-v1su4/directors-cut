@@ -3,6 +3,7 @@
   import { resolve } from '$app/paths';
   import VersionDetails from './VersionDetails.svelte';
   import { videoModel } from '$lib/data/version-context';
+  import { showTitle } from '$lib/data/titles';
 
   let {
     artifacts,
@@ -49,7 +50,7 @@
     <div class="dc-lightbox-header">
       <div class="dc-lightbox-title-line">
         <div>
-          <div class="dc-lightbox-title">{active?.title ?? 'Preview'}</div>
+          <div class="dc-lightbox-title" title={active?.title}>{active ? `${showTitle(active.title)} · v${active.version_number ?? activeIndex + 1}` : 'Preview'}</div>
           <div class="dc-lightbox-subtitle">
             {#if active}
               {isVideo ? videoModel(active) : formatType(active.artifact_type)}
@@ -61,10 +62,10 @@
       <div style="margin-top: 8px;">
         <a
           href={`${resolve('/comparisons')}?run=${active?.run_id}`}
-          style="font-size: 11px; color: var(--dc-sora); text-decoration: none;"
+          class="dc-lightbox-open"
           onclick={(e: MouseEvent) => { e.stopPropagation(); onClose(); }}
         >
-          Open project →
+          Open project
         </a>
       </div>
     </div>
@@ -75,22 +76,17 @@
           {#if mediaUrl}
             {#if isVideo}
               <video
+                class="dc-lightbox-media"
                 src={mediaUrl}
                 poster={active.thumbnail_url}
                 playsinline
                 controls
                 autoplay
-                style="width: 100%; max-height: 56vh; border-radius: var(--dc-radius); display: block;"
-
               >
                 <track kind="captions" />
               </video>
             {:else}
-              <img
-                src={mediaUrl}
-                alt={active.title}
-                style="width: 100%; max-height: 56vh; object-fit: contain; border-radius: var(--dc-radius); display: block;"
-              />
+              <img class="dc-lightbox-media" src={mediaUrl} alt={active.title} />
             {/if}
           {:else}
             <div class="dc-lightbox-no-preview">No preview available</div>
@@ -109,17 +105,14 @@
                 onclick={() => selectVersion(i)}
                 aria-label={`Version ${i + 1}`}
               >
-                {#if artifact.thumbnail_url || artifact.media_url}
-                  {#if artifact.artifact_type === 'video_result' || artifact.artifact_type === 'end_video'}
-                    <video src={artifact.media_url} preload="metadata" muted playsinline aria-label={artifact.title}></video>
-                  {:else}
-                    <img src={artifact.thumbnail_url ?? artifact.media_url} alt={artifact.title} loading="lazy" />
-                  {/if}
+                {#if artifact.thumbnail_url}
+                  <img src={artifact.thumbnail_url} alt={artifact.title} loading="lazy" />
+                {:else if artifact.media_url && (artifact.artifact_type === 'video_result' || artifact.artifact_type === 'end_video')}
+                  <video src={`${artifact.media_url}#t=0.5`} preload="metadata" muted playsinline aria-label={artifact.title}></video>
+                {:else if artifact.media_url}
+                  <img src={artifact.media_url} alt={artifact.title} loading="lazy" />
                 {:else}
                   <div class="dc-lightbox-version-placeholder">v{i + 1}</div>
-                {/if}
-                {#if artifact.artifact_type === 'video_result' || artifact.artifact_type === 'end_video'}
-                  <span class="dc-lightbox-version-typebadge">VIDEO</span>
                 {/if}
                 <span class="dc-lightbox-version-label">v{i + 1}</span>
               </button>
@@ -221,30 +214,30 @@
   }
 
   .dc-lightbox-stage {
-    background: var(--dc-bg);
+    background: #000;
     border: 1px solid var(--dc-border-subtle);
     border-radius: var(--dc-radius);
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Bounded, self-scrolling media viewport so tall media scrolls inside the
-       stage instead of pushing the whole body. Keeps the version strip and
-       prompt clearly below the video, never overlapping native controls. */
     flex: 0 0 auto;
-    min-height: 120px;
-    max-height: 58vh;
-    overflow: auto;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
     border-bottom: 1px solid var(--dc-border-subtle);
   }
 
-  .dc-lightbox-stage :global(video),
-  .dc-lightbox-stage :global(img) {
-    max-width: 100%;
-    max-height: calc(58vh - 24px);
+  .dc-lightbox-media {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #000;
   }
 
   .dc-lightbox-no-preview {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
     color: var(--dc-text-dim);
     font-size: 14px;
   }
@@ -284,8 +277,9 @@
   .dc-lightbox-version-thumb video {
     width: 100%;
     aspect-ratio: 16 / 9;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
+    background: #000;
   }
 
   .dc-lightbox-version-placeholder {
@@ -296,19 +290,6 @@
     justify-content: center;
     color: var(--dc-text-dim);
     font-size: 12px;
-  }
-
-  .dc-lightbox-version-typebadge {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: rgba(45, 212, 191, 0.85);
-    color: var(--dc-bg);
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 1px 4px;
-    border-bottom-right-radius: var(--dc-radius);
   }
 
   .dc-lightbox-version-label {
@@ -366,5 +347,94 @@
     .dc-lightbox-version-thumb {
       width: 68px;
     }
+  }
+
+  /* Glass skin: translucent panel, no rules, no outlined thumbnails. */
+  .dc-lightbox-backdrop {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .dc-lightbox-panel {
+    border: 0;
+    border-radius: 12px;
+    background: rgba(20, 20, 20, 0.78);
+    backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  }
+
+  .dc-lightbox-header,
+  .dc-lightbox-stage {
+    border: 0;
+  }
+
+  .dc-lightbox-stage {
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .dc-lightbox-title-line > div {
+    min-width: 0;
+  }
+
+  .dc-lightbox-title {
+    overflow: hidden;
+    font: 400 24px / 1.15 var(--dc-font-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dc-lightbox-close {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--dc-text);
+    font-size: 18px;
+  }
+
+  .dc-lightbox-open {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--dc-text);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .dc-lightbox-open:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .dc-lightbox-version-thumb {
+    border: 0;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+  }
+
+  .dc-lightbox-version-thumb:hover,
+  .dc-lightbox-version-thumb.dc-lightbox-version-active {
+    opacity: 1;
+  }
+
+  .dc-lightbox-version-thumb.dc-lightbox-version-active {
+    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .dc-lightbox-meta-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dc-text);
+    letter-spacing: 0;
+    text-transform: none;
   }
 </style>

@@ -99,7 +99,9 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -107,9 +109,11 @@
   }
 
   .dc-modal-panel {
-    background: var(--dc-bg-elev);
-    border: 1px solid var(--dc-border);
-    border-radius: var(--dc-radius);
+    background: rgba(20, 20, 20, 0.72);
+    backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
+    border: 0;
+    border-radius: 10px;
     width: 100%;
     max-width: 720px;
     max-height: calc(100vh - 48px);
@@ -119,8 +123,7 @@
   }
 
   .dc-modal-header {
-    padding: 16px 16px 12px;
-    border-bottom: 1px solid var(--dc-border-subtle);
+    padding: 20px 20px 4px;
   }
 
   .dc-modal-title-line {
@@ -132,25 +135,28 @@
 
   .dc-modal-title {
     margin: 0;
-    font-size: 16px;
-    font-weight: 600;
+    font: 400 26px / 1.1 var(--dc-font-serif);
     color: var(--dc-text);
   }
 
   .dc-modal-close {
-    background: transparent;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    color: var(--dc-text-dim);
+    color: var(--dc-text);
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--dc-radius);
+    padding: 0;
+    border-radius: 50%;
   }
 
   .dc-modal-close:hover {
     color: var(--dc-text);
-    background: var(--dc-bg-elev-2);
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .dc-modal-meta {
@@ -169,13 +175,11 @@
 
   .dc-modal-meta-label {
     color: var(--dc-text-dim);
-    text-transform: uppercase;
-    font-size: 10px;
-    letter-spacing: 0.05em;
+    font-size: 12px;
   }
 
   .dc-modal-body {
-    padding: 16px;
+    padding: 16px 20px 20px;
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -184,17 +188,17 @@
 
   .dc-modal-prompt-wrap {
     position: relative;
-    background: var(--dc-bg);
-    border: 1px solid var(--dc-border-subtle);
-    border-radius: var(--dc-radius);
-    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 0;
+    border-radius: 6px;
+    padding: 16px;
   }
 
   .dc-modal-prompt {
     margin: 0;
-    font-family: var(--dc-font-mono);
-    font-size: 12px;
-    line-height: 1.6;
+    font-family: var(--dc-font-sans);
+    font-size: 14px;
+    line-height: 1.65;
     color: var(--dc-text);
     white-space: pre-wrap;
     word-break: break-word;
@@ -231,9 +235,9 @@
   }
 
   .dc-modal-image-frame {
-    background: var(--dc-bg);
-    border: 1px solid var(--dc-border-subtle);
-    border-radius: var(--dc-radius);
+    background: rgba(0, 0, 0, 0.35);
+    border: 0;
+    border-radius: 4px;
     overflow: hidden;
     display: flex;
     flex-direction: column;

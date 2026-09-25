@@ -41,6 +41,13 @@ export const NAV_LINKS: NavLink[] = [
     icon: 'library',
     match: (p) => p.startsWith('/prompts'),
   },
+  {
+    href: '/sources',
+    label: 'Sources',
+    hint: 'Where the prompt library came from',
+    icon: 'sources',
+    match: (p) => p.startsWith('/sources'),
+  },
 ];
 
 /** Four destinations flank the centred Create tab; the rest live in "More". */

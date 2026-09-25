@@ -17,5 +17,5 @@
 {/key}
 
 <style>
-  img, video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  img, video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
 </style>

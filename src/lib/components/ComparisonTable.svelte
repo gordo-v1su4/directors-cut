@@ -352,8 +352,3 @@
     </div>
   </details>
 {/if}
-
-
-<style>
-  summary {cursor:pointer;font-size:12px;color:var(--dc-text-muted);padding:8px 0;}
-</style>

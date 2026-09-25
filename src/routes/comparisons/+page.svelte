@@ -11,6 +11,7 @@
   import ComparisonTable from '$lib/components/ComparisonTable.svelte';
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
+  import { renameProject, showTitle, signInOwner, SignInRequired } from '$lib/data/titles';
 
   let runList = $state<{ run_id: string; title: string; logline?: string; preview?: ComparisonArtifact | null; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
   let selectedRunId = $state('');
@@ -26,6 +27,60 @@
   let parsedRun = $derived(parseRunQuestion(displayQuestion));
   let displayBrief = $derived(run?.brief?.trim() || parsedRun.creativeBrief || 'No creative brief saved for this run.');
   let hasRealArtifacts = $derived(mediaSummary.length > 0);
+  function formatDate(value: string | undefined) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value.slice(0, 10) : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  let editingTitle = $state(false);
+  let titleDraft = $state('');
+  let renameBusy = $state(false);
+  let renameError = $state('');
+  let needSignIn = $state(false);
+  let password = $state('');
+
+  function startRename() {
+    titleDraft = run?.title ?? '';
+    renameError = '';
+    editingTitle = true;
+  }
+
+  function cancelRename() {
+    editingTitle = false;
+    renameError = '';
+    password = '';
+  }
+
+  async function saveTitle(event: SubmitEvent) {
+    event.preventDefault();
+    if (!run || !titleDraft.trim()) return;
+    const runId = run.run_id;
+    renameBusy = true;
+    renameError = '';
+    try {
+      if (needSignIn) {
+        await signInOwner(password);
+        password = '';
+        needSignIn = false;
+      }
+      const title = await renameProject(runId, titleDraft.trim());
+      if (run?.run_id === runId) run = { ...run, title };
+      runList = runList.map((r) => (r.run_id === runId ? { ...r, title } : r));
+      editingTitle = false;
+    } catch (error) {
+      if (error instanceof SignInRequired) needSignIn = true;
+      renameError = error instanceof Error ? error.message : 'Rename failed';
+    } finally {
+      renameBusy = false;
+    }
+  }
+
+  function statusLabel(status: string | undefined) {
+    const text = (status ?? 'active').replace(/_/g, ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
   async function loadRun(id: string) {
     switching = true;
     error = '';
@@ -106,75 +161,427 @@
   <title>Projects — Directors Cut</title>
 </svelte:head>
 
-<div class="dc-page dc-page-shell">
-  <div class="dc-projects-intro">
-    <div><p class="dc-eyebrow">Prompt experiments and output review</p><h1>Projects</h1></div>
-    <a class="dc-create-link" href={resolve('/create')}>+ New prompt project</a>
-  </div>
-  {#if runList.length > 1}
-    <div class="dc-run-switcher" aria-label="Projects">
-      {#each runList as r, index (r.run_id)}
-        <button
-          class:dc-run-card-active={r.run_id === selectedRunId}
-          class="dc-run-card"
-          aria-pressed={r.run_id === selectedRunId}
-          aria-describedby={`logline-${r.run_id}`}
-          onclick={() => selectRun(r.run_id)}
-        >
-          <span class="dc-run-card-art">
-            {#if r.preview}<ArtifactPreview artifact={r.preview} />{:else}<span class="dc-run-card-empty">No generated media yet</span>{/if}
-            <span class="dc-run-card-meta" id={`logline-${r.run_id}`}>{r.logline || 'Logline not added yet.'}</span>
-          </span>
-          <span class="dc-run-card-copy">
-            <strong>{r.title}</strong>
-          </span>
-          <span class="dc-run-card-arrow" aria-hidden="true">↗</span>
-        </button>
-      {/each}
-    </div>
-  {/if}
+<div class="dc-room">
+  <div class="dc-room-inner">
+    <header class="dc-room-head">
+      <div>
+        <h1 class="dc-room-title">Projects</h1>
+        <p class="dc-room-lede">Read what each model wrote, watch every take side by side, and decide what gets cut next.</p>
+      </div>
+    </header>
 
-  {#if loading}
-    <div class="dc-empty-state">Loading project…</div>
-  {:else if error}
-    <div class="dc-empty-state dc-error">{error}</div>
-  {:else if run}
-    <div class="dc-run-header">
-      <h2 style="font-size:20px;margin:0;">{run.title}</h2>
-      {#if run.logline}<p style="color:var(--dc-text-muted);font-size:13px;line-height:1.6;margin:8px 0 0;">{run.logline}</p>{/if}
-    </div>
-    <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
-    {#key run.run_id}<VersionDropzone runId={run.run_id} title={run.title} onAdded={refreshSelectedRun} />{/key}
-    <p style="color:var(--dc-text-muted);font-size:12px;">Add a video, then use Edit version details to attach its shot grid, prompt and video model.</p>
-    {#if displayQuestion}
-      <details class="project-source">
-        <summary>Project source</summary>
-        <p>{displayBrief}</p>
-        <pre>{displayQuestion}</pre>
-      </details>
+    {#if runList.length > 1}
+      <div class="posters" role="group" aria-label="Projects">
+        {#each runList as r (r.run_id)}
+          <button
+            class="poster"
+            class:active={r.run_id === selectedRunId}
+            aria-pressed={r.run_id === selectedRunId}
+            onclick={() => selectRun(r.run_id)}
+          >
+            <span class="poster-art">
+              {#if r.preview}<ArtifactPreview artifact={r.preview} />{:else}<span class="poster-empty">No render yet</span>{/if}
+            </span>
+            <span class="poster-copy">
+              <span class="poster-title" title={r.title}>{showTitle(r.title)}</span>
+              <span class="poster-meta">{r.artifact_count} {r.artifact_count === 1 ? 'render' : 'renders'}, {formatDate(r.created)}</span>
+            </span>
+          </button>
+        {/each}
+      </div>
     {/if}
 
-  {:else}
-    <div class="dc-empty-state">No project selected.</div>
-  {/if}
+    {#if loading}
+      <p class="room-note">Loading project…</p>
+    {:else if error}
+      <p class="room-note room-error" role="alert">{error}</p>
+    {:else if run}
+      <section class="run" aria-labelledby="run-title" class:switching>
+        <header class="run-head">
+          {#if editingTitle}
+            <form class="rename" onsubmit={saveTitle}>
+              <input
+                class="rename-input"
+                bind:value={titleDraft}
+                maxlength="120"
+                aria-label="Project title"
+                disabled={renameBusy}
+              />
+              {#if needSignIn}
+                <input
+                  class="rename-input rename-password"
+                  type="password"
+                  bind:value={password}
+                  placeholder="Owner password"
+                  autocomplete="current-password"
+                  aria-label="Owner password"
+                  disabled={renameBusy}
+                />
+              {/if}
+              <button type="submit" class="dc-room-btn dc-room-btn-solid" disabled={renameBusy || !titleDraft.trim() || (needSignIn && !password)}>
+                {renameBusy ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" class="dc-room-btn" onclick={cancelRename} disabled={renameBusy}>Cancel</button>
+            </form>
+            {#if renameError}<p class="rename-error" role="alert">{renameError}</p>{/if}
+          {:else}
+            <div class="run-title-row">
+              <h2 id="run-title" class="dc-room-h2" title={run.title}>{showTitle(run.title)}</h2>
+              <button type="button" class="rename-btn" onclick={startRename} aria-label="Rename project" title="Rename project">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" /></svg>
+              </button>
+            </div>
+          {/if}
+          <div class="run-head-body">
+            {#if run.logline}<p class="run-logline" title={run.logline}>{run.logline}</p>{/if}
+            <dl class="run-facts">
+              <div><dt>Status</dt><dd>{statusLabel(run.status)}</dd></div>
+              <div><dt>Answers</dt><dd>{run.answers?.length ?? 0}</dd></div>
+              <div><dt>Renders</dt><dd>{mediaSummary.length}</dd></div>
+              <div><dt>Started</dt><dd>{formatDate(run.created)}</dd></div>
+            </dl>
+          </div>
+        </header>
+
+        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
+
+        <div class="run-add">
+          {#key run.run_id}<VersionDropzone runId={run.run_id} title={run.title} onAdded={refreshSelectedRun} />{/key}
+          <p class="room-note">Add a video, then use Edit version details to attach its shot grid, prompt and video model.</p>
+        </div>
+
+        {#if displayQuestion}
+          <details class="source">
+            <summary>
+              <span>Project source</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </summary>
+            <div class="source-page">
+              <p class="source-brief">{displayBrief}</p>
+              <pre>{displayQuestion}</pre>
+            </div>
+          </details>
+        {/if}
+      </section>
+    {:else}
+      <p class="room-note">No project selected.</p>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .project-source {margin-top:24px;color:var(--dc-text-muted);font-size:12px;}
-  .project-source summary {cursor:pointer;}
-  .project-source pre {white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;line-height:1.7;}
+  .room-note {
+    margin: 0;
+    color: var(--dc-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
 
-  .dc-run-switcher { display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--dc-border-subtle); }
-  .dc-run-card { display:flex;flex-direction:column;justify-content:flex-start;min-width:0;padding:0;overflow:hidden;border:1px solid var(--dc-border);border-radius:10px;background:var(--dc-bg-elev);color:var(--dc-text);text-align:left;cursor:pointer; }
-  .dc-run-card:hover,.dc-run-card:focus-visible {border-color:var(--dc-text-dim);outline:none;}
-  .dc-run-card-active {border-color:var(--dc-accent);}
-  .dc-run-card-art {position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;background:#0a0a0b;}
-  .dc-run-card-empty {display:grid;place-items:center;height:100%;padding:12px;color:var(--dc-text-dim);font-size:10px;}
-  .dc-run-card-copy {display:flex;flex-direction:column;gap:7px;padding:14px 12px;}
-  .dc-run-card-copy strong {font-size:14px;line-height:1.25;}
-  .dc-run-card-meta {position:absolute;inset:0;display:flex;align-items:center;padding:18px;background:rgba(8,8,10,.92);color:var(--dc-text);font-size:12px;line-height:1.5;opacity:0;transition:opacity .15s ease;overflow:auto;}
-  .dc-run-card:hover .dc-run-card-meta,.dc-run-card:focus-visible .dc-run-card-meta {opacity:1;}
-  @media(prefers-reduced-motion:reduce) {.dc-run-card-meta {transition:none;}}
-  .dc-run-card-arrow {display:none;}
-  @media(max-width:860px) {.dc-run-switcher {display:flex;overflow-x:auto;} .dc-run-card {flex:0 0 280px;}}
+  .room-error {
+    color: #fca5a5;
+  }
+
+  /* ── Posters ──────────────────────────────────────────────────── */
+
+  .posters {
+    display: grid;
+    grid-auto-columns: minmax(220px, 1fr);
+    grid-auto-flow: column;
+    gap: 14px;
+    margin: 0 calc(-1 * var(--room-pad)) 20px;
+    padding: 4px var(--room-pad) 8px;
+    overflow-x: auto;
+    scroll-padding-inline: var(--room-pad);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .posters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .poster {
+    position: relative;
+    display: block;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 6px;
+    background: #111;
+    color: var(--dc-text);
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+    outline: 0;
+  }
+
+  .poster.active {
+    outline: 0;
+    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .poster:focus-visible {
+    outline: 2px solid var(--dc-text);
+    outline-offset: 3px;
+  }
+
+  .poster-art {
+    position: absolute;
+    inset: 0;
+  }
+
+  .poster-art :global(img),
+  .poster-art :global(video) {
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .poster:hover .poster-art :global(img),
+  .poster:hover .poster-art :global(video) {
+    transform: scale(1.04);
+  }
+
+  .poster-empty {
+    display: grid;
+    height: 100%;
+    place-items: center;
+    color: var(--dc-text-dim);
+    font-size: 13px;
+  }
+
+  .poster-copy {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 48px 16px 14px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
+  }
+
+  .poster-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font: 400 clamp(18px, 1.5vw, 22px) / 1.2 var(--dc-font-serif);
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .poster-meta {
+    color: var(--dc-text-muted);
+    font-size: 12px;
+  }
+
+  /* ── Selected project ─────────────────────────────────────────── */
+
+  .run {
+    transition: opacity 0.2s ease;
+  }
+
+  .run.switching {
+    opacity: 0.55;
+  }
+
+  .run-head {
+    padding-bottom: 20px;
+  }
+
+  .run-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .rename-btn {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--dc-text-dim);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .rename-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--dc-text);
+  }
+
+  .rename-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .rename {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rename-input {
+    flex: 0 1 480px;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 4px;
+    background: #161616;
+    color: var(--dc-text);
+    font: 400 20px var(--dc-font-serif);
+    outline: none;
+  }
+
+  /* Save and Cancel match the field so the row reads as one control. */
+  .rename :global(.dc-room-btn) {
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .rename-password {
+    flex: 0 1 200px;
+    font: 14px var(--dc-font-sans);
+  }
+
+  .rename-error {
+    margin: 8px 0 0;
+    color: #fca5a5;
+    font-size: 13px;
+  }
+
+  /* One column: title, a two-line logline, then the facts right under it. */
+  .run-head-body {
+    display: grid;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .run-logline {
+    display: -webkit-box;
+    max-width: 80ch;
+    margin: 0;
+    overflow: hidden;
+    color: #d6d3d1;
+    font-size: 14px;
+    line-height: 1.6;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .run-facts {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 12px 32px;
+    margin: 0;
+  }
+
+  @media (max-width: 520px) {
+    .run-facts {
+      grid-template-columns: repeat(2, auto);
+    }
+  }
+
+  .run-facts dt {
+    color: var(--dc-text-dim);
+    font-size: 12px;
+  }
+
+  .run-facts dd {
+    margin: 3px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .run-add {
+    display: grid;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  /* ── Project source ───────────────────────────────────────────── */
+
+  .source {
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .source summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    color: var(--dc-text);
+    font: 400 20px / 1 var(--dc-font-serif);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .source summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .source summary svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s ease;
+  }
+
+  .source[open] summary svg {
+    transform: rotate(180deg);
+  }
+
+  .source summary:focus-visible {
+    outline: 2px solid var(--dc-text);
+    outline-offset: 3px;
+  }
+
+  .source-page {
+    padding: clamp(20px, 2.6vw, 32px);
+    border: 0;
+    border-radius: 6px;
+    background: #0e0e0e;
+    font-family: var(--dc-font-sans);
+  }
+
+  .source-brief {
+    max-width: 70ch;
+    margin: 0 0 18px;
+    color: var(--dc-text);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .source pre {
+    max-height: 420px;
+    margin: 0;
+    overflow: auto;
+    color: #d6d3d1;
+    font: 13px / 1.65 var(--dc-font-sans);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
 </style>
