@@ -11,12 +11,15 @@
     promptsMap = new Map(),
     answersMap = new Map(),
     onClose,
+    showDetails = true,
   }: {
     artifacts: ComparisonArtifact[];
     activeIndex?: number;
     promptsMap?: Map<string, GenerationPrompt>;
     answersMap?: Map<string, ModelAnswer>;
     onClose: () => void;
+    /** Prompt and shot grid under the video; Projects shows them, Home does not. */
+    showDetails?: boolean;
   } = $props();
 
   let active = $derived(artifacts[activeIndex] ?? null);
@@ -96,7 +99,7 @@
 
       {#if artifacts.length > 1}
         <div class="dc-lightbox-versions">
-          <span class="dc-lightbox-meta-label">Versions ({artifacts.length})</span>
+          <span class="dc-lightbox-meta-label">Versions</span>
           <div class="dc-lightbox-version-strip">
             {#each artifacts as artifact, i (artifact.artifact_id)}
               <button
@@ -114,14 +117,14 @@
                 {:else}
                   <div class="dc-lightbox-version-placeholder">v{i + 1}</div>
                 {/if}
-                <span class="dc-lightbox-version-label">v{i + 1}</span>
+                <span class="dc-lightbox-version-label">v{artifact.version_number ?? i + 1}</span>
               </button>
             {/each}
           </div>
         </div>
       {/if}
 
-      {#if active && isVideo}
+      {#if active && isVideo && showDetails}
         {#key active.artifact_id}<VersionDetails artifact={active} {promptsMap} editable={false} />{/key}
       {/if}
 
@@ -154,7 +157,7 @@
     overflow: hidden;
     min-height: 0;
     width: 100%;
-    max-width: 900px;
+    max-width: 1120px;
     max-height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
@@ -258,7 +261,7 @@
 
   .dc-lightbox-version-thumb {
     flex: 0 0 auto;
-    width: 80px;
+    width: 160px;
     background: var(--dc-bg);
     border: 1px solid var(--dc-border-subtle);
     border-radius: var(--dc-radius);
@@ -293,14 +296,16 @@
   }
 
   .dc-lightbox-version-label {
+    /* A small corner chip, not a bar across the frame. */
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.6);
-    color: var(--dc-text);
-    font-size: 10px;
-    padding: 2px 4px;
+    bottom: 5px;
+    left: 5px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
     text-align: center;
   }
 
@@ -345,23 +350,25 @@
     }
 
     .dc-lightbox-version-thumb {
-      width: 68px;
+      width: 96px;
     }
   }
 
   /* Glass skin: translucent panel, no rules, no outlined thumbnails. */
+  /* The page behind freezes and blurs; the panel stays clear so it shows through. */
   .dc-lightbox-backdrop {
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(16px) saturate(1.1);
+    -webkit-backdrop-filter: blur(16px) saturate(1.1);
   }
 
   .dc-lightbox-panel {
     border: 0;
     border-radius: 12px;
-    background: rgba(20, 20, 20, 0.78);
-    backdrop-filter: blur(28px) saturate(1.2);
-    -webkit-backdrop-filter: blur(28px) saturate(1.2);
+    background: rgba(12, 12, 12, 0.55);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
   }
 
   .dc-lightbox-header,
@@ -417,7 +424,7 @@
   .dc-lightbox-version-thumb {
     border: 0;
     border-radius: 4px;
-    opacity: 0.5;
+    opacity: 0.95;
     transition: opacity 0.15s ease;
   }
 
@@ -436,5 +443,17 @@
     color: var(--dc-text);
     letter-spacing: 0;
     text-transform: none;
+  }
+
+  /* Whites a step down inside the player. */
+  .dc-lightbox-panel {
+    color: #d6d3d1;
+  }
+
+  .dc-lightbox-title,
+  .dc-lightbox-meta-label,
+  .dc-lightbox-open,
+  .dc-lightbox-close {
+    color: #d6d3d1;
   }
 </style>

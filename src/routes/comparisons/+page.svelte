@@ -11,7 +11,7 @@
   import ComparisonTable from '$lib/components/ComparisonTable.svelte';
   import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
-  import { renameProject, showTitle, signInOwner, SignInRequired } from '$lib/data/titles';
+  import { saveProjectText, showTitle, signInOwner, SignInRequired } from '$lib/data/titles';
 
   let runList = $state<{ run_id: string; title: string; logline?: string; preview?: ComparisonArtifact | null; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
   let selectedRunId = $state('');
@@ -35,6 +35,7 @@
 
   let editingTitle = $state(false);
   let titleDraft = $state('');
+  let loglineDraft = $state('');
   let renameBusy = $state(false);
   let renameError = $state('');
   let needSignIn = $state(false);
@@ -42,6 +43,7 @@
 
   function startRename() {
     titleDraft = run?.title ?? '';
+    loglineDraft = run?.logline ?? '';
     renameError = '';
     editingTitle = true;
   }
@@ -64,13 +66,15 @@
         password = '';
         needSignIn = false;
       }
-      const title = await renameProject(runId, titleDraft.trim());
-      if (run?.run_id === runId) run = { ...run, title };
-      runList = runList.map((r) => (r.run_id === runId ? { ...r, title } : r));
+      const saved = await saveProjectText(runId, { title: titleDraft.trim(), logline: loglineDraft.trim() });
+      const title = saved.title ?? titleDraft.trim();
+      const logline = saved.logline ?? loglineDraft.trim();
+      if (run?.run_id === runId) run = { ...run, title, logline };
+      runList = runList.map((r) => (r.run_id === runId ? { ...r, title, logline } : r));
       editingTitle = false;
     } catch (error) {
       if (error instanceof SignInRequired) needSignIn = true;
-      renameError = error instanceof Error ? error.message : 'Rename failed';
+      renameError = error instanceof Error ? error.message : 'Save failed';
     } finally {
       renameBusy = false;
     }
@@ -207,6 +211,16 @@
                 aria-label="Project title"
                 disabled={renameBusy}
               />
+              <textarea
+                class="rename-logline"
+                bind:value={loglineDraft}
+                rows="2"
+                maxlength="600"
+                placeholder="Logline: who, what pulls them in, and what it costs"
+                aria-label="Logline"
+                disabled={renameBusy}
+              ></textarea>
+              <div class="rename-actions">
               {#if needSignIn}
                 <input
                   class="rename-input rename-password"
@@ -222,18 +236,19 @@
                 {renameBusy ? 'Saving…' : 'Save'}
               </button>
               <button type="button" class="dc-room-btn" onclick={cancelRename} disabled={renameBusy}>Cancel</button>
+              </div>
             </form>
             {#if renameError}<p class="rename-error" role="alert">{renameError}</p>{/if}
           {:else}
             <div class="run-title-row">
               <h2 id="run-title" class="dc-room-h2" title={run.title}>{showTitle(run.title)}</h2>
-              <button type="button" class="rename-btn" onclick={startRename} aria-label="Rename project" title="Rename project">
+              <button type="button" class="rename-btn" onclick={startRename} aria-label="Edit title and logline" title="Edit title and logline">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" /></svg>
               </button>
             </div>
           {/if}
           <div class="run-head-body">
-            {#if run.logline}<p class="run-logline" title={run.logline}>{run.logline}</p>{/if}
+            {#if run.logline && !editingTitle}<p class="run-logline" title={run.logline}>{run.logline}</p>{/if}
             <dl class="run-facts">
               <div><dt>Status</dt><dd>{statusLabel(run.status)}</dd></div>
               <div><dt>Answers</dt><dd>{run.answers?.length ?? 0}</dd></div>
@@ -428,7 +443,14 @@
     stroke-linejoin: round;
   }
 
+  /* Title, then logline, then the actions: one column of rows. */
   .rename {
+    display: grid;
+    gap: 8px;
+    max-width: 720px;
+  }
+
+  .rename-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -436,7 +458,7 @@
   }
 
   .rename-input {
-    flex: 0 1 480px;
+    width: 100%;
     min-width: 0;
     height: 36px;
     padding: 0 12px;
@@ -454,8 +476,21 @@
     min-height: 36px;
   }
 
+  /* The logline gets its own full line under the title. */
+  .rename-logline {
+    min-width: 0;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 4px;
+    background: #161616;
+    color: var(--dc-text);
+    font: 14px / 1.55 var(--dc-font-sans);
+    resize: vertical;
+    outline: none;
+  }
+
   .rename-password {
-    flex: 0 1 200px;
+    width: 200px;
     font: 14px var(--dc-font-sans);
   }
 

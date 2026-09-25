@@ -154,6 +154,16 @@
     };
   });
 
+  // Phones scroll the document itself; hold it still while the player is open.
+  $effect(() => {
+    if (!lightboxArtifacts) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  });
+
   // The lightbox plays its own video; keep the hero quiet underneath it.
   $effect(() => {
     if (!heroVideo) return;
@@ -163,10 +173,10 @@
 </script>
 
 {#if lightboxArtifacts}
-  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} onClose={() => (lightboxArtifacts = null)} />
+  <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} showDetails={false} onClose={() => (lightboxArtifacts = null)} />
 {/if}
 
-<div class="home">
+<div class="home" class:frozen={!!lightboxArtifacts}>
   {#if loading}
     <div class="home-wrap"><p class="home-state">Loading projects…</p></div>
   {:else if !projects.length}
@@ -353,6 +363,11 @@
     }
   }
 
+  /* The player is open: the page underneath holds still. */
+  .home.frozen {
+    overflow: hidden;
+  }
+
   .home-wrap {
     max-width: var(--max);
     margin: 0 auto;
@@ -530,7 +545,8 @@
 
   .card-logline {
     display: -webkit-box;
-    max-width: 62ch;
+    /* Narrow enough that even a short logline wraps to fill both lines. */
+    max-width: 46ch;
     margin: 8px 0 0;
     overflow: hidden;
     color: #d6d3d1;
@@ -539,13 +555,18 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    /* Always two lines tall, so switching projects never moves the buttons. */
+    height: calc(2 * 1.55em);
   }
 
   .card-facts {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px 18px;
+    height: 1.4em;
     margin: 10px 0 0;
+    overflow: hidden;
+    white-space: nowrap;
     color: var(--ink-2);
     font-size: 12px;
   }
@@ -577,8 +598,8 @@
   @container (min-width: 760px) {
     .screen-scrim {
       background:
-        linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0.5) 32%, rgba(0, 0, 0, 0) 60%),
-        linear-gradient(to right, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 55%);
+        linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0.35) 24%, rgba(0, 0, 0, 0) 48%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 45%);
     }
 
     .card {
@@ -589,9 +610,14 @@
       padding-bottom: clamp(20px, 3cqi, 44px);
     }
 
+    .card-title {
+      max-width: min(62%, 900px);
+    }
+
     .card-title,
     .card-logline {
-      max-width: min(62%, 900px);
+      /* The lighter shade leaves the copy to carry its own contrast. */
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
     }
   }
 

@@ -42,23 +42,26 @@ export async function signInOwner(password: string): Promise<void> {
 
 export class SignInRequired extends Error {}
 
-/** Rename a project on the server. Throws SignInRequired when the session is missing or expired. */
-export async function renameProject(runId: string, title: string): Promise<string> {
+/**
+ * Save a project's title and/or logline on the server.
+ * Throws SignInRequired when the session is missing or expired.
+ */
+export async function saveProjectText(
+  runId: string,
+  changes: { title?: string; logline?: string },
+): Promise<{ title?: string; logline?: string }> {
   const token = ownerToken();
-  if (!token) throw new SignInRequired('Sign in to rename this project');
+  if (!token) throw new SignInRequired('Sign in to save changes to this project.');
   const response = await fetch(`${mediaApi}/runs/${encodeURIComponent(runId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify(changes),
   });
   if (response.status === 401) {
     sessionStorage.removeItem('directors-cut-owner');
-    throw new SignInRequired('Your session expired. Sign in again to rename.');
-  }
-  if (response.status === 404) {
-    throw new Error('Renaming needs the latest catalog server. Deploy backend/app.py to turn it on.');
+    throw new SignInRequired('Your session expired. Sign in again to save.');
   }
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || 'Rename failed');
-  return result.run?.title ?? title;
+  if (!response.ok) throw new Error(result.error || 'Save failed');
+  return { title: result.run?.title, logline: result.run?.logline };
 }
