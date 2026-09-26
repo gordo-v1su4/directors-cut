@@ -39,6 +39,7 @@
   let captureStatus = $state<GetConceptCaptureStatusOutput | null>(null);
   let pollTimer: ReturnType<typeof setTimeout> | undefined;
   let bridgeLost = $state(false);
+  let pollSession = 0;
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
@@ -194,6 +195,7 @@
   }
 
   function stopPolling() {
+    pollSession += 1;
     if (pollTimer) clearTimeout(pollTimer);
     pollTimer = undefined;
     bridgeLost = false;
@@ -224,10 +226,14 @@
    */
   function startPolling(runId: string) {
     stopPolling();
+    // A reply that lands after polling stopped (page closed, run reset) must
+    // not schedule another check.
+    const session = pollSession;
     let failures = 0;
     const tick = () => {
       refreshCaptureStatus(runId)
         .then((status) => {
+          if (session !== pollSession) return;
           failures = 0;
           bridgeLost = false;
           if (status && (status.capture_job_status === 'complete' || status.ready_for_projects)) return endCapture();
@@ -236,6 +242,7 @@
           pollTimer = setTimeout(tick, 3000);
         })
         .catch(() => {
+          if (session !== pollSession) return;
           failures += 1;
           if (failures >= 3) bridgeLost = true;
           pollTimer = setTimeout(tick, Math.min(30_000, 3000 * 2 ** Math.min(failures, 4)));
