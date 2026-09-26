@@ -4,7 +4,7 @@
  * viewing preferences. The nav, Home and Projects all read from here so a
  * take is numbered and labelled the same way on every page.
  */
-import { loadComparisonRun, loadComparisonsIndex, loadRunArtifacts } from '$lib/data/comparisons';
+import { loadComparisonRun, loadComparisonsIndex } from '$lib/data/comparisons';
 import { showTitle } from '$lib/data/titles';
 import { videoModel } from '$lib/data/version-context';
 import type { ComparisonArtifact, ComparisonRunDetail, ComparisonRunSummary } from '$lib/types/comparison';
@@ -157,8 +157,10 @@ class Studio {
   );
   newest = $derived(this.takes[0]);
 
-  private summarySigs = new Map<string, string>();
-  private artifactSigs = new Map<string, string>();
+  /** Last-seen data per project, to skip rebuilding what did not change. */
+  private sigs = new Map<string, string>();
+  /** Bumped by every reload, so an overlapping refresh never undoes one. */
+  private epochs = new Map<string, number>();
   private loading: Promise<void> | null = null;
   private refreshing: Promise<void> | null = null;
 
@@ -190,10 +192,10 @@ class Studio {
   }
 
   /**
-   * Bring the catalog up to date. A project is fully re-read only when it is
-   * new, its index entry changed, or its artifacts changed (edited version
-   * details live there); unchanged projects cost one small request. Requests
-   * run a few at a time so a growing catalog never fires a burst.
+   * Bring the catalog up to date. Every project's files are read (four
+   * projects at a time, each project's five files in parallel) and a project
+   * is rebuilt only when something in them changed, so answers, prompts and
+   * version details edited elsewhere show up on every open page.
    */
   async refresh(force = false) {
     if (!force && typeof document !== 'undefined' && document.hidden) return;
@@ -207,27 +209,27 @@ class Studio {
     const summaries = index.runs
       .filter((run) => run.status !== 'promoted')
       .sort((a, b) => b.created.localeCompare(a.created));
+    const startEpochs = new Map(this.epochs);
 
-    const current = new Map(this.projects.map((project) => [project.runId, project]));
-    let changed = force || summaries.length !== this.projects.length;
-
-    const projects = await mapLimit(summaries, 4, async (summary): Promise<Project | null> => {
-      const existing = current.get(summary.run_id);
-      const summarySig = JSON.stringify(summary);
-      if (!force && existing && this.summarySigs.get(summary.run_id) === summarySig) {
-        const artifacts = await loadRunArtifacts(summary.run_id);
-        if (JSON.stringify(artifacts) === this.artifactSigs.get(summary.run_id)) return existing;
-      }
+    const results = await mapLimit(summaries, 4, async (summary) => {
       const detail = await loadComparisonRun(summary.run_id).catch(() => null);
-      if (!detail) return existing ?? null;
-      changed = true;
-      this.summarySigs.set(summary.run_id, summarySig);
-      this.artifactSigs.set(summary.run_id, JSON.stringify(detail.artifacts));
-      return buildProject(summary, detail);
+      return { summary, detail, sig: detail ? JSON.stringify([summary, detail]) : '' };
     });
 
-    if (changed) {
-      this.projects = projects.filter((project): project is Project => !!project);
+    let changed = force || results.length !== this.projects.length;
+    const projects = results.flatMap(({ summary, detail, sig }): Project[] => {
+      const current = this.project(summary.run_id);
+      // A reload finished while this refresh was reading: its data is newer.
+      if (current && this.epochs.get(summary.run_id) !== startEpochs.get(summary.run_id)) return [current];
+      if (!detail) return current ? [current] : [];
+      if (current && !force && this.sigs.get(summary.run_id) === sig) return [current];
+      changed = true;
+      this.sigs.set(summary.run_id, sig);
+      return [buildProject(summary, detail)];
+    });
+
+    if (changed || projects.some((project, i) => project !== this.projects[i])) {
+      this.projects = projects;
       this.markNewest();
     }
     this.loaded = true;
@@ -242,9 +244,13 @@ class Studio {
   async reload(runId: string) {
     const summary = this.project(runId)?.summary;
     if (!summary) return this.refresh(true);
+    const epoch = (this.epochs.get(runId) ?? 0) + 1;
+    this.epochs.set(runId, epoch);
     const detail = await loadComparisonRun(runId);
+    // A later reload of the same project owns the result.
+    if (this.epochs.get(runId) !== epoch) return;
     const fresh = buildProject({ ...summary, title: detail.title, logline: detail.logline }, detail);
-    this.artifactSigs.set(runId, JSON.stringify(detail.artifacts));
+    this.sigs.delete(runId);
     this.projects = this.projects.map((project) => (project.runId === runId ? fresh : project));
     this.markNewest();
   }

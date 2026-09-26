@@ -171,11 +171,6 @@ async function fetchAnswers(runId: string): Promise<ModelAnswer[]> {
   }
 }
 
-/** One run's artifacts alone: a cheap way to notice edited version details. */
-export function loadRunArtifacts(runId: string): Promise<ComparisonArtifact[]> {
-  return fetchArtifacts(runId);
-}
-
 async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {
   try {
     const res = await fetch(catalogUrl(`/data/comparisons/${runId}/artifacts.json`), { cache: 'no-store' });

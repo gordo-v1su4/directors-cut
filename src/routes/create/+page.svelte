@@ -116,13 +116,19 @@
   const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const slateNumber = String(new Date().getDate()).padStart(2, '0');
 
+  /**
+   * Clear the last run before a new pitch. A capture still in flight keeps
+   * its run, status and Projects link; a finished one also stops polling.
+   */
   function resetRun() {
+    error = '';
+    if (busy || captureRunning) return;
+    stopPolling();
     request = '';
     automatedRun = null;
     capturePrepared = null;
     captureRunning = false;
     captureStatus = null;
-    error = '';
   }
 
   function applyPreset(preset: (typeof QUICK_START_PRESETS)[number]) {
