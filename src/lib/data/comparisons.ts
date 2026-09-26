@@ -60,15 +60,23 @@ export async function loadComparisonsIndex(): Promise<ComparisonIndexResult> {
   }
 }
 
+/**
+ * Load one run with everything it owns. By default a file that cannot be read
+ * comes back empty; with `strict`, any failed read other than a missing file
+ * throws instead, so a caller holding good data can keep it.
+ */
 export async function loadComparisonRun(
   runId: string,
-  runOverride?: ComparisonRun
+  runOverride?: ComparisonRun,
+  { strict = false }: { strict?: boolean } = {},
 ): Promise<ComparisonRunDetail> {
-  const run = runOverride ?? (await fetchRun(runId));
-  const answers = await fetchAnswers(runId);
-  const artifacts = await fetchArtifacts(runId);
-  const prompts = await fetchPrompts(runId);
-  const decisions = await fetchDecisions(runId);
+  const [run, answers, artifacts, prompts, decisions] = await Promise.all([
+    runOverride ?? fetchRun(runId, strict),
+    fetchAnswers(runId, strict),
+    fetchArtifacts(runId, strict),
+    fetchPrompts(runId, strict),
+    fetchDecisions(runId, strict),
+  ]);
 
   const rows = buildComparisonRows(run, answers, artifacts, prompts, decisions);
 
@@ -122,7 +130,7 @@ export function getGeneratedMediaSummary(artifacts: ComparisonArtifact[]): Gener
     }));
 }
 
-async function fetchRun(runId: string): Promise<ComparisonRun> {
+async function fetchRun(runId: string, strict = false): Promise<ComparisonRun> {
   // Prefer the per-run run.json emitted by the build script (carries the real
   // brief, question, models_requested, target_models, tags from the run md).
   try {
@@ -130,8 +138,11 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
     if (res.ok) {
       const run = (await res.json()) as ComparisonRun;
       if (run.run_id) return run;
+    } else if (res.status !== 404) {
+      throw new Error(`run.json returned ${res.status}`);
     }
   } catch (e) {
+    if (strict) throw e;
     console.warn(`run.json fetch failed for ${runId}:`, e);
   }
   // Fallback: reconstruct a minimal run from the comparisons index summary.
@@ -158,48 +169,37 @@ async function fetchRun(runId: string): Promise<ComparisonRun> {
   }
 }
 
-async function fetchAnswers(runId: string): Promise<ModelAnswer[]> {
+/**
+ * Read one of a run's JSON files. A missing file is an empty list; any other
+ * failure is logged and read as empty, or thrown when `strict`.
+ */
+async function readRunList<T>(runId: string, file: string, strict: boolean): Promise<T[]> {
   try {
-    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/answers.json`), { cache: 'no-store' });
-    if (!res.ok) return [];
-    return (await res.json()) as ModelAnswer[];
+    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/${file}`), { cache: 'no-store' });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`${file} returned ${res.status}`);
+    return (await res.json()) as T[];
   } catch (e) {
-    console.error(`Failed to load answers for ${runId}:`, e);
+    if (strict) throw e;
+    console.warn(`Failed to load ${file} for ${runId}:`, e);
     return [];
   }
 }
 
-async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {
-  try {
-    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/artifacts.json`), { cache: 'no-store' });
-    if (!res.ok) return [];
-    return (await res.json()) as ComparisonArtifact[];
-  } catch (e) {
-    console.error(`Failed to load artifacts for ${runId}:`, e);
-    return [];
-  }
+function fetchAnswers(runId: string, strict = false) {
+  return readRunList<ModelAnswer>(runId, 'answers.json', strict);
 }
 
-async function fetchPrompts(runId: string): Promise<GenerationPrompt[]> {
-  try {
-    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/prompts.json`), { cache: 'no-store' });
-    if (!res.ok) return [];
-    return (await res.json()) as GenerationPrompt[];
-  } catch (e) {
-    console.warn(`Failed to load prompts for ${runId}:`, e);
-    return [];
-  }
+function fetchArtifacts(runId: string, strict = false) {
+  return readRunList<ComparisonArtifact>(runId, 'artifacts.json', strict);
 }
 
-async function fetchDecisions(runId: string): Promise<ConceptDecision[]> {
-  try {
-    const res = await fetch(catalogUrl(`/data/comparisons/${runId}/decisions.json`), { cache: 'no-store' });
-    if (!res.ok) return [];
-    return (await res.json()) as ConceptDecision[];
-  } catch (e) {
-    console.warn(`Failed to load concept decisions for ${runId}:`, e);
-    return [];
-  }
+function fetchPrompts(runId: string, strict = false) {
+  return readRunList<GenerationPrompt>(runId, 'prompts.json', strict);
+}
+
+function fetchDecisions(runId: string, strict = false) {
+  return readRunList<ConceptDecision>(runId, 'decisions.json', strict);
 }
 
 export function isCreativeConcept(answer: ModelAnswer): answer is ModelAnswer & { structured_prompt: CreativeConceptPackage } {

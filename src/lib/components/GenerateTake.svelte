@@ -1,10 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import type { ComparisonRow, ComparisonRun, ComparisonRunDetail, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
-  import VersionReview from './VersionReview.svelte';
-  import ModelAnswerCell from './ModelAnswerCell.svelte';
-  import VersionedArtifactCell from './VersionedArtifactCell.svelte';
-  import ReferenceImageStrip from './ReferenceImageStrip.svelte';
+  import GlassModal from './GlassModal.svelte';
+  import { toneFor } from '$lib/ui/tones';
   import { callBridgeTool } from '$lib/bridge/types';
   import type {
     GetImageGenerationStatusInput,
@@ -23,14 +21,23 @@
     SubmitVideoGenerationOutput,
   } from '$lib/bridge/types';
 
+  /*
+   * Generate another take: approve a writer's idea, get a live quote from the
+   * bridge, then confirm the credits. Always mounted so a generation started
+   * earlier keeps polling; the modal only shows while open.
+   */
   let {
     run,
     rows,
+    open = false,
+    onclose,
     ondecision,
     onrefresh,
   }: {
     run: ComparisonRun | ComparisonRunDetail;
     rows: ComparisonRow[];
+    open?: boolean;
+    onclose?: () => void;
     ondecision?: () => Promise<void> | void;
     onrefresh?: () => Promise<void> | void;
   } = $props();
@@ -305,50 +312,88 @@
   });
 </script>
 
-{#if 'artifacts' in run}
-  {#key run.run_id}
-    <VersionReview videos={run.artifacts.filter(a => a.media_url && ['video_result','end_video'].includes(a.artifact_type)).sort((a,b)=>a.created_at.localeCompare(b.created_at))} grids={run.artifacts.filter(a=>a.media_url && ['shot_grid','image_result'].includes(a.artifact_type))} {promptsMap} {answersMap} onSaved={onrefresh} />
-  {/key}
+{#if open}
+  <GlassModal title="Generate take" fullTitle="Generate another take for this project" width={720} onclose={() => onclose?.()}>
+    {#if !BRIDGE_TOKEN}
+      <p class="note">Generation runs through the local Raycast bridge. Start the bridge and set its token for this session to quote and generate takes.</p>
+    {/if}
+    {#if rows.some((row) => row.answer.ui_status !== 'missing')}
+      <div class="cards">
+        {#each rows as row (row.answer.answer_id)}
+          {#if row.answer.ui_status !== 'missing'}
+            {@const generation = generationByAnswer[row.answer.answer_id]}
+            {@const grid = gridByAnswer[row.answer.answer_id]}
+            {@const generationStatus = rowGenerationStatus(row)}
+            {@const title = row.answer.structured_prompt && typeof row.answer.structured_prompt === 'object' && 'title' in row.answer.structured_prompt
+              ? String(row.answer.structured_prompt.title)
+              : row.answer.model_name}
+            <div class="card raised">
+              <div class="card-head">
+                <span class="stag tone-{toneFor(row.answer.model_name)}">{row.answer.model_name}</span>
+                <span class="stag tone-{toneFor(generationStatus)}">{generationStatus}</span>
+              </div>
+              <div class="t-body card-title" {title}>{title}</div>
+              <div class="card-actions">
+                <button class="sbtn" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
+                <button class="sbtn" disabled={savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
+                <button class="sbtn" disabled={!soraPromptForRow(row) || !BRIDGE_TOKEN || grid?.busy} onclick={() => requestGridQuote(row)}>Quote shot grid</button>
+                {#if grid?.quote && !grid?.submission}
+                  <button class="sbtn sbtn-primary" disabled={grid?.busy} onclick={() => confirmGridGeneration(row)}>Confirm {grid.quote.credit_cost_total} credits</button>
+                {/if}
+                {#if row.canGenerate && generationStatus !== 'Ready'}
+                  <button class="sbtn" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Quote Sora 2 take</button>
+                {/if}
+                {#if generation?.quote?.quote_status === 'quoted' && !generation.submission}
+                  <button class="sbtn sbtn-primary" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>
+                {/if}
+              </div>
+              {#if decisionError[row.answer.answer_id]}<p class="error">{decisionError[row.answer.answer_id]}</p>{/if}
+              {#if generation?.error}<p class="error">{generation.error}</p>{/if}
+              {#if grid?.error}<p class="error">{grid.error}</p>{/if}
+            </div>
+          {/if}
+        {/each}
+      </div>
+    {:else}
+      <p class="note">No writer ideas in this project yet. Pitch it from Create to get treatments to generate from.</p>
+    {/if}
+  </GlassModal>
 {/if}
 
-{#if rows.some((row) => row.answer.ui_status !== 'missing')}
-  <details class="dc-concept-gate-strip">
-    <summary>Generate another take</summary>
-    <div class="dc-brief-label">Choose a prompt and confirm the generation cost</div>
-    <div class="dc-concept-gate-cards">
-      {#each rows as row (row.answer.answer_id)}
-        {#if row.answer.ui_status !== 'missing'}
-          {@const generation = generationByAnswer[row.answer.answer_id]}
-          {@const generationStatus = rowGenerationStatus(row)}
-          {@const title = row.answer.structured_prompt && typeof row.answer.structured_prompt === 'object' && 'title' in row.answer.structured_prompt
-            ? String(row.answer.structured_prompt.title)
-            : row.answer.model_name}
-          <div class="dc-concept-gate-card">
-            <div class="dc-concept-gate-card-head">
-              <strong>{row.answer.model_name}</strong>
-              <span class="dc-decision-status" data-status={generationStatus.toLowerCase()}>{generationStatus}</span>
-            </div>
-            <div class="dc-concept-gate-card-title">{title}</div>
-            <details><summary>Generate shot grid</summary>
-              <button class="dc-action-button" disabled={!soraPromptForRow(row) || !BRIDGE_TOKEN || gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>requestGridQuote(row)}>Get image quote</button>
-              {#if gridByAnswer[row.answer.answer_id]?.quote && !gridByAnswer[row.answer.answer_id]?.submission}<button class="dc-action-button" disabled={gridByAnswer[row.answer.answer_id]?.busy} onclick={()=>confirmGridGeneration(row)}>Confirm {gridByAnswer[row.answer.answer_id]?.quote?.credit_cost_total} credits</button>{/if}
-              {#if gridByAnswer[row.answer.answer_id]?.error}<p class="dc-decision-error">{gridByAnswer[row.answer.answer_id]?.error}</p>{/if}
-            </details>
-            <div class="dc-action-group">
-              <button class="dc-action-button dc-approve-button" disabled={!row.canApprove || savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'approved')}>Approve idea</button>
-              <button class="dc-action-button dc-reject-button" disabled={savingAnswerId === row.answer.answer_id} onclick={() => recordDecision(row, 'rejected')}>Reject</button>
-            </div>
-            {#if row.canGenerate && generationStatus !== 'Ready'}
-              <button class="dc-action-button dc-row-quote-button" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Get live Higgsfield quote</button>
-            {/if}
-            {#if generation?.quote?.quote_status === 'quoted' && !generation.submission}
-              <button class="dc-action-button dc-confirm-generation" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>
-            {/if}
-            {#if decisionError[row.answer.answer_id]}<p class="dc-decision-error">{decisionError[row.answer.answer_id]}</p>{/if}
-            {#if generation?.error}<p class="dc-decision-error">{generation.error}</p>{/if}
-          </div>
-        {/if}
-      {/each}
-    </div>
-  </details>
-{/if}
+<style>
+  .note {
+    margin: 0 0 14px;
+    color: var(--dc-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .cards {
+    display: grid;
+    gap: 10px;
+  }
+
+  .card {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .card-head,
+  .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-title {
+    white-space: normal;
+  }
+
+  .error {
+    margin: 0;
+    color: #f0a8a0;
+    font-size: 12px;
+  }
+</style>

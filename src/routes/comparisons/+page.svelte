@@ -1,39 +1,124 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { resolve } from '$app/paths';
-  import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import ProjectCard from '$lib/components/ProjectCard.svelte';
+  import ClipCard from '$lib/components/ClipCard.svelte';
+  import TakePlayer, { type CompareMode } from '$lib/components/TakePlayer.svelte';
+  import GlassModal from '$lib/components/GlassModal.svelte';
+  import GenerateTake from '$lib/components/GenerateTake.svelte';
   import VersionDropzone from '$lib/components/VersionDropzone.svelte';
-  import { page } from '$app/stores';
-  import type { ComparisonRunDetail, ComparisonRun, ComparisonArtifact } from '$lib/types/comparison';
-  import { loadComparisonRun, loadComparisonsIndex, getRunGenerationStatus, getGeneratedMediaSummary, type GeneratedMediaSummaryItem } from '$lib/data/comparisons';
-  import { parseRunQuestion } from '$lib/data/run-brief';
-  import { loadPromptCardBySlug } from '$lib/data/loader';
-  import ComparisonTable from '$lib/components/ComparisonTable.svelte';
-  import GenerationStatusBanner from '$lib/components/GenerationStatusBanner.svelte';
+  import VersionDetails from '$lib/components/VersionDetails.svelte';
   import CopyButton from '$lib/components/CopyButton.svelte';
-  import { saveProjectText, showTitle, signInOwner, SignInRequired } from '$lib/data/titles';
+  import Icon from '$lib/components/Icon.svelte';
+  import { studio, plural, type Take } from '$lib/ui/studio.svelte';
+  import { toneFor } from '$lib/ui/tones';
+  import { mediaApi } from '$lib/data/media-api';
+  import { parseRunQuestion } from '$lib/data/run-brief';
+  import { saveProjectText, signInOwner, SignInRequired } from '$lib/data/titles';
+  import type { GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
 
-  let runList = $state<{ run_id: string; title: string; logline?: string; preview?: ComparisonArtifact | null; status: string; answer_count: number; artifact_count: number; model_labels: string[]; created: string }[]>([]);
-  let selectedRunId = $state('');
-  let run = $state<ComparisonRunDetail | null>(null);
-  let loading = $state(true);
-  let switching = $state(false);
-  let error = $state('');
-  let promptSlug = $state('');
+  type Drawer = 'prompt' | 'shots' | 'versions' | 'source';
 
-  let genStatus = $derived(run ? getRunGenerationStatus(run.artifacts) : 'pending');
-  let mediaSummary = $derived<GeneratedMediaSummaryItem[]>(run ? getGeneratedMediaSummary(run.artifacts) : []);
-  let displayQuestion = $derived(run?.question?.trim() ? run.question : '');
-  let parsedRun = $derived(parseRunQuestion(displayQuestion));
-  let displayBrief = $derived(run?.brief?.trim() || parsedRun.creativeBrief || 'No creative brief saved for this run.');
-  let hasRealArtifacts = $derived(mediaSummary.length > 0);
-  function formatDate(value: string | undefined) {
-    if (!value) return '';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value.slice(0, 10) : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const project = $derived(studio.project(page.url.searchParams.get('run')) ?? studio.projects[0]);
+  const takes = $derived(project?.takes ?? []);
+  const take = $derived(takes.find((t) => t.id === page.url.searchParams.get('take')) ?? takes.at(-1));
+  const takeIndex = $derived(take ? takes.indexOf(take) : -1);
+
+  let compareId = $state<string | null>(null);
+  const compareTake = $derived(
+    takes.find((t) => t.id === compareId && t.id !== take?.id) ?? takes[takeIndex - 1] ?? takes.find((t) => t.id !== take?.id),
+  );
+
+  let mode = $state<CompareMode>('watch');
+  let drawer = $state<Drawer>('prompt');
+  let importOpen = $state(false);
+  let generateOpen = $state(false);
+  let shotUrl = $state<string | null>(null);
+  let dropzone = $state<ReturnType<typeof VersionDropzone>>();
+  let pendingFiles = $state<File[]>([]);
+  let draggingCut = $state(false);
+  let writerId = $state<string | null>(null);
+  let details = $state<ReturnType<typeof VersionDetails>>();
+
+  const detail = $derived(project?.detail);
+  const promptsMap = $derived(new Map<string, GenerationPrompt>((detail?.prompts ?? []).map((p) => [p.prompt_id, p])));
+  const writers = $derived((detail?.answers ?? []).filter((answer) => answer.ui_status !== 'missing'));
+  const writer = $derived(writers.find((w) => w.answer_id === writerId) ?? writers.find((w) => w.answer_id === take?.artifact.answer_id) ?? writers[0]);
+  const grids = $derived(
+    (detail?.artifacts ?? []).filter((a) => a.media_url && (a.artifact_type === 'shot_grid' || a.artifact_type === 'image_result')),
+  );
+  const shots = $derived([
+    ...new Set([
+      ...(project?.shotGrids ?? []).map((grid) => grid.media_url!),
+      ...takes.flatMap((t) => (t.artifact.shot_grid_url ? [t.artifact.shot_grid_url] : [])),
+    ]),
+  ]);
+  const question = $derived(detail?.question?.trim() ?? '');
+  const brief = $derived(detail?.brief?.trim() || parseRunQuestion(question).creativeBrief || '');
+
+  function go(runId: string, takeId?: string) {
+    const params = new URLSearchParams({ run: runId });
+    if (takeId) params.set('take', takeId);
+    void goto(`?${params}`, { replaceState: true, noScroll: true, keepFocus: true });
   }
 
-  let editingTitle = $state(false);
+  function selectProject(runId: string) {
+    if (runId === project?.runId) return;
+    compareId = null;
+    writerId = null;
+    mode = 'watch';
+    cancelRename();
+    go(runId);
+  }
+
+  function selectTake(next: Take) {
+    if (!project) return;
+    // Comparing: the take on screen becomes the one it's compared against.
+    if (mode !== 'watch' && take && next.id !== take.id) compareId = take.id;
+    go(project.runId, next.id);
+  }
+
+  function step(direction: number) {
+    if (!project || takes.length < 2) return;
+    const next = takes[(takeIndex + direction + takes.length) % takes.length];
+    go(project.runId, next.id);
+  }
+
+  function writerConcept(answer: ModelAnswer) {
+    const concept = answer.structured_prompt;
+    if (concept && typeof concept === 'object' && !Array.isArray(concept) && 'summary' in concept) {
+      return { title: String(concept.title ?? ''), logline: String(concept.logline ?? ''), body: String(concept.summary ?? '') };
+    }
+    return { title: '', logline: '', body: answer.answer_text };
+  }
+
+  async function reload() {
+    if (project) await studio.reload(project.runId);
+  }
+
+  function dropCut(event: DragEvent) {
+    event.preventDefault();
+    draggingCut = false;
+    pendingFiles = Array.from(event.dataTransfer?.files ?? []);
+    importOpen = true;
+  }
+
+  // Hand a dropped cut to the dropzone once the import modal has mounted it.
+  $effect(() => {
+    if (dropzone && pendingFiles.length) {
+      dropzone.add(pendingFiles);
+      pendingFiles = [];
+    }
+  });
+
+  $effect(() => {
+    void studio.ensure();
+    const interval = setInterval(() => void studio.refresh(), 15000);
+    return () => clearInterval(interval);
+  });
+
+  // ── Rename (owner sign-in) ─────────────────────────────────────────
+  let editing = $state(false);
   let titleDraft = $state('');
   let loglineDraft = $state('');
   let renameBusy = $state(false);
@@ -42,22 +127,21 @@
   let password = $state('');
 
   function startRename() {
-    titleDraft = run?.title ?? '';
-    loglineDraft = run?.logline ?? '';
+    titleDraft = project?.fullTitle ?? '';
+    loglineDraft = project?.detail.logline ?? project?.logline ?? '';
     renameError = '';
-    editingTitle = true;
+    editing = true;
   }
 
   function cancelRename() {
-    editingTitle = false;
+    editing = false;
     renameError = '';
     password = '';
   }
 
-  async function saveTitle(event: SubmitEvent) {
+  async function saveRename(event: SubmitEvent) {
     event.preventDefault();
-    if (!run || !titleDraft.trim()) return;
-    const runId = run.run_id;
+    if (!project || !titleDraft.trim()) return;
     renameBusy = true;
     renameError = '';
     try {
@@ -66,12 +150,9 @@
         password = '';
         needSignIn = false;
       }
-      const saved = await saveProjectText(runId, { title: titleDraft.trim(), logline: loglineDraft.trim() });
-      const title = saved.title ?? titleDraft.trim();
-      const logline = saved.logline ?? loglineDraft.trim();
-      if (run?.run_id === runId) run = { ...run, title, logline };
-      runList = runList.map((r) => (r.run_id === runId ? { ...r, title, logline } : r));
-      editingTitle = false;
+      await saveProjectText(project.runId, { title: titleDraft.trim(), logline: loglineDraft.trim() });
+      await reload();
+      editing = false;
     } catch (error) {
       if (error instanceof SignInRequired) needSignIn = true;
       renameError = error instanceof Error ? error.message : 'Save failed';
@@ -79,371 +160,364 @@
       renameBusy = false;
     }
   }
-
-  function statusLabel(status: string | undefined) {
-    const text = (status ?? 'active').replace(/_/g, ' ');
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
-
-  async function loadRun(id: string) {
-    switching = true;
-    error = '';
-    try {
-      if (promptSlug) {
-        const card = await loadPromptCardBySlug(promptSlug);
-        if (card) {
-          const runMeta: ComparisonRun = {
-            run_id: `prompt-${card.slug}`,
-            title: `${card.title} — Model Comparison`,
-            brief: card.summary,
-            question: card.prompt_pattern || card.body_excerpt,
-            created: card.created,
-            created_by: 'prompt-card',
-            status: 'running',
-            models_requested: [],
-            target_models: card.model_targets,
-            tags: card.tags,
-          };
-          run = await loadComparisonRun(runMeta.run_id, runMeta);
-        } else {
-          error = `Prompt card "${promptSlug}" not found.`;
-        }
-      } else {
-        const detail = await loadComparisonRun(id);
-        if (selectedRunId === id) run = detail;
-      }
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-    } finally {
-      loading = false;
-      switching = false;
-    }
-  }
-
-  function selectRun(id: string) {
-    selectedRunId = id;
-    promptSlug = '';
-    loadRun(id);
-  }
-
-  async function refreshSelectedRun() {
-    if (selectedRunId) await loadRun(selectedRunId);
-  }
-
-  onMount(() => {
-    let busy = false;
-    const timer = setInterval(async () => {
-      if (busy || !selectedRunId) return;
-      busy = true;
-      const id = selectedRunId;
-      try {
-        const detail = await loadComparisonRun(id);
-        if (selectedRunId === id && JSON.stringify(detail) !== JSON.stringify(run)) run = detail;
-        runList = (await loadComparisonsIndex()).runs.sort((a,b)=>b.created.localeCompare(a.created));
-      } finally { busy = false; }
-    }, 10000);
-    void (async () => {
-    promptSlug = $page.url.searchParams.get('prompt') || '';
-    const urlRun = $page.url.searchParams.get('run') || '';
-    try {
-      const idx = await loadComparisonsIndex();
-      runList = idx.runs.sort((a,b)=>b.created.localeCompare(a.created));
-      const startId = urlRun || (runList[0]?.run_id ?? '');
-      selectedRunId = startId;
-      if (startId || promptSlug) await loadRun(startId);
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-    } finally {
-      loading = false;
-    }
-    })();
-    return () => clearInterval(timer);
-  });
 </script>
 
 <svelte:head>
-  <title>Projects — Directors Cut</title>
+  <title>{project ? `${project.title} · Projects` : 'Projects'} · Directors Cut</title>
 </svelte:head>
 
-<div class="dc-room">
-  <div class="dc-room-inner">
-    <header class="dc-room-head">
-      <div>
-        <h1 class="dc-room-title">Projects</h1>
-        <p class="dc-room-lede">Read what each model wrote, watch every take side by side, and decide what gets cut next.</p>
+<div class="studio-column projects">
+  {#if !studio.loaded}
+    <p class="state"><Icon name="loader" size={16} /> Opening the review bay…</p>
+  {:else if !project}
+    <div class="state-empty">
+      <h1 class="t-page">No projects yet</h1>
+      <p class="muted">Pitch one from Create and its takes land here.</p>
+      <a class="sbtn sbtn-primary" href="/create"><Icon name="sparkles" /> New pitch</a>
+    </div>
+  {:else}
+    {#if studio.projects.length > 1}
+      <nav class="strip" aria-label="Projects">
+        {#each studio.projects as p (p.runId)}
+          <div class="strip-item">
+            <ProjectCard
+              compact
+              title={p.title}
+              fullTitle={p.fullTitle}
+              cover={p.takes.at(-1)?.artifact ?? p.shotGrids[0]}
+              selected={p.runId === project.runId}
+              onselect={() => selectProject(p.runId)}
+            />
+          </div>
+        {/each}
+      </nav>
+    {/if}
+
+    <header class="head">
+      <div class="head-copy">
+        {#if editing}
+          <form class="rename" onsubmit={saveRename}>
+            <input class="sinput" bind:value={titleDraft} maxlength="120" aria-label="Project title" placeholder="Project title" disabled={renameBusy} />
+            <textarea class="stextarea" bind:value={loglineDraft} rows="2" maxlength="600" aria-label="Logline" placeholder="Logline: who, what pulls them in, and what it costs" disabled={renameBusy}></textarea>
+            <div class="rename-actions">
+              {#if needSignIn}
+                <input class="sinput password" type="password" bind:value={password} placeholder="Owner password" autocomplete="current-password" aria-label="Owner password" disabled={renameBusy} />
+              {/if}
+              <button type="submit" class="sbtn sbtn-primary" disabled={renameBusy || !titleDraft.trim() || (needSignIn && !password)}>
+                {renameBusy ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" class="sbtn" onclick={cancelRename} disabled={renameBusy}>Cancel</button>
+            </div>
+            {#if renameError}<p class="error" role="alert">{renameError}</p>{/if}
+          </form>
+        {:else}
+          <div class="title-row">
+            <h1 class="t-page" title={project.fullTitle}>{project.title}</h1>
+            <button type="button" class="sbtn" onclick={startRename}><Icon name="edit" size={12} /> Rename</button>
+          </div>
+          <p class="logline" title={project.logline}>{project.logline}</p>
+        {/if}
+        {#if studio.pending.includes(project.runId)}
+          <p class="pending" role="status"><Icon name="loader" size={12} /> Saved. Showing the change here as soon as the catalog can be read again.</p>
+        {/if}
+        <div class="tags">
+          <span class="stag tone-{toneFor(project.status)}">{project.status}</span>
+          <span class="stag tone-review">{plural(takes.length, 'take')}</span>
+          {#each writers as w (w.answer_id)}
+            <span class="stag tone-{toneFor(w.model_name)}">{w.model_name}</span>
+          {/each}
+        </div>
+      </div>
+      <div class="head-actions">
+        <button type="button" class="sbtn" onclick={() => (importOpen = true)}><Icon name="upload" /> Import cut</button>
+        <button type="button" class="sbtn sbtn-primary" onclick={() => (generateOpen = true)}><Icon name="sparkles" /> Generate take</button>
       </div>
     </header>
 
-    {#if runList.length > 1}
-      <div class="posters" role="group" aria-label="Projects">
-        {#each runList as r (r.run_id)}
-          <button
-            class="poster"
-            class:active={r.run_id === selectedRunId}
-            aria-pressed={r.run_id === selectedRunId}
-            onclick={() => selectRun(r.run_id)}
-          >
-            <span class="poster-art">
-              {#if r.preview}<ArtifactPreview artifact={r.preview} />{:else}<span class="poster-empty">No render yet</span>{/if}
-            </span>
-            <span class="poster-copy">
-              <span class="poster-title" title={r.title}>{showTitle(r.title)}</span>
-              <span class="poster-meta">{r.artifact_count} {r.artifact_count === 1 ? 'render' : 'renders'}, {formatDate(r.created)}</span>
-            </span>
+    {#if take}
+      <section class="review" aria-label="Takes">
+        <TakePlayer
+          primary={take}
+          secondary={compareTake}
+          bind:mode
+          canStep={takes.length > 1}
+          onprev={() => step(-1)}
+          onnext={() => step(1)}
+        />
+        <div class="rail" aria-label="All takes">
+          {#each takes.toReversed() as t (t.id)}
+            <div class="rail-item">
+              <ClipCard
+                density="thumb"
+                title={project.title}
+                fullTitle={`${project.fullTitle} ${t.code}`}
+                takeLabel={t.code}
+                writer={t.writer}
+                videoModel={t.model}
+                videoUrl={t.artifact.media_url}
+                thumbnailUrl={t.artifact.thumbnail_url}
+                isNewest={t.isNewest}
+                playOnHover={studio.playOnHover}
+                selected={t.id === take.id || (mode !== 'watch' && t.id === compareTake?.id)}
+                onselect={() => selectTake(t)}
+              />
+            </div>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <button
+        type="button"
+        class="empty-drop"
+        class:dragging={draggingCut}
+        ondragover={(e) => { e.preventDefault(); draggingCut = true; }}
+        ondragleave={() => (draggingCut = false)}
+        ondrop={dropCut}
+        onclick={() => (importOpen = true)}
+      >
+        <Icon name="upload" size={20} />
+        <strong>No takes yet</strong>
+        <span class="muted">Drop a cut here, or generate the first take.</span>
+      </button>
+    {/if}
+
+    <section class="drawer">
+      <div class="drawer-tabs" role="tablist" aria-label="Project details">
+        {#each [['prompt', 'Prompt'], ['shots', `Shots${shots.length ? ` ${shots.length}` : ''}`], ['versions', `Versions ${takes.length}`], ['source', 'Source']] as [id, label] (id)}
+          <button type="button" role="tab" class="tab" class:active={drawer === id} aria-selected={drawer === id} onclick={() => (drawer = id as Drawer)}>
+            {label}
           </button>
         {/each}
       </div>
-    {/if}
 
-    {#if loading}
-      <p class="room-note">Loading project…</p>
-    {:else if error}
-      <p class="room-note room-error" role="alert">{error}</p>
-    {:else if run}
-      <section class="run" aria-labelledby="run-title" class:switching>
-        <header class="run-head">
-          {#if editingTitle}
-            <form class="rename" onsubmit={saveTitle}>
-              <input
-                class="rename-input"
-                bind:value={titleDraft}
-                maxlength="120"
-                aria-label="Project title"
-                disabled={renameBusy}
-              />
-              <textarea
-                class="rename-logline"
-                bind:value={loglineDraft}
-                rows="2"
-                maxlength="600"
-                placeholder="Logline: who, what pulls them in, and what it costs"
-                aria-label="Logline"
-                disabled={renameBusy}
-              ></textarea>
-              <div class="rename-actions">
-              {#if needSignIn}
-                <input
-                  class="rename-input rename-password"
-                  type="password"
-                  bind:value={password}
-                  placeholder="Owner password"
-                  autocomplete="current-password"
-                  aria-label="Owner password"
-                  disabled={renameBusy}
-                />
-              {/if}
-              <button type="submit" class="dc-room-btn dc-room-btn-solid" disabled={renameBusy || !titleDraft.trim() || (needSignIn && !password)}>
-                {renameBusy ? 'Saving…' : 'Save'}
-              </button>
-              <button type="button" class="dc-room-btn" onclick={cancelRename} disabled={renameBusy}>Cancel</button>
+      {#if drawer === 'prompt'}
+        <div class="panel glass-panel">
+          {#if take}
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2 class="t-body">Take {take.code}</h2>
+                {#if take.model}<span class="stag tone-{toneFor(take.model)}">{take.model}</span>{/if}
               </div>
-            </form>
-            {#if renameError}<p class="rename-error" role="alert">{renameError}</p>{/if}
-          {:else}
-            <div class="run-title-row">
-              <h2 id="run-title" class="dc-room-h2" title={run.title}>{showTitle(run.title)}</h2>
-              <button type="button" class="rename-btn" onclick={startRename} aria-label="Edit title and logline" title="Edit title and logline">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" /></svg>
-              </button>
+              {#if mediaApi}
+                <button type="button" class="sbtn" onclick={() => details?.edit()}><Icon name="edit" size={12} /> Edit version details</button>
+              {/if}
+            </div>
+            {#key take.id}
+              <VersionDetails bind:this={details} artifact={take.artifact} showHeading={false} {grids} {promptsMap} onSaved={reload} />
+            {/key}
+          {/if}
+
+          {#if writers.length}
+            <div class="writers">
+              <div class="panel-head">
+                <h2 class="t-body">Writers room</h2>
+                <div class="writer-tags" role="group" aria-label="Writers">
+                  {#each writers as w (w.answer_id)}
+                    <button
+                      type="button"
+                      class="stag tone-{toneFor(w.model_name)}"
+                      class:selected={w.answer_id === writer?.answer_id}
+                      aria-pressed={w.answer_id === writer?.answer_id}
+                      onclick={() => (writerId = w.answer_id)}
+                    >
+                      {w.model_name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+              {#if writer}
+                {@const concept = writerConcept(writer)}
+                <div class="treatment raised">
+                  {#if concept.title}<p class="t-card">{concept.title}</p>{/if}
+                  {#if concept.logline}<p class="treatment-logline">{concept.logline}</p>{/if}
+                  <p class="treatment-body">{concept.body}</p>
+                  <div class="treatment-actions"><CopyButton text={concept.body} label="Copy" /></div>
+                </div>
+              {/if}
             </div>
           {/if}
-          <div class="run-head-body">
-            {#if run.logline && !editingTitle}<p class="run-logline" title={run.logline}>{run.logline}</p>{/if}
-            <dl class="run-facts">
-              <div><dt>Status</dt><dd>{statusLabel(run.status)}</dd></div>
-              <div><dt>Answers</dt><dd>{run.answers?.length ?? 0}</dd></div>
-              <div><dt>Renders</dt><dd>{mediaSummary.length}</dd></div>
-              <div><dt>Started</dt><dd>{formatDate(run.created)}</dd></div>
-            </dl>
-          </div>
-        </header>
-
-        <ComparisonTable {run} rows={run.rows} ondecision={refreshSelectedRun} onrefresh={refreshSelectedRun} />
-
-        <div class="run-add">
-          {#key run.run_id}<VersionDropzone runId={run.run_id} title={run.title} onAdded={refreshSelectedRun} />{/key}
-          <p class="room-note">Add a video, then use Edit version details to attach its shot grid, prompt and video model.</p>
         </div>
-
-        {#if displayQuestion}
-          <details class="source">
-            <summary>
-              <span>Project source</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-            </summary>
-            <div class="source-page">
-              <p class="source-brief">{displayBrief}</p>
-              <pre>{displayQuestion}</pre>
-            </div>
-          </details>
+      {:else if drawer === 'shots'}
+        {#if shots.length}
+          <div class="shots">
+            {#each shots as url (url)}
+              <button type="button" class="shot" onclick={() => (shotUrl = url)} aria-label="Open shot grid">
+                <img src={url} alt="" loading="lazy" />
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <p class="panel-note muted">No shot grids yet. Attach one to a take with Edit version details.</p>
         {/if}
-      </section>
-    {:else}
-      <p class="room-note">No project selected.</p>
+      {:else if drawer === 'versions'}
+        <div class="versions">
+          {#each takes.toReversed() as t (t.id)}
+            <div class="version-item">
+              <ClipCard
+                density="thumb"
+                title={project.title}
+                takeLabel={t.code}
+                writer={t.writer}
+                videoModel={t.model}
+                videoUrl={t.artifact.media_url}
+                thumbnailUrl={t.artifact.thumbnail_url}
+                isNewest={t.isNewest}
+                playOnHover={studio.playOnHover}
+                selected={t.id === take?.id}
+                onselect={() => selectTake(t)}
+              />
+            </div>
+          {/each}
+          <button
+            type="button"
+            class="version-item drop-tile"
+            class:dragging={draggingCut}
+            ondragover={(e) => { e.preventDefault(); draggingCut = true; }}
+            ondragleave={() => (draggingCut = false)}
+            ondrop={dropCut}
+            onclick={() => (importOpen = true)}
+          >
+            <Icon name="upload" size={18} />
+            <span>Drop a cut</span>
+          </button>
+        </div>
+      {:else}
+        <div class="panel glass-panel source">
+          {#if brief}<p class="source-brief">{brief}</p>{/if}
+          {#if question}
+            <pre>{question}</pre>
+          {:else}
+            <p class="muted">No source saved for this project.</p>
+          {/if}
+        </div>
+      {/if}
+    </section>
+
+    {#key project.runId}
+      <GenerateTake run={project.detail} rows={project.detail.rows} open={generateOpen} onclose={() => (generateOpen = false)} ondecision={reload} onrefresh={reload} />
+    {/key}
+
+    {#if importOpen}
+      <GlassModal title="Import cut" fullTitle={`Import a cut into ${project.fullTitle}`} onclose={() => (importOpen = false)}>
+        <VersionDropzone bind:this={dropzone} runId={project.runId} title={project.title} onAdded={reload} />
+        <p class="modal-note muted">Each file becomes the next take. Afterwards, use Edit version details to attach its prompt, shot grid and video model.</p>
+      </GlassModal>
     {/if}
-  </div>
+
+    {#if shotUrl}
+      <GlassModal title="Shot grid" width={1120} onclose={() => (shotUrl = null)}>
+        <img class="shot-full" src={shotUrl} alt="Shot grid" />
+      </GlassModal>
+    {/if}
+  {/if}
 </div>
 
 <style>
-  .room-note {
-    margin: 0;
+  .projects {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-top: 20px;
+    padding-bottom: 64px;
+  }
+
+  .state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 72px 0;
     color: var(--dc-text-muted);
     font-size: 14px;
-    line-height: 1.5;
   }
 
-  .room-error {
-    color: #fca5a5;
-  }
-
-  /* ── Posters ──────────────────────────────────────────────────── */
-
-  .posters {
+  .state-empty {
     display: grid;
-    grid-auto-columns: minmax(220px, 1fr);
-    grid-auto-flow: column;
-    gap: 14px;
-    margin: 0 calc(-1 * var(--room-pad)) 20px;
-    padding: 4px var(--room-pad) 8px;
-    overflow-x: auto;
-    scroll-padding-inline: var(--room-pad);
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    justify-items: start;
+    gap: 12px;
+    padding-block: 48px;
   }
 
-  .posters::-webkit-scrollbar {
+  .state-empty p {
+    margin: 0;
+  }
+
+  /* ── Poster strip ─────────────────────────────────────────────── */
+
+  .strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .strip::-webkit-scrollbar {
     display: none;
   }
 
-  .poster {
-    position: relative;
-    display: block;
-    min-width: 0;
-    aspect-ratio: 16 / 9;
-    padding: 0;
-    overflow: hidden;
-    border: 0;
-    border-radius: 6px;
-    background: #111;
-    color: var(--dc-text);
-    text-align: left;
-    cursor: pointer;
+  .strip-item {
+    flex: 0 0 clamp(150px, 16vw, 210px);
     scroll-snap-align: start;
-    outline: 0;
   }
 
-  .poster.active {
-    outline: 0;
-    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.7);
-  }
+  /* ── Header ───────────────────────────────────────────────────── */
 
-  .poster:focus-visible {
-    outline: 2px solid var(--dc-text);
-    outline-offset: 3px;
-  }
-
-  .poster-art {
-    position: absolute;
-    inset: 0;
-  }
-
-  .poster-art :global(img),
-  .poster-art :global(video) {
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-
-  .poster:hover .poster-art :global(img),
-  .poster:hover .poster-art :global(video) {
-    transform: scale(1.04);
-  }
-
-  .poster-empty {
-    display: grid;
-    height: 100%;
-    place-items: center;
-    color: var(--dc-text-dim);
-    font-size: 13px;
-  }
-
-  .poster-copy {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
+  .head {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 48px 16px 14px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px 24px;
   }
 
-  .poster-title {
+  .head-copy {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .title-row {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logline {
     display: -webkit-box;
+    max-width: 780px;
+    height: calc(2 * 1.5em);
+    margin: 8px 0 0;
     overflow: hidden;
-    font: 400 clamp(18px, 1.5vw, 22px) / 1.2 var(--dc-font-serif);
-    line-clamp: 1;
+    color: var(--dc-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2;
   }
 
-  .poster-meta {
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .pending {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
     color: var(--dc-text-muted);
     font-size: 12px;
   }
 
-  /* ── Selected project ─────────────────────────────────────────── */
-
-  .run {
-    transition: opacity 0.2s ease;
-  }
-
-  .run.switching {
-    opacity: 0.55;
-  }
-
-  .run-head {
-    padding-bottom: 20px;
-  }
-
-  .run-title-row {
+  .head-actions {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .rename-btn {
-    display: grid;
     flex-shrink: 0;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--dc-text-dim);
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .rename-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--dc-text);
-  }
-
-  .rename-btn svg {
-    width: 16px;
-    height: 16px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.75;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* Title, then logline, then the actions: one column of rows. */
   .rename {
     display: grid;
     gap: 8px;
@@ -457,166 +531,289 @@
     gap: 8px;
   }
 
-  .rename-input {
-    width: 100%;
-    min-width: 0;
-    height: 36px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 4px;
-    background: #161616;
-    color: var(--dc-text);
-    font: 400 20px var(--dc-font-serif);
-    outline: none;
-  }
-
-  /* Save and Cancel match the field so the row reads as one control. */
-  .rename :global(.dc-room-btn) {
-    height: 36px;
-    min-height: 36px;
-  }
-
-  /* The logline gets its own full line under the title. */
-  .rename-logline {
-    min-width: 0;
-    padding: 8px 12px;
-    border: 0;
-    border-radius: 4px;
-    background: #161616;
-    color: var(--dc-text);
-    font: 14px / 1.55 var(--dc-font-sans);
-    resize: vertical;
-    outline: none;
-  }
-
-  .rename-password {
+  .password {
     width: 200px;
-    font: 14px var(--dc-font-sans);
   }
 
-  .rename-error {
-    margin: 8px 0 0;
-    color: #fca5a5;
-    font-size: 13px;
-  }
-
-  /* One column: title, a two-line logline, then the facts right under it. */
-  .run-head-body {
-    display: grid;
-    gap: 14px;
-    margin-top: 8px;
-  }
-
-  .run-logline {
-    display: -webkit-box;
-    max-width: 80ch;
+  .error {
     margin: 0;
-    overflow: hidden;
-    color: #d6d3d1;
-    font-size: 14px;
-    line-height: 1.6;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .run-facts {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    justify-content: start;
-    gap: 12px 32px;
-    margin: 0;
-  }
-
-  @media (max-width: 520px) {
-    .run-facts {
-      grid-template-columns: repeat(2, auto);
-    }
-  }
-
-  .run-facts dt {
-    color: var(--dc-text-dim);
+    color: #f0a8a0;
     font-size: 12px;
   }
 
-  .run-facts dd {
-    margin: 3px 0 0;
-    font-size: 14px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
+  /* ── Player + rail ────────────────────────────────────────────── */
 
-  .run-add {
+  .review {
     display: grid;
-    gap: 10px;
-    margin-top: 28px;
+    grid-template-columns: minmax(0, 1fr) 184px;
+    gap: 12px;
+    align-items: start;
   }
 
-  /* ── Project source ───────────────────────────────────────────── */
-
-  .source {
-    margin-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .source summary {
+  .rail {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 52px;
-    color: var(--dc-text);
-    font: 400 20px / 1 var(--dc-font-serif);
-    list-style: none;
-    cursor: pointer;
+    flex-direction: column;
+    gap: 8px;
+    max-height: calc((100vw - 2 * var(--dc-gutter-x) - 196px) * 9 / 16);
+    overflow-y: auto;
+    scrollbar-width: none;
   }
 
-  .source summary::-webkit-details-marker {
+  .rail::-webkit-scrollbar {
     display: none;
   }
 
-  .source summary svg {
-    width: 22px;
-    height: 22px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.75;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: transform 0.2s ease;
+  .rail-item {
+    flex-shrink: 0;
   }
 
-  .source[open] summary svg {
-    transform: rotate(180deg);
+  @media (min-width: 1473px) {
+    .rail {
+      max-height: calc((var(--dc-page-max) - 196px) * 9 / 16);
+    }
   }
 
-  .source summary:focus-visible {
-    outline: 2px solid var(--dc-text);
-    outline-offset: 3px;
+  .empty-drop,
+  .drop-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: #0e0e0e;
+    color: var(--dc-text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
   }
 
-  .source-page {
-    padding: clamp(20px, 2.6vw, 32px);
+  .empty-drop {
+    aspect-ratio: 16 / 9;
+    max-height: 60vh;
+  }
+
+  .empty-drop strong {
+    font: 400 24px / 1.2 var(--dc-font-serif);
+  }
+
+  .empty-drop:hover,
+  .drop-tile:hover,
+  .dragging {
+    background: #1a1a1a;
+  }
+
+  /* ── Drawer ───────────────────────────────────────────────────── */
+
+  .drawer-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--dc-text-muted);
+    font: 13px var(--dc-font-sans);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .tab:hover {
+    background: #0e0e0e;
+    color: var(--dc-text);
+  }
+
+  .tab.active {
+    background: #1f1f1f;
+    color: var(--dc-text);
+  }
+
+  .panel {
+    display: grid;
+    gap: 18px;
+    padding: 18px;
+  }
+
+  .panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    margin-bottom: 12px;
+  }
+
+  .panel-title,
+  .writer-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .panel-title .t-body,
+  .writers .t-body {
+    width: auto;
+  }
+
+  .writers {
+    padding-top: 8px;
+  }
+
+  .treatment {
+    padding: 14px 16px;
+  }
+
+  .treatment p {
+    margin: 0;
+  }
+
+  .treatment-logline {
+    margin-top: 6px !important;
+    color: var(--dc-text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .treatment-body {
+    margin-top: 10px !important;
+    color: var(--dc-text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .treatment-actions {
+    margin-top: 12px;
+  }
+
+  .panel-note {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .shots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 8px;
+  }
+
+  .shot {
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    overflow: hidden;
     border: 0;
     border-radius: 6px;
     background: #0e0e0e;
-    font-family: var(--dc-font-sans);
+    cursor: zoom-in;
+  }
+
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .shot:hover img {
+    transform: scale(1.03);
+  }
+
+  .shot-full {
+    display: block;
+    width: 100%;
+    max-height: calc(100dvh - 140px);
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
+  .versions {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .versions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .version-item {
+    flex: 0 0 240px;
+  }
+
+  .drop-tile {
+    aspect-ratio: 16 / 9;
   }
 
   .source-brief {
-    max-width: 70ch;
-    margin: 0 0 18px;
+    margin: 0;
     color: var(--dc-text);
     font-size: 14px;
-    line-height: 1.7;
+    line-height: 1.6;
   }
 
   .source pre {
-    max-height: 420px;
     margin: 0;
-    overflow: auto;
-    color: #d6d3d1;
+    color: var(--dc-text-muted);
     font: 13px / 1.65 var(--dc-font-sans);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  .modal-note {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* ── Tablet and phone ─────────────────────────────────────────── */
+
+  @media (max-width: 1000px) {
+    .review {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rail {
+      flex-direction: row;
+      max-height: none;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    .rail-item {
+      width: 176px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .projects {
+      gap: 20px;
+      padding-top: 14px;
+    }
+
+    .head {
+      flex-direction: column;
+    }
+
+
+    .panel {
+      padding: 14px;
+    }
+
+    .version-item {
+      flex-basis: 200px;
+    }
   }
 </style>

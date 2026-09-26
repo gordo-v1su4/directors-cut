@@ -109,33 +109,25 @@ a, button, select, summary, [role='button'] {
 }
 
 /*
- * App shell.
- *
- * Mobile: the document scrolls, so the URL bar collapses and momentum feels
- * native. Desktop: the classic fixed-height workspace with panel scrolling.
+ * App shell. The document scrolls at every width, so the URL bar collapses
+ * on phones and momentum feels native. The nav floats over the page as 25%
+ * black glass; pages start below it, except Home, whose hero runs under it.
  */
+:root {
+  --dc-nav-offset: calc(var(--dc-nav-height) + var(--dc-safe-t));
+  --dc-tabbar-clearance: 0px;
+}
+
 .dc-app-main {
-  min-height: calc(100dvh - var(--dc-nav-height));
-  padding-bottom: var(--dc-tabbar-clearance);
+  min-height: 100dvh;
+  padding-top: var(--dc-nav-offset);
+  box-sizing: border-box;
 }
 
 .dc-page-shell {
   padding: var(--dc-page-pad);
   padding-left: max(var(--dc-page-pad), var(--dc-safe-l));
   padding-right: max(var(--dc-page-pad), var(--dc-safe-r));
-}
-
-@media (min-width: 861px) {
-  .dc-app-main {
-    height: calc(100dvh - var(--dc-nav-height));
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .dc-page-shell {
-    height: 100%;
-    overflow-y: auto;
-  }
 }
 
 button, select, textarea { font: inherit; }
@@ -2721,4 +2713,179 @@ nav a.active {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* ===========================================================================
+ * Studio kit (screening-room brief). One content column, glass surfaces,
+ * 28 px controls, tinted tags, one-line serif titles. No outlines anywhere.
+ * ======================================================================== */
+.studio-column {
+  max-width: var(--dc-page-max);
+  margin-inline: auto;
+  padding-inline: max(var(--dc-gutter-x), var(--dc-safe-l)) max(var(--dc-gutter-x), var(--dc-safe-r));
+  box-sizing: content-box;
+}
+
+.glass-panel {
+  border-radius: 8px;
+  background: rgba(22, 22, 22, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-modal {
+  border-radius: 8px;
+  background: rgba(22, 22, 22, 0.86);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.raised {
+  border-radius: 6px;
+  background: #0e0e0e;
+}
+
+/* One-line titles: short show name, full title on hover. */
+.t-page,
+.t-section,
+.t-card,
+.t-body {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--dc-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t-page { font: 400 clamp(28px, 2.5vw, 36px) / 1.12 var(--dc-font-serif); letter-spacing: -0.01em; }
+.t-section { font: 400 clamp(20px, 1.8vw, 24px) / 1.18 var(--dc-font-serif); }
+.t-card { font: 400 clamp(18px, 1.4vw, 22px) / 1.2 var(--dc-font-serif); }
+.t-body { font: 500 14px / 1.35 var(--dc-font-sans); }
+
+.muted { color: var(--dc-text-muted); }
+.dim { color: var(--dc-text-dim); }
+.label { color: var(--dc-text-dim); font-size: 12px; }
+
+/* Buttons: 28 px, 13 px text, 4 px radius. */
+.sbtn {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: #161616;
+  color: var(--dc-text);
+  font: 500 13px var(--dc-font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.sbtn:hover:not(:disabled) { background: #1f1f1f; }
+.sbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.sbtn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.sbtn.selected { background: #262626; }
+
+.sbtn-primary { background: rgba(255, 255, 255, 0.7); color: #000; }
+.sbtn-primary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.8); }
+.sbtn-primary.selected { background: rgba(255, 255, 255, 0.85); }
+
+.sbtn-icon { width: 28px; padding: 0; }
+.sbtn-icon.selected { background: rgba(255, 255, 255, 0.7); color: #000; }
+
+/* Tags: 20 px, filled tints. */
+.stag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  max-width: 180px;
+  height: 20px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: #161616;
+  color: var(--dc-text-muted);
+  font: 400 12px / 1 var(--dc-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.stag { cursor: pointer; }
+button.stag:hover { filter: brightness(1.15); }
+.stag.selected { background: rgba(255, 255, 255, 0.7); color: #000; }
+
+.tone-chatgpt { background: #14221d; color: #a7d7c5; }
+.tone-claude { background: #261b16; color: #e6bfa8; }
+.tone-gemini { background: #1a1d28; color: #c5c0f0; }
+.tone-deepseek { background: #102226; color: #9fd4d1; }
+.tone-kimi { background: #26141c; color: #e8b3c4; }
+.tone-glm { background: #1f2418; color: #c9d4a8; }
+.tone-hermes { background: #22201a; color: #dcd2b4; }
+.tone-sora { background: #191d28; color: #b8c7e8; }
+.tone-seedance { background: #241926; color: #d9b8e6; }
+.tone-approved { background: #16241b; color: #b2d8be; }
+.tone-review { background: #252015; color: #dfd0a8; }
+.tone-warm { background: #241a18; color: #ddb8b0; }
+
+/* Inputs: 28 px, #161616, no outline. */
+.sinput,
+.stextarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: #161616;
+  color: var(--dc-text);
+  font: 13px / 1.5 var(--dc-font-sans);
+  outline: none;
+}
+
+.sinput { height: 28px; padding: 0 10px; }
+.stextarea { padding: 8px 10px; resize: vertical; }
+.sinput::placeholder,
+.stextarea::placeholder { color: var(--dc-text-dim); }
+
+.ssearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: #161616;
+  color: var(--dc-text-dim);
+}
+
+.ssearch:focus-within { box-shadow: 0 0 0 3px rgba(231, 229, 228, 0.16); }
+.ssearch svg { width: 14px; height: 14px; flex-shrink: 0; }
+.ssearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dc-text);
+  font: 13px var(--dc-font-sans);
+  outline: none;
+}
+.ssearch input::placeholder { color: var(--dc-text-dim); }
+
+/* Selection used by tabs, rows and cards: a lifted fill, never a line. */
+.is-selected {
+  background: #1f1f1f !important;
+}
+
+@media (max-width: 860px) {
+  .sinput,
+  .stextarea,
+  .ssearch input { font-size: 16px; }
 }
