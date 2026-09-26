@@ -217,6 +217,9 @@
           </div>
           <p class="logline" title={project.logline}>{project.logline}</p>
         {/if}
+        {#if studio.pending.includes(project.runId)}
+          <p class="pending" role="status"><Icon name="loader" size={12} /> Saved. Showing the change here as soon as the catalog can be read again.</p>
+        {/if}
         <div class="tags">
           <span class="stag tone-{toneFor(project.status)}">{project.status}</span>
           <span class="stag tone-review">{plural(takes.length, 'take')}</span>
@@ -497,6 +500,15 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 12px;
+  }
+
+  .pending {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    color: var(--dc-text-muted);
+    font-size: 12px;
   }
 
   .head-actions {

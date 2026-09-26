@@ -37,7 +37,8 @@
   let capturePrepared = $state<PrepareConceptCaptureOutput | null>(null);
   let captureRunning = $state(false);
   let captureStatus = $state<GetConceptCaptureStatusOutput | null>(null);
-  let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let pollTimer: ReturnType<typeof setTimeout> | undefined;
+  let bridgeLost = $state(false);
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
@@ -193,8 +194,9 @@
   }
 
   function stopPolling() {
-    if (pollTimer) clearInterval(pollTimer);
+    if (pollTimer) clearTimeout(pollTimer);
     pollTimer = undefined;
+    bridgeLost = false;
   }
 
   async function refreshCaptureStatus(runId: string): Promise<GetConceptCaptureStatusOutput | null> {
@@ -215,23 +217,31 @@
     if (message) error = message;
   }
 
+  /**
+   * Follow a capture until it finishes. If the bridge stops answering, keep
+   * trying with a growing wait (up to 30 s) and say so; the capture itself
+   * may still finish, and its answers appear as soon as the bridge is back.
+   */
   function startPolling(runId: string) {
     stopPolling();
     let failures = 0;
-    pollTimer = setInterval(() => {
+    const tick = () => {
       refreshCaptureStatus(runId)
         .then((status) => {
           failures = 0;
-          if (!status) return;
-          if (status.capture_job_status === 'complete' || status.ready_for_projects) endCapture();
+          bridgeLost = false;
+          if (status && (status.capture_job_status === 'complete' || status.ready_for_projects)) return endCapture();
           // The result panel explains a capture that went idle before finishing.
-          else if (status.capture_job_status === 'idle') endCapture();
+          if (status?.capture_job_status === 'idle') return endCapture();
+          pollTimer = setTimeout(tick, 3000);
         })
-        .catch((caught) => {
+        .catch(() => {
           failures += 1;
-          if (failures >= 5) endCapture(`Lost contact with the bridge: ${caught instanceof Error ? caught.message : String(caught)}`);
+          if (failures >= 3) bridgeLost = true;
+          pollTimer = setTimeout(tick, Math.min(30_000, 3000 * 2 ** Math.min(failures, 4)));
         });
-    }, 3000);
+    };
+    pollTimer = setTimeout(tick, 3000);
   }
 
   async function startConceptRun() {
@@ -496,7 +506,9 @@
         </div>
       {/if}
       <p class="hint">
-        {#if captureRunning}
+        {#if captureRunning && bridgeLost}
+          The bridge stopped answering. Still checking; answers appear here once it is back.
+        {:else if captureRunning}
           Raycast is capturing ChatGPT first, then Claude. Answers appear here as they land.
         {:else if capturePrepared && !captureStatus?.ready_for_projects}
           Capture stopped before both answers came back. Check that Raycast is open and has Accessibility access.

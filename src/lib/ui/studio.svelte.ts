@@ -150,6 +150,8 @@ class Studio {
   loaded = $state(false);
   heroAutoRotate = $state(false);
   playOnHover = $state(false);
+  /** Projects saved here whose fresh copy could not be read yet; retried until it arrives. */
+  pending = $state<string[]>([]);
 
   /** Every take in the studio, newest first. */
   takes = $derived(
@@ -227,6 +229,7 @@ class Studio {
       if (!detail) return current ? [current] : [];
       if (current && !force && this.sigs.get(summary.run_id) === sig) return [current];
       changed = true;
+      this.pending = this.pending.filter((id) => id !== summary.run_id);
       this.sigs.set(summary.run_id, sig);
       return [buildProject(summary, detail)];
     });
@@ -249,11 +252,23 @@ class Studio {
     if (!summary) return this.refresh(true);
     const epoch = (this.epochs.get(runId) ?? 0) + 1;
     this.epochs.set(runId, epoch);
-    const detail = await loadComparisonRun(runId, undefined, { strict: true }).catch(() => null);
-    // A failed read keeps what is on screen; a later reload of the same project owns the result.
-    if (!detail || this.epochs.get(runId) !== epoch) return;
-    const fresh = buildProject({ ...summary, title: detail.title, logline: detail.logline }, detail);
+    let detail: ComparisonRunDetail | null = null;
+    for (let attempt = 0; attempt < 3 && !detail; attempt++) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      detail = await loadComparisonRun(runId, undefined, { strict: true }).catch(() => null);
+    }
+    // A later reload of the same project owns the result.
+    if (this.epochs.get(runId) !== epoch) return;
     this.sigs.delete(runId);
+    if (!detail) {
+      // The change is saved but could not be read back: keep what is on
+      // screen, flag the project, and let refreshes retry until it lands.
+      if (!this.pending.includes(runId)) this.pending = [...this.pending, runId];
+      setTimeout(() => void this.refresh(), 5000);
+      return;
+    }
+    this.pending = this.pending.filter((id) => id !== runId);
+    const fresh = buildProject({ ...summary, title: detail.title, logline: detail.logline }, detail);
     this.projects = this.projects.map((project) => (project.runId === runId ? fresh : project));
     this.markNewest();
   }
