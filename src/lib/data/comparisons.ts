@@ -64,11 +64,13 @@ export async function loadComparisonRun(
   runId: string,
   runOverride?: ComparisonRun
 ): Promise<ComparisonRunDetail> {
-  const run = runOverride ?? (await fetchRun(runId));
-  const answers = await fetchAnswers(runId);
-  const artifacts = await fetchArtifacts(runId);
-  const prompts = await fetchPrompts(runId);
-  const decisions = await fetchDecisions(runId);
+  const [run, answers, artifacts, prompts, decisions] = await Promise.all([
+    runOverride ?? fetchRun(runId),
+    fetchAnswers(runId),
+    fetchArtifacts(runId),
+    fetchPrompts(runId),
+    fetchDecisions(runId),
+  ]);
 
   const rows = buildComparisonRows(run, answers, artifacts, prompts, decisions);
 
@@ -167,6 +169,11 @@ async function fetchAnswers(runId: string): Promise<ModelAnswer[]> {
     console.error(`Failed to load answers for ${runId}:`, e);
     return [];
   }
+}
+
+/** One run's artifacts alone: a cheap way to notice edited version details. */
+export function loadRunArtifacts(runId: string): Promise<ComparisonArtifact[]> {
+  return fetchArtifacts(runId);
 }
 
 async function fetchArtifacts(runId: string): Promise<ComparisonArtifact[]> {

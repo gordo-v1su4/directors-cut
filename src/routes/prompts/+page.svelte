@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { loadPromptCards } from '$lib/data/loader';
   import type { PromptCardIndex } from '$lib/types/prompt-card';
@@ -8,7 +8,14 @@
   import Icon from '$lib/components/Icon.svelte';
   import { toneFor } from '$lib/ui/tones';
   import { callBridgeTool } from '$lib/bridge/types';
-  import type { GenerateCinematicGridInput, GenerateCinematicGridOutput } from '$lib/bridge/types';
+  import type {
+    GenerateCinematicGridInput,
+    GenerateCinematicGridOutput,
+    GeneratedImage,
+    GetResearchStatusInput,
+    GetResearchStatusOutput,
+    JobStatus,
+  } from '$lib/bridge/types';
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
@@ -23,7 +30,9 @@
   let copiedId = $state('');
   let narrow = $state(false);
   let sheetOpen = $state(false);
-  let gridJob = $state<GenerateCinematicGridOutput | null>(null);
+  /** The grid job for one card: started here, then followed until it finishes. */
+  let gridJob = $state<{ cardId: string; jobId: string; status: JobStatus; images: GeneratedImage[]; message?: string } | null>(null);
+  let gridTimer: ReturnType<typeof setTimeout> | undefined;
   let gridError = $state('');
   let gridBusy = $state(false);
 
@@ -65,8 +74,6 @@
 
   function select(card: PromptCardIndex) {
     selectedId = card.id;
-    gridJob = null;
-    gridError = '';
     if (narrow) sheetOpen = true;
   }
 
@@ -78,11 +85,12 @@
   }
 
   async function generateGrid(card: PromptCardIndex) {
+    stopGridPolling();
     gridBusy = true;
     gridError = '';
     gridJob = null;
     try {
-      gridJob = await callBridgeTool<GenerateCinematicGridInput, GenerateCinematicGridOutput>(
+      const started = await callBridgeTool<GenerateCinematicGridInput, GenerateCinematicGridOutput>(
         { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
         'generate_cinematic_grid',
         {
@@ -92,12 +100,45 @@
           resolution: '2k',
         },
       );
+      gridJob = { cardId: card.id, jobId: started.job_id, status: started.status, images: started.images ?? [] };
+      if (started.status === 'queued' || started.status === 'running') pollGrid(started.job_id, 0);
+      else gridBusy = false;
     } catch (e) {
       gridError = e instanceof Error ? e.message : String(e);
-    } finally {
       gridBusy = false;
     }
   }
+
+  function stopGridPolling() {
+    if (gridTimer) clearTimeout(gridTimer);
+    gridTimer = undefined;
+  }
+
+  /** Follow the bridge job until its images are ready (about ten minutes at most). */
+  function pollGrid(jobId: string, attempt: number) {
+    gridTimer = setTimeout(async () => {
+      try {
+        const status = await callBridgeTool<GetResearchStatusInput, GetResearchStatusOutput>(
+          { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
+          'get_research_status',
+          { job_id: jobId },
+        );
+        if (gridJob?.jobId !== jobId) return;
+        gridJob = { ...gridJob, status: status.status, images: status.images ?? gridJob.images, message: status.message };
+        if (status.status === 'queued' || status.status === 'running') {
+          if (attempt < 150) return pollGrid(jobId, attempt + 1);
+          gridError = 'The grid is still rendering. Check the bridge for the finished images.';
+        }
+      } catch (e) {
+        if (gridJob?.jobId !== jobId) return;
+        if (attempt < 150) return pollGrid(jobId, attempt + 1);
+        gridError = e instanceof Error ? e.message : String(e);
+      }
+      gridBusy = false;
+    }, 4000);
+  }
+
+  onDestroy(stopGridPolling);
 
   onMount(() => {
     void loadPromptCards().then((all) => {
@@ -161,7 +202,22 @@
         <Icon name="sparkles" /> Use in Create
       </button>
     </div>
-    {#if gridJob}<p class="dim note">Grid job {gridJob.job_id}: {gridJob.status}</p>{/if}
+    {#if gridJob && gridJob.cardId === card.id}
+      {#if gridJob.images.length}
+        <div class="grid-images">
+          {#each gridJob.images as image (image.index)}
+            <a href={image.result_url} target="_blank" rel="noopener" title={image.caption}>
+              <img src={image.result_url} alt={image.caption} loading="lazy" />
+            </a>
+          {/each}
+        </div>
+      {/if}
+      <p class="dim note">
+        {#if gridJob.status === 'completed'}Grid ready{gridJob.images.length ? '. Click an image to open it full size.' : ', but the bridge returned no images.'}
+        {:else if gridJob.status === 'failed'}The grid failed{gridJob.message ? `: ${gridJob.message}` : '.'}
+        {:else}Rendering the grid…{/if}
+      </p>
+    {/if}
     {#if gridError}<p class="error">{gridError}</p>{/if}
   </div>
 {/snippet}
@@ -503,6 +559,26 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .grid-images {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .grid-images a {
+    display: block;
+    overflow: hidden;
+    border-radius: 4px;
+    background: #0e0e0e;
+  }
+
+  .grid-images img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
   }
 
   .note,

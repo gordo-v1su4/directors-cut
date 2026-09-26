@@ -44,21 +44,34 @@
 
   onMount(() => {
     void bridgeHealth(BRIDGE_URL).then((connected) => (bridgeConnected = connected));
-    // Prompts → "Use in Create" arrives with the recipe's slug.
-    const slug = page.url.searchParams.get('recipe');
-    if (slug) {
-      void loadPromptCardBySlug(slug).then((card) => {
-        if (!card) return;
-        idea = card.prompt_pattern || card.summary;
-        sampleSource = card.title;
-        recipeTitle = card.title;
-        const uses = card.use_cases.join(' ');
-        if (/music/.test(uses)) format = 'music video';
-        else if (/product|commercial|ad/.test(uses)) format = 'commercial';
-        else if (/teaser|trailer/.test(uses)) format = 'trailer';
-        titleManuallyEdited = false;
-      });
+  });
+
+  // Prompts → "Use in Create" arrives with the recipe's slug. Follow the URL,
+  // so moving between recipes (or back) always shows the matching pitch.
+  const recipeSlug = $derived(page.url.searchParams.get('recipe'));
+  $effect(() => {
+    const slug = recipeSlug;
+    if (!slug) {
+      recipeTitle = '';
+      return;
     }
+    let stale = false;
+    void loadPromptCardBySlug(slug).then((card) => {
+      if (stale || !card) return;
+      idea = card.prompt_pattern || card.summary;
+      sampleSource = card.title;
+      recipeTitle = card.title;
+      const uses = card.use_cases.join(' ');
+      if (/music/.test(uses)) format = 'music video';
+      else if (/product|commercial|\bad\b/.test(uses)) format = 'commercial';
+      else if (/teaser|trailer/.test(uses)) format = 'trailer';
+      else format = 'visual concept';
+      titleManuallyEdited = false;
+      resetRun();
+    });
+    return () => {
+      stale = true;
+    };
   });
 
   let titleOptions = $derived(suggestTitleOptions(idea, format, sampleSource));
