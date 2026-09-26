@@ -1,9 +1,12 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { onDestroy, onMount } from 'svelte';
   import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions, type CaptureHandoffMode } from '$lib/create/brief';
   import { callBridgeTool, bridgeHealth } from '$lib/bridge/types';
-  import { loadLatestArtifacts } from '$lib/data/comparisons';
+  import { loadPromptCardBySlug } from '$lib/data/loader';
+  import Icon from '$lib/components/Icon.svelte';
+  import { toneFor } from '$lib/ui/tones';
   import type {
     CreateComparisonRunInput,
     CreateComparisonRunOutput,
@@ -12,19 +15,10 @@
     RunConceptCaptureOutput,
   } from '$lib/bridge/types';
 
-  type CreateMode = 'create' | 'ingest';
-
-  let mode = $state<CreateMode>('create');
   let projectTitle = $state('');
   let idea = $state('');
-  let ingestPrompt = $state('');
-  let ingestFile = $state<File | null>(null);
-  let ingestUrl = $state('');
-  let ingestReady = $state(false);
-  let ingestBusy = $state(false);
   let format = $state('trailer');
   let duration = $state('12');
-  let targetSora = $state(true);
   let includeAudio = $state(true);
   let handoffMode = $state<CaptureHandoffMode>('automated');
   let referenceName = $state('');
@@ -33,8 +27,10 @@
   let copied = $state(false);
   let sampleIndex = $state(0);
   let sampleSource = $state('');
+  let recipeTitle = $state('');
   let titleManuallyEdited = $state(false);
   let busy = $state(false);
+  let clapping = $state(false);
   let error = $state('');
   let bridgeConnected = $state(false);
   let automatedRun = $state<CreateComparisonRunOutput | null>(null);
@@ -45,7 +41,25 @@
 
   const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
   const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
-  onMount(() => { void bridgeHealth(BRIDGE_URL).then((connected) => bridgeConnected = connected); });
+
+  onMount(() => {
+    void bridgeHealth(BRIDGE_URL).then((connected) => (bridgeConnected = connected));
+    // Prompts → "Use in Create" arrives with the recipe's slug.
+    const slug = page.url.searchParams.get('recipe');
+    if (slug) {
+      void loadPromptCardBySlug(slug).then((card) => {
+        if (!card) return;
+        idea = card.prompt_pattern || card.summary;
+        sampleSource = card.title;
+        recipeTitle = card.title;
+        const uses = card.use_cases.join(' ');
+        if (/music/.test(uses)) format = 'music video';
+        else if (/product|commercial|ad/.test(uses)) format = 'commercial';
+        else if (/teaser|trailer/.test(uses)) format = 'trailer';
+        titleManuallyEdited = false;
+      });
+    }
+  });
 
   let titleOptions = $derived(suggestTitleOptions(idea, format, sampleSource));
   let effectiveTitle = $derived(resolveProjectTitle(projectTitle, idea, format, sampleSource));
@@ -59,41 +73,44 @@
 
   const SAMPLE_PROMPTS = [
     {
-      family: 'seedance',
       source: 'Seedance Supernatural Teaser Pattern',
       format: 'trailer',
       duration: '12',
-      text: '12-second premium streaming teaser, 16:9, cinematic thriller grade. 0-3s: an isolated cliffside hotel glows beneath an incoming storm as rain moves sideways across an empty terrace and distant thunder rolls. 3-6s: slow push toward a woman in silver eveningwear facing a dark window; her reflection turns toward camera half a beat before she does. 6-9s: a crack races through the pane, every light cuts out, and a red handprint appears on the inside with one sharp bass impact. 9-12s: smash cut to black; AFTER CHECKOUT slams into frame in elegant chrome serif type as the thunder decays into silence. No extra logos, no subtitles, no watermark.'
+      text: '12-second premium streaming teaser, 16:9, cinematic thriller grade. 0-3s: an isolated cliffside hotel glows beneath an incoming storm as rain moves sideways across an empty terrace and distant thunder rolls. 3-6s: slow push toward a woman in silver eveningwear facing a dark window; her reflection turns toward camera half a beat before she does. 6-9s: a crack races through the pane, every light cuts out, and a red handprint appears on the inside with one sharp bass impact. 9-12s: smash cut to black; AFTER CHECKOUT slams into frame in elegant chrome serif type as the thunder decays into silence. No extra logos, no subtitles, no watermark.',
     },
     {
-      family: 'seedance',
-      source: 'Seedance Beat-Sync MV Trio',
-      format: 'music video',
-      duration: '10',
-      text: '10-second vertical fashion music video, 9:16, beat-synced cuts and one deep-red color grade. 0-1s: three dancers hold still beneath a flickering gas-station canopy as the first kick lands. 1-3s: medium close-up on the lead snapping open a chrome fan while the camera punches forward on the beat. 3-5s: wide formation change across rain-black pavement, coats and puddle reflections hitting every kick. 5-7s: insert of boots striking water in crisp rhythmic splashes. 7-10s: crane up to reveal the full neon forecourt; the trio freezes on the last beat as the track ends with a metallic shutter hit. No text or watermark.'
-    },
-    {
-      family: 'sora',
       source: 'Sora World-Simulator Physics Loop',
       format: 'visual concept',
       duration: '8',
-      text: 'An 8-second physically coherent tabletop world inside a dark watchmaker’s studio. A miniature glass city rests inside an open silver pocket watch. Warm steam from a nearby espresso cup drifts across the city, condensing on the towers and gathering into droplets that run down the streets like rivers. The camera makes one slow macro orbit while gears beneath the city turn, streetlights flicker in response, and loose paper fibers lift naturally in the warm air. Amber task lighting and deep black shadows define the scene. In the final second, the largest droplet rolls back into its starting position for a seamless loop. Natural room tone, tiny gear clicks, and soft steam hiss.'
+      text: 'An 8-second physically coherent tabletop world inside a dark watchmaker’s studio. A miniature glass city rests inside an open silver pocket watch. Warm steam from a nearby espresso cup drifts across the city, condensing on the towers and gathering into droplets that run down the streets like rivers. The camera makes one slow macro orbit while gears beneath the city turn, streetlights flicker in response, and loose paper fibers lift naturally in the warm air. Amber task lighting and deep black shadows define the scene. In the final second, the largest droplet rolls back into its starting position for a seamless loop. Natural room tone, tiny gear clicks, and soft steam hiss.',
     },
     {
-      family: 'sora',
       source: 'Sora Audio-First Micro Documentary',
       format: 'short film scene',
       duration: '15',
-      text: 'A 15-second observational documentary scene inside a family-run neon-sign workshop before sunrise. Audio leads from the first frame: transformer hum, rain tapping the skylight, glass tubing clinking, and the short hiss of a blue flame timed exactly to the artisan’s hands. The camera begins wide among stacked signs, moves into a shoulder-level tracking shot as she bends a glowing pink tube, then ends on a macro view of the finished letter flickering alive. Moist concrete, worn tools, realistic handheld movement, cool window light mixed with magenta neon. A calm voice says, “You can hear when the glass is ready.” No subtitles.'
+      text: 'A 15-second observational documentary scene inside a family-run neon-sign workshop before sunrise. Audio leads from the first frame: transformer hum, rain tapping the skylight, glass tubing clinking, and the short hiss of a blue flame timed exactly to the artisan’s hands. The camera begins wide among stacked signs, moves into a shoulder-level tracking shot as she bends a glowing pink tube, then ends on a macro view of the finished letter flickering alive. Moist concrete, worn tools, realistic handheld movement, cool window light mixed with magenta neon. A calm voice says, “You can hear when the glass is ready.” No subtitles.',
     },
-    {
-      family: 'both',
-      source: 'Netflix Teaser — Seedance vs Sora Comparison',
-      format: 'trailer',
-      duration: '12',
-      text: 'Create a 12-second supernatural-thriller teaser set in a luxury coastal hotel during a hurricane evacuation. Begin with an empty chandelier swaying over a flooded lobby, move to a young concierge noticing that every security monitor shows the same unknown guest, then hit one impossible action as all elevator doors open onto black ocean water. End on a hard title reveal: CHECKOUT, centered against wet brushed steel. Premium but unnerving realism, restrained camera movement, cyan emergency light against warm practicals, escalating wind and electrical hum, one moment of total silence before the title impact. Produce a structured timed version for Seedance and a fluid natural-language cinematic version for Sora.'
-    }
   ];
+
+  const FORMATS = [
+    { value: 'trailer', label: 'Trailer or teaser' },
+    { value: 'music video', label: 'Music video' },
+    { value: 'commercial', label: 'Commercial' },
+    { value: 'short film scene', label: 'Short film scene' },
+    { value: 'visual concept', label: 'Visual concept' },
+  ];
+  const formatLabel = $derived(FORMATS.find((f) => f.value === format)?.label ?? format);
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const slateNumber = String(new Date().getDate()).padStart(2, '0');
+
+  function resetRun() {
+    request = '';
+    automatedRun = null;
+    capturePrepared = null;
+    captureRunning = false;
+    captureStatus = null;
+    error = '';
+  }
 
   function applyPreset(preset: (typeof QUICK_START_PRESETS)[number]) {
     idea = preset.idea;
@@ -102,37 +119,26 @@
     projectTitle = preset.title;
     titleManuallyEdited = false;
     sampleSource = preset.label;
-    request = '';
-    automatedRun = null;
-    capturePrepared = null;
-    captureRunning = false;
-    captureStatus = null;
-    error = '';
-  }
-
-  function selectTitle(option: string) {
-    projectTitle = option;
-    titleManuallyEdited = true;
+    recipeTitle = '';
+    resetRun();
   }
 
   function useSamplePrompt() {
-    const family = targetSora ? 'sora' : 'both';
-    const eligible = SAMPLE_PROMPTS.filter((sample) => sample.family === family);
-    const pool = eligible.length ? eligible : SAMPLE_PROMPTS;
-    const sample = pool[sampleIndex % pool.length];
+    const sample = SAMPLE_PROMPTS[sampleIndex % SAMPLE_PROMPTS.length];
     idea = sample.text;
     sampleSource = sample.source;
     format = sample.format;
     duration = sample.duration;
     titleManuallyEdited = false;
+    recipeTitle = '';
     projectTitle = suggestTitleOptions(sample.text, sample.format, sample.source)[0] ?? '';
     sampleIndex += 1;
-    request = '';
-    automatedRun = null;
-    capturePrepared = null;
-    captureRunning = false;
-    captureStatus = null;
-    error = '';
+    resetRun();
+  }
+
+  function selectTitle(option: string) {
+    projectTitle = option;
+    titleManuallyEdited = true;
   }
 
   function handleReference(event: Event) {
@@ -141,28 +147,6 @@
     if (referenceUrl) URL.revokeObjectURL(referenceUrl);
     referenceName = file.name;
     referenceUrl = URL.createObjectURL(file);
-  }
-
-  function handleIngestFile(event: Event) {
-    const file = (event.currentTarget as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (ingestUrl) URL.revokeObjectURL(ingestUrl);
-    ingestFile = file;
-    ingestUrl = URL.createObjectURL(file);
-    ingestReady = false;
-  }
-
-  async function ingestProject() {
-    if (!ingestFile || !ingestPrompt.trim()) return;
-    ingestBusy = true;
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    ingestReady = true;
-    ingestBusy = false;
-  }
-
-  function switchMode(nextMode: CreateMode) {
-    mode = nextMode;
-    error = '';
   }
 
   function briefInput() {
@@ -220,6 +204,9 @@
   }
 
   async function startConceptRun() {
+    // The slate claps before anything else happens.
+    clapping = true;
+    setTimeout(() => (clapping = false), 420);
     error = '';
     busy = true;
     automatedRun = null;
@@ -236,6 +223,12 @@
 
       if (!BRIDGE_TOKEN) {
         error = 'Automated capture needs VITE_RAYCAST_BRIDGE_TOKEN in .env.local and the bridge running on :8787.';
+        return;
+      }
+
+      bridgeConnected = await bridgeHealth(BRIDGE_URL);
+      if (!bridgeConnected) {
+        error = 'The bridge is offline. Start it on port 8787, or switch Run mode to Manual.';
         return;
       }
 
@@ -279,1208 +272,677 @@
   }
 
   onDestroy(stopPolling);
-  const FORMATS = [
-    { value: 'trailer', label: 'Trailer or teaser' },
-    { value: 'music video', label: 'Music video' },
-    { value: 'commercial', label: 'Commercial' },
-    { value: 'short film scene', label: 'Short film scene' },
-    { value: 'visual concept', label: 'Visual concept' },
-  ];
-  const formatLabel = $derived(FORMATS.find((f) => f.value === format)?.label ?? format);
-  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-  // A blown-out frame of the latest render lights the room, as on the home page.
-  let backdrop = $state('');
-  onMount(() => {
-    void loadLatestArtifacts(12)
-      .then((items) => (backdrop = items.find((item) => item.thumbnail_url)?.thumbnail_url ?? ''))
-      .catch(() => undefined);
-  });
 </script>
 
-<svelte:head><title>Create — Directors Cut</title></svelte:head>
+<svelte:head><title>Create · Directors Cut</title></svelte:head>
 
-<div class="pitch">
-  {#if backdrop}
-    <div class="pitch-glow" style:background-image={`url("${backdrop}")`} aria-hidden="true"></div>
+<div class="studio-column create">
+  <header class="head">
+    <div class="head-title">
+      <h1 class="t-page">Create</h1>
+      <span class="dim head-note">Pitch it once. ChatGPT and Claude each write a take, and both land in Projects.</span>
+    </div>
+    {#if recipeTitle}<span class="stag tone-review recipe-tag">Loaded recipe: {recipeTitle}</span>{/if}
+  </header>
+
+  <section aria-labelledby="templates-title">
+    <div class="section-head">
+      <h2 id="templates-title" class="t-section">Start from a template</h2>
+      <span class="dim section-note">Or write your own below</span>
+    </div>
+    <div class="templates">
+      {#each QUICK_START_PRESETS as preset (preset.id)}
+        <button type="button" class="template" class:is-selected={sampleSource === preset.label} onclick={() => applyPreset(preset)}>
+          <span class="template-tags">
+            <span class="stag">{preset.label}</span>
+            <span class="stag tone-review">{FORMATS.find((f) => f.value === preset.format)?.label ?? preset.format}</span>
+          </span>
+          <span class="t-card">{preset.title.replace(/\s+—.*$/, '')}</span>
+          <span class="template-idea">{preset.idea}</span>
+        </button>
+      {/each}
+      <button type="button" class="template" class:is-selected={SAMPLE_PROMPTS.some((s) => s.source === sampleSource)} onclick={useSamplePrompt}>
+        <span class="template-tags">
+          <span class="stag tone-warm">Example</span>
+          <span class="stag">From the library</span>
+        </span>
+        <span class="t-card">Surprise me</span>
+        <span class="template-idea">Load a tested prompt from the recipe library. Click again for another.</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="desk">
+    <section class="form glass-panel" aria-label="Pitch">
+      <div class="field">
+        <label class="field-label" for="project-title">Working title</label>
+        <input id="project-title" class="sinput" bind:value={projectTitle} placeholder="Named from your idea as you type" oninput={() => (titleManuallyEdited = true)} />
+        {#if titleOptions.length && idea.trim()}
+          <div class="chips" role="group" aria-label="Suggested titles">
+            {#each titleOptions as option (option)}
+              <button type="button" class="stag" class:selected={projectTitle === option} onclick={() => selectTitle(option)}>{option}</button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="creative-idea">The idea</label>
+        <textarea
+          id="creative-idea"
+          class="stextarea idea"
+          bind:value={idea}
+          rows="7"
+          placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal…"
+        ></textarea>
+        {#if sampleSource}<p class="hint">Adapted from {sampleSource}.</p>{/if}
+      </div>
+
+      <div class="field">
+        <span class="field-label">Format</span>
+        <div class="options" role="radiogroup" aria-label="Format">
+          {#each FORMATS as option (option.value)}
+            <button type="button" role="radio" class="sbtn" class:sbtn-primary={format === option.value} aria-checked={format === option.value} onclick={() => (format = option.value)}>
+              {option.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="field-pair">
+        <div class="field">
+          <span class="field-label">Run mode</span>
+          <div class="options" role="radiogroup" aria-label="Run mode">
+            <button type="button" role="radio" class="sbtn" class:sbtn-primary={handoffMode === 'automated'} aria-checked={handoffMode === 'automated'} onclick={() => (handoffMode = 'automated')}>Automated</button>
+            <button type="button" role="radio" class="sbtn" class:sbtn-primary={handoffMode === 'manual'} aria-checked={handoffMode === 'manual'} onclick={() => (handoffMode = 'manual')}>Manual</button>
+          </div>
+          <p class="hint">{handoffMode === 'automated' ? 'The bridge creates the run and captures both writers.' : 'Copy the brief and run it from Raycast yourself.'}</p>
+        </div>
+        <div class="field">
+          <span class="field-label">Sound</span>
+          <div class="options" role="radiogroup" aria-label="Sound">
+            <button type="button" role="radio" class="sbtn" class:sbtn-primary={includeAudio} aria-checked={includeAudio} onclick={() => (includeAudio = true)}>In the prompt</button>
+            <button type="button" role="radio" class="sbtn" class:sbtn-primary={!includeAudio} aria-checked={!includeAudio} onclick={() => (includeAudio = false)}>Picture only</button>
+          </div>
+          <p class="hint">Music, ambience, dialogue and effects.</p>
+        </div>
+      </div>
+
+      <label class="reference raised" class:filled={!!referenceUrl}>
+        <input type="file" accept="image/*" onchange={handleReference} />
+        {#if referenceUrl}
+          <img src={referenceUrl} alt="Selected visual reference" />
+          <span><strong>{referenceName}</strong><span class="dim">Stays on this device for now. Click to swap it.</span></span>
+        {:else}
+          <span class="reference-icon"><Icon name="plus" size={16} /></span>
+          <span><strong>Add a reference image</strong><span class="dim">A character, product, location or mood frame.</span></span>
+        {/if}
+      </label>
+    </section>
+
+    <!-- The slate fills in as the pitch takes shape, and claps on Start. -->
+    <aside class="slate glass-panel" aria-label="Slate">
+      <div class="sticks" class:clap={clapping} aria-hidden="true">
+        {#each Array(12) as _, i (i)}<span></span>{/each}
+      </div>
+      <div class="slate-body">
+        <div class="slate-top">
+          <div class="slate-name">
+            <span class="label">Production</span>
+            <span class="t-section" class:empty={!idea.trim()}>{idea.trim() ? effectiveTitle : 'Untitled'}</span>
+          </div>
+          <span class="slate-icon"><Icon name="clapper" size={16} /></span>
+        </div>
+
+        <div class="cells">
+          <div class="cell raised"><span class="label">Roll / Slate</span><span class="cell-big">A{slateNumber}</span></div>
+          <div class="cell raised"><span class="label">Format</span><span class="cell-value">{formatLabel}</span></div>
+          <div class="cell raised"><span class="label">Length</span><span class="cell-value">12 sec · {today}</span></div>
+        </div>
+
+        <div class="cells cells-2">
+          <div class="cell raised">
+            <span class="label">Writers room</span>
+            <span class="cell-tags"><span class="stag tone-chatgpt">ChatGPT</span><span class="stag tone-claude">Claude</span></span>
+          </div>
+          <div class="cell raised">
+            <span class="label">Camera</span>
+            <span class="cell-tags"><span class="stag tone-sora">Sora 2</span><span class="stag">{includeAudio ? 'Sound on' : 'No sound'}</span></span>
+          </div>
+        </div>
+
+        <div class="slate-go">
+          <p class="status">
+            <span class="dot" class:live={handoffMode === 'manual' || (bridgeConnected && !!BRIDGE_TOKEN)}></span>
+            <span>
+              {#if handoffMode === 'manual'}
+                Next, copy the brief into Raycast.
+              {:else if BRIDGE_TOKEN && bridgeConnected}
+                Bridge connected.
+              {:else if BRIDGE_TOKEN}
+                Bridge offline. Start it on port 8787.
+              {:else}
+                Automated runs need the bridge token. Switch to Manual to go without it.
+              {/if}
+            </span>
+          </p>
+          <button class="sbtn sbtn-primary start" type="button" disabled={!canSubmit} onclick={startConceptRun}>
+            <Icon name="play" size={12} filled />
+            {busy ? 'Starting…' : handoffMode === 'manual' ? 'Prepare brief' : 'Start'}
+          </button>
+        </div>
+        {#if error}<p class="error" role="alert">{error}</p>{/if}
+      </div>
+    </aside>
+  </div>
+
+  {#if automatedRun}
+    <section class="result glass-panel" aria-labelledby="run-title">
+      <div class="result-head">
+        <div>
+          <span class="label">Run started</span>
+          <h2 id="run-title" class="t-section">{automatedRun.title}</h2>
+        </div>
+        <button class="sbtn sbtn-primary" type="button" onclick={openProjects}>Open in Projects <Icon name="up-right" /></button>
+      </div>
+      <div class="result-tags">
+        <span class="stag tone-{toneFor(captureStatus?.run_status ?? automatedRun.run_status)}">{captureStatus?.run_status ?? automatedRun.run_status}</span>
+        <span class="stag">{captureStatus?.captured_valid_count ?? 0} of 2 captured</span>
+        <span class="stag">{captureRunning ? 'Capturing' : captureStatus?.capture_job_status ?? 'Idle'}</span>
+        {#each captureStatus?.models ?? [] as model (model.label)}
+          <span class="stag tone-{toneFor(model.label)}">{model.label}: {model.status}</span>
+        {/each}
+      </div>
+      {#if captureStatus?.answers?.length}
+        <div class="answers">
+          {#each captureStatus.answers as answer (answer.answer_id)}
+            <article class="raised answer">
+              <span class="stag tone-{toneFor(answer.model_name)}">{answer.model_name}</span>
+              {#if answer.title}<h3 class="t-card">{answer.title}</h3>{/if}
+              {#if answer.logline}<p class="muted">{answer.logline}</p>{/if}
+            </article>
+          {/each}
+        </div>
+      {/if}
+      <p class="hint">
+        {#if captureRunning}
+          Raycast is capturing ChatGPT first, then Claude. Answers appear here as they land.
+        {:else if capturePrepared && !captureStatus?.ready_for_projects}
+          Capture stopped before both answers came back. Check that Raycast is open and has Accessibility access.
+        {:else if captureStatus?.ready_for_projects}
+          Both concepts are in. Open Projects to compare them.
+        {/if}
+      </p>
+    </section>
   {/if}
 
-  <div class="pitch-wrap">
-    <header class="pitch-head">
-      <h1>What are we making?</h1>
-      <p>
-        Write the idea the way you'd pitch it. ChatGPT and Claude each develop their own concept from it,
-        and both land in Projects for you to compare.
-      </p>
-      <div class="modes" role="tablist" aria-label="Project workflow">
-        <button type="button" role="tab" aria-selected={mode === 'create'} class:active={mode === 'create'} onclick={() => switchMode('create')}>
-          New concept
-        </button>
-        <button type="button" role="tab" aria-selected={mode === 'ingest'} class:active={mode === 'ingest'} onclick={() => switchMode('ingest')}>
-          Import a finished cut
-        </button>
+  {#if request && handoffMode === 'manual'}
+    <section class="result glass-panel" aria-labelledby="brief-title">
+      <div class="result-head">
+        <div>
+          <span class="label">Ready for Raycast</span>
+          <h2 id="brief-title" class="t-section">Concept brief</h2>
+        </div>
+        <button class="sbtn" type="button" onclick={copyRequest}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copied' : 'Copy brief'}</button>
       </div>
-    </header>
-
-    {#if mode === 'create'}
-      <div class="desk">
-        <section class="desk-form" aria-label="Concept brief">
-          <div class="block">
-            <h2 class="block-title">Start from a template</h2>
-            <div class="presets">
-              {#each QUICK_START_PRESETS as preset (preset.id)}
-                <button
-                  type="button"
-                  class="preset"
-                  class:active={sampleSource === preset.label}
-                  onclick={() => applyPreset(preset)}
-                >
-                  <span class="preset-kind">{preset.label}</span>
-                  <span class="preset-title">{preset.title.replace(/\s+—.*$/, '')}</span>
-                  <span class="preset-idea">{preset.idea}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <div class="block">
-            <div class="block-row">
-              <label class="block-title" for="creative-idea">The idea</label>
-              <button class="link-btn" type="button" onclick={useSamplePrompt}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5L8.5 20.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L15 4Zm-1 3 3 3M6 3v3M4.5 4.5h3M19 15v4M17 17h4" /></svg>
-                Try an example
-              </button>
-            </div>
-            <textarea
-              id="creative-idea"
-              class="treatment"
-              bind:value={idea}
-              rows="9"
-              placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal…"
-            ></textarea>
-            {#if sampleSource}
-              <p class="hint">Adapted from {sampleSource}. Try another example for a different starting point.</p>
-            {/if}
-          </div>
-
-          <div class="block">
-            <label class="block-title" for="project-title">Working title</label>
-            <input
-              id="project-title"
-              class="title-input"
-              bind:value={projectTitle}
-              placeholder="Named from your idea as you type"
-              oninput={() => { titleManuallyEdited = true; }}
-            />
-            {#if titleOptions.length}
-              <div class="title-options" role="group" aria-label="Suggested titles">
-                {#each titleOptions as option (option)}
-                  <button type="button" class:active={projectTitle === option} onclick={() => selectTitle(option)}>{option}</button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-
-          <div class="block">
-            <h2 class="block-title">Format</h2>
-            <div class="formats" role="radiogroup" aria-label="Format">
-              {#each FORMATS as option (option.value)}
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={format === option.value}
-                  class:active={format === option.value}
-                  onclick={() => (format = option.value)}
-                >
-                  {option.label}
-                </button>
-              {/each}
-            </div>
-            <p class="hint">Every run is 12 seconds for now, targeting Sora 2.</p>
-          </div>
-
-          <div class="block">
-            <h2 class="block-title">How to run it</h2>
-            <div class="choices">
-              <label class="choice" class:active={handoffMode === 'automated'}>
-                <input type="radio" name="handoff-mode" value="automated" bind:group={handoffMode} />
-                <strong>Automated</strong>
-                <span>The bridge creates the run and captures ChatGPT and Claude for you.</span>
-              </label>
-              <label class="choice" class:active={handoffMode === 'manual'}>
-                <input type="radio" name="handoff-mode" value="manual" bind:group={handoffMode} />
-                <strong>Manual</strong>
-                <span>Copy the brief and run it from Raycast yourself.</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="block block-split">
-            <label class="toggle">
-              <input type="checkbox" bind:checked={includeAudio} />
-              <span class="toggle-track" aria-hidden="true"></span>
-              <span class="toggle-copy">
-                <strong>Sound in the prompt</strong>
-                <span>Music, ambience, dialogue and effects are written into the video prompt.</span>
-              </span>
-            </label>
-
-            <label class="reference" class:filled={!!referenceUrl}>
-              <input type="file" accept="image/*" onchange={handleReference} />
-              {#if referenceUrl}
-                <img src={referenceUrl} alt="Selected visual reference" />
-                <span class="toggle-copy">
-                  <strong>{referenceName}</strong>
-                  <span>Stays on this device for now. Click to swap it.</span>
-                </span>
-              {:else}
-                <span class="reference-plus" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-                </span>
-                <span class="toggle-copy">
-                  <strong>Add a reference image</strong>
-                  <span>A character, product, location or mood frame.</span>
-                </span>
-              {/if}
-            </label>
-          </div>
-        </section>
-
-        <!-- The slate fills in as the brief takes shape. -->
-        <aside class="slate-col">
-          <div class="slate">
-            <div class="slate-sticks" aria-hidden="true"></div>
-            <div class="slate-body">
-              <p class="slate-label">Production</p>
-              <p class="slate-title" class:empty={!idea.trim()}>{idea.trim() ? effectiveTitle : 'Untitled'}</p>
-              <dl class="slate-grid">
-                <div><dt>Format</dt><dd>{formatLabel}</dd></div>
-                <div><dt>Length</dt><dd>12 sec</dd></div>
-                <div><dt>Sound</dt><dd>{includeAudio ? 'On' : 'Off'}</dd></div>
-                <div><dt>Writers</dt><dd>ChatGPT, Claude</dd></div>
-                <div><dt>Camera</dt><dd>Sora 2</dd></div>
-                <div><dt>Date</dt><dd>{today}</dd></div>
-              </dl>
-
-              <button class="slate-go" type="button" disabled={!canSubmit} onclick={startConceptRun}>
-                {busy ? 'Starting…' : handoffMode === 'manual' ? 'Prepare the brief' : 'Start concept run'}
-              </button>
-
-              <p class="slate-status">
-                <span class="dot" class:live={handoffMode === 'manual' || (bridgeConnected && !!BRIDGE_TOKEN)}></span>
-                <span>
-                  {#if handoffMode === 'manual'}
-                    Next, copy the brief and run “Start Directors Cut Concept Run” in Raycast.
-                  {:else if BRIDGE_TOKEN && bridgeConnected}
-                    Bridge connected. Answers stream in here as they're captured.
-                  {:else if BRIDGE_TOKEN}
-                    The bridge is offline. Start it on port 8787 to run automatically.
-                  {:else}
-                    Automated runs need <code>VITE_RAYCAST_BRIDGE_TOKEN</code> in <code>.env.local</code>. Switch to Manual to go without it.
-                  {/if}
-                </span>
-              </p>
-              {#if error}<p class="slate-error" role="alert">{error}</p>{/if}
-            </div>
-          </div>
-        </aside>
-      </div>
-    {:else}
-      <section class="import" aria-labelledby="import-title">
-        <h2 id="import-title" class="visually-hidden">Import a finished cut</h2>
-        <label class="import-drop" class:filled={!!ingestFile}>
-          <input type="file" accept="video/*" onchange={handleIngestFile} />
-          {#if ingestFile}
-            <video src={ingestUrl} muted controls playsinline aria-label="Selected video preview"></video>
-          {:else}
-            <span class="reference-plus" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-            </span>
-            <strong>Drop a finished video here</strong>
-            <span>MP4, WebM or MOV. 16:9 works best.</span>
-          {/if}
-        </label>
-
-        <div class="import-side">
-          {#if ingestFile}
-            <p class="import-file"><strong>{ingestFile.name}</strong> {(ingestFile.size / 1024 / 1024).toFixed(1)} MB</p>
-          {/if}
-          <label class="block-title" for="ingest-prompt">The prompt that made it</label>
-          <textarea
-            id="ingest-prompt"
-            class="treatment"
-            bind:value={ingestPrompt}
-            rows="9"
-            placeholder="Paste the prompt used for this video. It's used to name, sort and describe the project."
-          ></textarea>
-          <button
-            class="slate-go"
-            type="button"
-            disabled={!ingestFile || !ingestPrompt.trim() || ingestBusy}
-            onclick={ingestProject}
-          >
-            {ingestBusy ? 'Preparing project…' : ingestReady ? 'Project ready' : 'Add to projects'}
-          </button>
-          {#if ingestReady}
-            <p class="slate-status"><span class="dot live"></span><span>Import staged. The prompt will fill in the project card and category.</span></p>
-          {:else}
-            <p class="hint">You only need the video and its prompt. Everything else can be edited later from the project.</p>
-          {/if}
-        </div>
-      </section>
-    {/if}
-
-    {#if automatedRun}
-      <section class="result" aria-labelledby="run-title">
-        <div class="result-head">
-          <div>
-            <p class="block-title">Run started</p>
-            <h2 id="run-title">{automatedRun.title}</h2>
-          </div>
-          <button class="btn" type="button" onclick={openProjects}>Open in Projects</button>
-        </div>
-        <dl class="result-facts">
-          <div><dt>Run</dt><dd>{automatedRun.run_id}</dd></div>
-          <div><dt>Status</dt><dd>{captureStatus?.run_status ?? automatedRun.run_status}</dd></div>
-          <div><dt>Captured</dt><dd>{captureStatus?.captured_valid_count ?? 0} of 2</dd></div>
-          <div><dt>Capture</dt><dd>{captureRunning ? 'Running' : captureStatus?.capture_job_status ?? 'Idle'}</dd></div>
-        </dl>
-        {#if captureStatus}
-          <ul class="result-models">
-            {#each captureStatus.models as model (model.label)}
-              <li data-status={model.status}>
-                <strong>{model.label}</strong>
-                <span>{model.raycast_agent}</span>
-                <span class="result-state">{model.status}</span>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-        {#if captureStatus?.answers?.length}
-          <div class="result-answers">
-            {#each captureStatus.answers as answer (answer.answer_id)}
-              <article data-status={answer.structure_status}>
-                <header><strong>{answer.model_name}</strong><span>{answer.structure_status}</span></header>
-                {#if answer.title}<h3>{answer.title}</h3>{/if}
-                {#if answer.logline}<p>{answer.logline}</p>{/if}
-              </article>
-            {/each}
-          </div>
-        {/if}
-        {#if captureRunning}
-          <p class="hint">Computer use is driving Raycast: Sora 2 - ChatGPT first, then Sora 2 - Haiku. Answers appear above as they're captured.</p>
-        {:else if capturePrepared && !captureStatus?.ready_for_projects}
-          <p class="hint">Capture stopped before both answers came back. Check that Raycast is open and has Accessibility access.</p>
-        {:else if captureStatus?.ready_for_projects}
-          <p class="hint">Both concepts are in. Open Projects to compare and approve them.</p>
-        {/if}
-      </section>
-    {/if}
-
-    {#if request && handoffMode === 'manual'}
-      <section class="result" aria-labelledby="brief-title">
-        <div class="result-head">
-          <div>
-            <p class="block-title">Ready for Raycast</p>
-            <h2 id="brief-title">Concept brief</h2>
-          </div>
-          <button class="btn" type="button" onclick={copyRequest}>{copied ? 'Copied' : 'Copy brief'}</button>
-        </div>
-        <pre class="brief">{request}</pre>
-      </section>
-    {/if}
-  </div>
+      <pre class="brief">{request}</pre>
+    </section>
+  {/if}
 </div>
 
 <style>
-  /*
-   * The pitch room. Same language as the home page: black room, colour only
-   * from footage (a blown-out frame of the latest render), Instrument Serif
-   * for titles, Courier Prime for anything that reads like a script.
-   * The slate is the one loud element.
-   */
-  .pitch {
-    --pad: var(--dc-gutter-x);
-    --ink: #e7e5e4;
-    --ink-2: #bdb7b1;
-    --ink-3: #938d87;
-    --line: rgba(255, 255, 255, 0.1);
-    --line-2: rgba(255, 255, 255, 0.22);
-    --raise: #0e0e0e;
-
-    position: relative;
-    min-height: 100%;
-    padding: clamp(20px, 3vw, 36px) 0 clamp(40px, 6vw, 80px);
-    overflow-x: clip;
-    background: #000;
-    color: var(--ink);
+  .create {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding-top: 24px;
+    padding-bottom: 64px;
   }
 
-  @media (min-width: 861px) {
-    .pitch {
-      height: 100%;
-      overflow-y: auto;
-    }
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
   }
 
-  .pitch-glow {
-    position: absolute;
-    inset: -20% -10% auto;
-    height: 520px;
-    background-position: center;
-    background-size: cover;
-    filter: blur(110px) saturate(1.4);
-    opacity: 0.35;
-    pointer-events: none;
-    mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  .recipe-tag {
+    max-width: 100%;
   }
 
-  .pitch-wrap {
-    position: relative;
-    max-width: calc(var(--dc-page-max) + 2 * var(--pad));
-    margin: 0 auto;
-    padding: 0 max(var(--pad), var(--dc-safe-r)) 0 max(var(--pad), var(--dc-safe-l));
+  .head-title,
+  .section-head {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 12px;
   }
 
-  svg {
-    width: 16px;
-    height: 16px;
+  .head-title .t-page,
+  .section-head .t-section {
     flex-shrink: 0;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.75;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: auto;
   }
 
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
+  .head-note,
+  .section-note {
     overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-
-  /* ── Header ──────────────────────────────────────────────────── */
-
-  .pitch-head h1 {
-    margin: 0;
-    overflow: hidden;
-    font: 400 clamp(28px, 2.6vw, 36px) / 1.15 var(--dc-font-serif);
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .pitch-head > p {
-    max-width: 56ch;
-    margin: 6px 0 0;
+  .section-head {
+    margin-bottom: 12px;
+  }
+
+  /* ── Templates ────────────────────────────────────────────────── */
+
+  .templates {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .template {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #0e0e0e;
+    color: var(--dc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .template:hover {
+    background: #161616;
+  }
+
+  .template-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .template-idea {
+    display: -webkit-box;
+    overflow: hidden;
     color: var(--dc-text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* ── Desk: pitch form + slate ─────────────────────────────────── */
+
+  .desk {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .form {
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .field {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .field-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .field-label {
+    color: var(--dc-text-muted);
+    font-size: 13px;
+  }
+
+  .idea {
     font-size: 14px;
     line-height: 1.55;
   }
 
-  .modes {
-    display: inline-flex;
-    gap: 4px;
-    margin-top: 18px;
-    padding: 4px;
-    border: 0;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.5);
-  }
-
-  .modes button {
-    min-height: 28px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 3px;
-    background: transparent;
-    color: var(--ink-2);
-    font-size: 13px;
-    font-weight: 550;
-    cursor: pointer;
-  }
-
-  .modes button:hover {
-    color: var(--ink);
-  }
-
-  .modes button.active {
-    background: rgba(255, 255, 255, 0.7);
-    color: #000;
-  }
-
-  /* ── Desk: form + slate ──────────────────────────────────────── */
-
-  .desk {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: clamp(24px, 3vw, 40px);
-    margin-top: clamp(24px, 3vw, 36px);
-  }
-
-  @media (min-width: 1000px) {
-    .desk {
-      grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
-      align-items: start;
-    }
-
-    .slate-col {
-      position: sticky;
-      top: 24px;
-    }
-  }
-
-  .desk-form {
+  .chips,
+  .options {
     display: flex;
-    flex-direction: column;
-    gap: clamp(22px, 2.6vw, 30px);
-    min-width: 0;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
-  .block {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .block-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .block-title {
-    margin: 0;
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 600;
+  .chips .stag {
+    max-width: 100%;
   }
 
   .hint {
     margin: 0;
-    color: var(--ink-2);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .link-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    padding: 0 4px;
-    border: 0;
-    background: none;
-    color: var(--ink-2);
-    font-size: 13px;
-    cursor: pointer;
-  }
-
-  .link-btn:hover {
-    color: var(--ink);
-  }
-
-  /* Templates, dealt out like pitch cards */
-  .presets {
-    display: grid;
-    grid-auto-columns: minmax(220px, 1fr);
-    grid-auto-flow: column;
-    gap: 12px;
-    margin: 0 calc(-1 * var(--pad));
-    padding: 0 var(--pad) 4px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--pad);
-    scrollbar-width: none;
-  }
-
-  .presets::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Beside the slate there's room for all three; no need to bleed or scroll. */
-  @media (min-width: 1000px) {
-    .presets {
-      grid-auto-flow: row;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin: 0;
-      padding: 0;
-    }
-  }
-
-  .preset {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-    padding: 18px;
-    border: 0;
-    border-radius: 6px;
-    background: linear-gradient(160deg, #141414, #0a0a0a);
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
-    scroll-snap-align: start;
-    transition: border-color 0.15s ease, transform 0.15s ease;
-  }
-
-  .preset:hover {
-    border-color: var(--line-2);
-    transform: translateY(-2px);
-  }
-
-  .preset.active {
-    border-color: transparent;
-    background: #1c1c1c;
-    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.7);
-  }
-
-  .preset-kind {
-    color: var(--ink-2);
-    font-size: 12px;
-  }
-
-  .preset-title {
-    overflow: hidden;
-    font: 400 20px / 1.15 var(--dc-font-serif);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .preset-idea {
-    display: -webkit-box;
-    overflow: hidden;
-    color: var(--ink-3);
-    font-size: 12px;
-    line-height: 1.5;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
-  /* Script-style writing surfaces */
-  .treatment {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 220px;
-    padding: clamp(18px, 2.4vw, 28px);
-    border: 0;
-    border-radius: 6px;
-    background: var(--raise);
-    color: var(--ink);
-    font: 14px / 1.7 var(--dc-font-sans);
-    resize: vertical;
-    outline: none;
-    transition: border-color 0.15s ease;
-  }
-
-  .treatment::placeholder,
-  .title-input::placeholder {
-    color: var(--ink-3);
-  }
-
-  .treatment:focus {
-    background: #141414;
-  }
-
-  .title-input:focus {
-    border-bottom-color: rgba(255, 255, 255, 0.4);
-  }
-
-  .title-input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 6px 0 10px;
-    border: 0;
-    border-bottom: 1px solid var(--line-2);
-    background: transparent;
-    color: var(--ink);
-    font: 400 clamp(22px, 2vw, 28px) / 1.2 var(--dc-font-serif);
-    outline: none;
-  }
-
-  .title-options,
-  .formats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .title-options button,
-  .formats button {
-    min-height: 28px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 4px;
-    background: #161616;
-    color: var(--ink-2);
-    font-size: 13px;
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-  }
-
-  .title-options button:hover,
-  .formats button:hover {
-    background: #222;
-    color: var(--ink);
-  }
-
-  .title-options button.active,
-  .formats button.active {
-    background: rgba(255, 255, 255, 0.7);
-    color: #000;
-  }
-
-  .choices {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-    gap: 12px;
-  }
-
-  .choice {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 18px 18px 18px 48px;
-    border: 0;
-    border-radius: 6px;
-    background: var(--raise);
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-  }
-
-  .choice:hover {
-    border-color: var(--line-2);
-  }
-
-  .choice.active {
-    border-color: transparent;
-    background: #1a1a1a;
-  }
-
-  .choice input {
-    position: absolute;
-    top: 20px;
-    left: 18px;
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--ink);
-  }
-
-  .choice strong {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .choice span {
-    color: var(--ink-2);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  .block-split {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-    gap: 12px;
-  }
-
-  .toggle,
-  .reference {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    min-height: 88px;
-    padding: 16px 18px;
-    border: 0;
-    border-radius: 6px;
-    background: var(--raise);
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-  }
-
-  .toggle:hover,
-  .reference:hover {
-    border-color: var(--line-2);
-  }
-
-  .toggle input,
-  .reference input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .toggle-track {
-    position: relative;
-    flex: 0 0 40px;
-    height: 24px;
-    border-radius: 12px;
-    background: #3f3f46;
-    transition: background 0.2s ease;
-  }
-
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #d6d3d1;
-    transition: transform 0.2s ease;
-  }
-
-  .toggle input:checked + .toggle-track {
-    background: var(--ink);
-  }
-
-  .toggle input:checked + .toggle-track::after {
-    background: #000;
-    transform: translateX(16px);
-  }
-
-  .toggle input:focus-visible + .toggle-track {
-    outline: 2px solid var(--ink);
-    outline-offset: 3px;
-  }
-
-  .toggle-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .toggle-copy strong {
-    overflow: hidden;
-    font-size: 14px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .toggle-copy span {
-    color: var(--ink-2);
+    color: var(--dc-text-dim);
     font-size: 12px;
     line-height: 1.45;
   }
 
   .reference {
-    border-style: dashed;
-  }
-
-  .reference.filled {
-    border-style: solid;
-  }
-
-  .reference img {
-    flex: 0 0 96px;
-    width: 96px;
-    aspect-ratio: 16 / 9;
-    border-radius: 3px;
-    object-fit: cover;
-  }
-
-  .reference-plus {
-    display: grid;
-    flex: 0 0 40px;
-    place-items: center;
-    height: 40px;
-    border: 0;
-    border-radius: 50%;
-    color: var(--ink);
-  }
-
-  .reference-plus svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  /* ── The slate ───────────────────────────────────────────────── */
-
-  .slate {
-    overflow: hidden;
-    border: 0;
-    border-radius: 8px;
-    background: #0e0e0e;
-    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
-  }
-
-  /* Clapper sticks */
-  .slate-sticks {
-    height: 28px;
-    background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.7) 0 22px, #000 22px 44px);
-  }
-
-  .slate-body {
-    padding: 22px 22px 24px;
-  }
-
-  .slate-label {
-    margin: 0;
-    color: var(--ink-3);
-    font-size: 12px;
-  }
-
-  .slate-title {
-    margin: 6px 0 0;
-    overflow: hidden;
-    font: 400 clamp(24px, 2.2vw, 30px) / 1.15 var(--dc-font-serif);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .slate-title.empty {
-    color: var(--ink-3);
-  }
-
-  .slate-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 3px;
-    margin: 20px 0 0;
-  }
-
-  .slate-grid div {
-    min-width: 0;
-    padding: 10px 12px;
-    border-radius: 3px;
-    background: #161616;
-  }
-
-  .slate-grid dt,
-  .result-facts dt {
-    color: var(--ink-3);
-    font-size: 11px;
-  }
-
-  .slate-grid dd,
-  .result-facts dd {
-    margin: 3px 0 0;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.3;
-    overflow-wrap: anywhere;
-  }
-
-  .slate-go {
-    width: 100%;
-    min-height: 32px;
-    margin-top: 20px;
-    border: 0;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.7);
-    color: #000;
-    font-size: 14px;
-    font-weight: 650;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
     cursor: pointer;
     transition: background 0.15s ease;
   }
 
-  .slate-go:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.8);
+  .reference:hover {
+    background: #161616;
   }
 
-  .slate-go:disabled {
-    background: #27272a;
-    color: #71717a;
-    cursor: not-allowed;
-  }
-
-  .slate-go:focus-visible,
-  .btn:focus-visible,
-  .preset:focus-visible,
-  .formats button:focus-visible,
-  .title-options button:focus-visible,
-  .modes button:focus-visible,
-  .link-btn:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 3px;
-  }
-
-  .slate-status {
-    display: flex;
-    gap: 10px;
-    margin: 16px 0 0;
-    color: var(--ink-2);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .slate-status code {
-    color: var(--ink);
-    font-family: var(--dc-font-mono);
-    font-size: 12px;
-    overflow-wrap: anywhere;
-  }
-
-  .dot {
-    flex: 0 0 8px;
-    height: 8px;
-    margin-top: 6px;
-    border-radius: 50%;
-    background: #f59e0b;
-  }
-
-  .dot.live {
-    background: #22c55e;
-  }
-
-  .slate-error {
-    margin: 12px 0 0;
-    color: #fca5a5;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  /* ── Import ──────────────────────────────────────────────────── */
-
-  .import {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: clamp(24px, 3vw, 40px);
-    margin-top: clamp(40px, 5vw, 72px);
-  }
-
-  @media (min-width: 1000px) {
-    .import {
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-      align-items: start;
-    }
-  }
-
-  .import-drop {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border: 0;
-    border-radius: 8px;
-    background: var(--raise);
-    color: var(--ink-2);
-    font-size: 14px;
-    text-align: center;
+  .reference input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
     cursor: pointer;
   }
 
-  .import-drop strong {
-    color: var(--ink);
-    font: 400 clamp(20px, 2vw, 26px) / 1.2 var(--dc-font-serif);
-  }
-
-  .import-drop.filled {
-    border-style: solid;
-    background: #000;
-  }
-
-  .import-drop input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .import-drop video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .import-side {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .reference > span:last-child {
+    display: grid;
+    gap: 2px;
     min-width: 0;
+    font-size: 12px;
   }
 
-  .import-side .slate-go {
-    margin-top: 4px;
-  }
-
-  .import-file {
-    margin: 0;
-    color: var(--ink-2);
+  .reference strong {
+    overflow: hidden;
+    color: var(--dc-text);
     font-size: 13px;
-    overflow-wrap: anywhere;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .import-file strong {
-    color: var(--ink);
+  .reference-icon {
+    display: grid;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border-radius: 6px;
+    background: #161616;
   }
 
-  /* ── Run results ─────────────────────────────────────────────── */
+  .reference img {
+    flex-shrink: 0;
+    width: 72px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  /* ── Slate ────────────────────────────────────────────────────── */
+
+  .slate {
+    position: sticky;
+    top: calc(var(--dc-nav-offset) + 16px);
+    overflow: hidden;
+  }
+
+  .sticks {
+    display: flex;
+    height: 32px;
+    overflow: hidden;
+    background: #161616;
+    transform-origin: 0 100%;
+    transition: transform 0.2s ease;
+  }
+
+  .sticks span {
+    flex-shrink: 0;
+    width: 40px;
+    height: 100%;
+    transform: skewX(-24deg);
+  }
+
+  .sticks span:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  /* Start lifts the sticks and snaps them shut. */
+  .sticks.clap {
+    animation: clap 0.42s ease;
+  }
+
+  @keyframes clap {
+    0% { transform: rotate(0); }
+    45% { transform: rotate(-9deg); }
+    100% { transform: rotate(0); }
+  }
+
+  .slate-body {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .slate-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .slate-name {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .slate-name .empty {
+    color: var(--dc-text-dim);
+  }
+
+  .slate-icon {
+    display: grid;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 6px;
+    background: #161616;
+  }
+
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cells-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cell {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+    padding: 10px 12px;
+  }
+
+  .cell-big {
+    font: 400 22px / 1 var(--dc-font-serif);
+  }
+
+  .cell-value {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cell-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .slate-go {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .status {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--dc-text-muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6b6560;
+  }
+
+  .dot.live {
+    background: #9fd4a8;
+    box-shadow: 0 0 10px rgba(159, 212, 168, 0.6);
+  }
+
+  .start {
+    padding: 0 20px;
+  }
+
+  .error {
+    margin: 0;
+    color: #f0a8a0;
+    font-size: 12px;
+  }
+
+  /* ── Results ──────────────────────────────────────────────────── */
 
   .result {
-    margin-top: clamp(40px, 5vw, 64px);
-    padding: clamp(20px, 2.5vw, 32px);
-    border: 0;
-    border-radius: 8px;
-    background: var(--raise);
+    display: grid;
+    gap: 14px;
+    padding: 20px;
   }
 
   .result-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: end;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 16px;
-  }
-
-  .result-head h2 {
-    margin: 4px 0 0;
-    overflow: hidden;
-    font: 400 clamp(22px, 2.2vw, 30px) / 1.15 var(--dc-font-serif);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .btn {
-    min-height: 28px;
-    padding: 0 20px;
-    border: 0;
-    border-radius: 3px;
-    background: transparent;
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 550;
-    cursor: pointer;
-  }
-
-  .btn:hover {
-    border-color: var(--ink);
-  }
-
-  .result-facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
-    gap: 16px;
-    margin: 24px 0 0;
-    padding-top: 20px;
-    border-top: 1px solid var(--line);
-  }
-
-  .result-models {
-    display: grid;
-    gap: 8px;
-    margin: 20px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .result-models li {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
     gap: 12px;
-    padding: 12px 14px;
-    border: 0;
-    border-radius: 4px;
-    color: var(--ink-2);
-    font-size: 13px;
   }
 
-  .result-models strong {
-    color: var(--ink);
-  }
-
-  .result-state {
-    text-transform: capitalize;
-  }
-
-  .result-models li[data-status='captured'],
-  .result-answers article[data-status='valid'] {
-    border-color: rgba(34, 197, 94, 0.5);
-  }
-
-  .result-models li[data-status='invalid'],
-  .result-answers article[data-status='invalid'] {
-    border-color: rgba(248, 113, 113, 0.5);
-  }
-
-  .result-answers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: 12px;
-    margin-top: 16px;
-  }
-
-  .result-answers article {
-    padding: 18px;
-    border: 0;
-    border-radius: 6px;
-    background: #000;
-  }
-
-  .result-answers header {
+  .result-tags {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .answers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 10px;
+  }
+
+  .answer {
+    display: grid;
     gap: 8px;
-    color: var(--ink-2);
-    font-size: 13px;
+    padding: 14px;
   }
 
-  .result-answers header strong {
-    color: var(--ink);
-  }
-
-  .result-answers h3 {
-    margin: 10px 0 6px;
-    font: 400 20px / 1.2 var(--dc-font-serif);
-  }
-
-  .result-answers p {
+  .answer p {
     margin: 0;
-    color: var(--ink-2);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-
-  .result .hint {
-    margin-top: 16px;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .brief {
-    max-height: 460px;
-    margin: 20px 0 0;
-    padding: clamp(18px, 2.4vw, 28px);
-    overflow: auto;
-    border: 0;
-    border-radius: 6px;
-    background: #000;
-    color: #d6d3d1;
-    font: 13px / 1.7 var(--dc-font-sans);
+    margin: 0;
+    color: var(--dc-text-muted);
+    font: 13px / 1.6 var(--dc-font-sans);
     white-space: pre-wrap;
   }
 
-  @media (max-width: 420px) {
-    .slate-grid {
+  /* ── Tablet and phone ─────────────────────────────────────────── */
+
+  @media (max-width: 1100px) {
+    .templates {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
 
-    .modes {
-      display: flex;
+  @media (max-width: 900px) {
+    .desk {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .modes button {
-      flex: 1;
-      padding: 0 10px;
+    .slate {
+      position: static;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .create {
+      gap: 24px;
+      padding-top: 16px;
+    }
+
+    .head-note,
+    .section-note {
+      display: none;
+    }
+
+    .templates {
+      display: flex;
+      margin-inline: calc(-1 * var(--dc-gutter-x));
+      padding-inline: var(--dc-gutter-x);
+      overflow-x: auto;
+      scrollbar-width: none;
+      scroll-snap-type: x mandatory;
+    }
+
+    .template {
+      flex: 0 0 78%;
+      scroll-snap-align: start;
+    }
+
+    .field-pair {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form,
+    .slate-body {
+      padding: 16px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .preset,
-    .toggle-track,
-    .toggle-track::after {
-      transition: none;
+    .sticks.clap {
+      animation: none;
     }
   }
 </style>

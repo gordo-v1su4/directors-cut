@@ -1,160 +1,85 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { resolve } from '$app/paths';
-  import { loadComparisonsIndex, loadComparisonRun, loadLatestArtifacts } from '$lib/data/comparisons';
-  import type {
-    ComparisonArtifact,
-    ComparisonRunDetail,
-    ComparisonRunSummary,
-    CreativeConceptPackage,
-  } from '$lib/types/comparison';
+  import { goto } from '$app/navigation';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
-  import ArtifactPreview from '$lib/components/ArtifactPreview.svelte';
-  import { videoModel } from '$lib/data/version-context';
+  import ClipCard from '$lib/components/ClipCard.svelte';
+  import ProjectCard from '$lib/components/ProjectCard.svelte';
+  import Icon from '$lib/components/Icon.svelte';
+  import { studio, type Take } from '$lib/ui/studio.svelte';
+  import { toneFor } from '$lib/ui/tones';
   import { showTitle } from '$lib/data/titles';
+  import type { ComparisonArtifact } from '$lib/types/comparison';
 
-  let projects = $state<ComparisonRunSummary[]>([]);
-  let latestMedia = $state<ComparisonArtifact[]>([]);
-  let selectedIndex = $state(0);
-  let selectedDetail = $state<ComparisonRunDetail | null>(null);
-  let lightboxArtifacts = $state<ComparisonArtifact[] | null>(null);
-  let lightboxIndex = $state(0);
-  let loading = $state(true);
+  let heroIndex = $state(0);
+  let heroPlaying = $state(true);
   let heroMuted = $state(true);
   let heroVideo = $state<HTMLVideoElement | null>(null);
-  let latestRow = $state<HTMLDivElement | null>(null);
+  let lightboxArtifacts = $state<ComparisonArtifact[] | null>(null);
+  let lightboxIndex = $state(0);
 
-  const selectedProject = $derived(projects[selectedIndex]);
-  const selectedMedia = $derived(
-    latestMedia.filter((item) => item.run_id === selectedProject?.run_id && (item.media_url || item.thumbnail_url)),
-  );
-  const projectVersions = $derived(
-    selectedDetail?.artifacts
-      .filter((item) => isVideo(item) && !!item.media_url)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at)) ?? [],
-  );
-  const heroArtifact = $derived(selectedMedia[0] ?? projectVersions.at(-1));
-  const heroTake = $derived(
-    Math.max(1, projectVersions.findIndex((v) => v.artifact_id === heroArtifact?.artifact_id) + 1),
-  );
-  const concept = $derived(
-    selectedDetail?.answers.find((answer) => answer.answer_id === heroArtifact?.answer_id)?.structured_prompt ??
-      selectedDetail?.answers.find((answer) => answer.structure_status === 'valid')?.structured_prompt,
-  );
-  const logline = $derived(
-    selectedDetail?.logline ||
-      (concept && typeof concept === 'object' && 'logline' in concept ? String(concept.logline) : '') ||
-      selectedProject?.logline ||
-      'Logline not added yet.',
-  );
+  const projects = $derived(studio.projects);
+  const featured = $derived(projects[heroIndex] ?? projects[0]);
+  const heroTake = $derived(featured?.takes.at(-1));
+  const latest = $derived(studio.takes.slice(0, 8));
 
-  function isVideo(item: ComparisonArtifact) {
-    return item.artifact_type === 'video_result' || item.artifact_type === 'end_video';
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
   }
 
-  function modelOf(item: ComparisonArtifact | undefined) {
-    return item ? videoModel(item) : 'Model not set';
-  }
-
-  function plural(count: number, noun: string) {
-    return `${count} ${noun}${count === 1 ? '' : 's'}`;
-  }
-
-  function statusLabel(status: string | undefined) {
-    const text = (status ?? 'active').replace(/_/g, ' ');
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  }
-
-  function shortDate(value: string | undefined) {
-    if (!value) return '';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? value.slice(0, 10)
-      : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  function thumbForRun(runId: string) {
-    return latestMedia.find((m) => m.run_id === runId && (m.media_url || m.thumbnail_url));
-  }
-
-  async function openClip(item: ComparisonArtifact) {
-    const detail = await loadComparisonRun(item.run_id);
-    lightboxArtifacts = detail.artifacts
-      .filter((a) => isVideo(a) && a.media_url)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
-    lightboxIndex = Math.max(0, lightboxArtifacts.findIndex((a) => a.artifact_id === item.artifact_id));
-  }
-
-  function openTake(index: number) {
-    lightboxArtifacts = projectVersions;
-    lightboxIndex = index;
-  }
-
-  function scrollRow(row: HTMLElement | null, direction: number) {
-    row?.scrollBy({ left: direction * row.clientWidth * 0.85, behavior: 'smooth' });
-  }
-
-  async function selectProject(index: number) {
-    selectedIndex = index;
-    selectedDetail = null;
-    const project = projects[index];
-    if (project) {
-      const detail = await loadComparisonRun(project.run_id);
-      if (projects[selectedIndex]?.run_id === project.run_id) selectedDetail = detail;
-    }
+  function takeHref(take: Take) {
+    return `/comparisons?run=${take.runId}&take=${take.id}`;
   }
 
   function move(direction: number) {
-    if (!projects.length) return;
-    void selectProject((selectedIndex + direction + projects.length) % projects.length);
+    if (projects.length < 2) return;
+    heroIndex = (heroIndex + direction + projects.length) % projects.length;
   }
 
-
-  onMount(() => {
-    let disposed = false;
-    let busy = false;
-    let lastIndex = '';
-    async function refresh() {
-      if (busy) return;
-      busy = true;
-      try {
-        const index = await loadComparisonsIndex();
-        const signature = JSON.stringify(index);
-        if (disposed || signature === lastIndex) return;
-        const selectedId = projects[selectedIndex]?.run_id;
-        const media = await loadLatestArtifacts(100);
-        if (disposed) return;
-        projects = index.runs.filter((run) => run.status !== 'promoted')
-          .sort((a, b) => b.created.localeCompare(a.created));
-        selectedIndex = Math.max(0, projects.findIndex((project) => project.run_id === selectedId));
-        latestMedia = media;
-        if (projects.length) {
-          const id = projects[selectedIndex].run_id;
-          const detail = await loadComparisonRun(id);
-          if (!disposed && projects[selectedIndex]?.run_id === id) selectedDetail = detail;
-        }
-        lastIndex = signature;
-      } finally { busy = false; if (!disposed) loading = false; }
+  function togglePlay() {
+    if (!heroVideo) return;
+    if (heroVideo.paused) {
+      void heroVideo.play().catch(() => {});
+      heroPlaying = true;
+    } else {
+      heroVideo.pause();
+      heroPlaying = false;
     }
+  }
 
-    // Stop the hero from playing (and draining battery) in a background tab.
-    const onVisibility = () => {
-      if (document.hidden) heroVideo?.pause();
-      else if (heroVideo && !lightboxArtifacts) void heroVideo.play().catch(() => {});
-    };
-    document.addEventListener('visibilitychange', onVisibility);
+  function openTake(take: Take) {
+    const project = studio.project(take.runId);
+    if (!project) return;
+    lightboxArtifacts = project.takes.map((t) => t.artifact);
+    lightboxIndex = Math.max(0, project.takes.findIndex((t) => t.id === take.id));
+  }
 
-    void refresh();
-    const interval = setInterval(() => { void refresh(); }, 10000);
-    return () => {
-      disposed = true;
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
+  $effect(() => {
+    void studio.ensure();
+    const interval = setInterval(() => void studio.refresh(), 15000);
+    return () => clearInterval(interval);
   });
 
-  // Phones scroll the document itself; hold it still while the player is open.
+  // Rotate the hero only when the director asked for it on Sources.
+  $effect(() => {
+    if (!studio.heroAutoRotate || projects.length < 2 || lightboxArtifacts) return;
+    const timer = setInterval(() => move(1), 9000);
+    return () => clearInterval(timer);
+  });
+
+  // Quiet the hero in a background tab and under the player.
+  $effect(() => {
+    const video = heroVideo;
+    if (!video) return;
+    const sync = () => {
+      if (document.hidden || lightboxArtifacts || !heroPlaying) video.pause();
+      else void video.play().catch(() => {});
+    };
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  });
+
+  // Phones scroll the document; hold it still while the player is open.
   $effect(() => {
     if (!lightboxArtifacts) return;
     const previous = document.body.style.overflow;
@@ -163,323 +88,183 @@
       document.body.style.overflow = previous;
     };
   });
-
-  // The lightbox plays its own video; keep the hero quiet underneath it.
-  $effect(() => {
-    if (!heroVideo) return;
-    if (lightboxArtifacts) heroVideo.pause();
-    else void heroVideo.play().catch(() => {});
-  });
 </script>
+
+<svelte:head><title>Directors Cut</title></svelte:head>
 
 {#if lightboxArtifacts}
   <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} showDetails={false} onClose={() => (lightboxArtifacts = null)} />
 {/if}
 
-<div class="home" class:frozen={!!lightboxArtifacts}>
-  {#if loading}
-    <div class="home-wrap"><p class="home-state">Loading projects…</p></div>
-  {:else if !projects.length}
-    <div class="home-wrap">
-      <section class="home-state">
-        <h1>Nothing in the edit yet</h1>
-        <p>Create a project and its renders will show up here.</p>
-        <a class="btn btn-solid" href={resolve('/create')}>Create a project</a>
-      </section>
+<div class="home">
+  {#if !studio.loaded}
+    <div class="studio-column state"><Icon name="loader" size={16} /> Opening the screening room…</div>
+  {:else if !featured}
+    <div class="studio-column state-empty">
+      <h1 class="t-page">Nothing in the edit yet</h1>
+      <p class="muted">Pitch a project and its renders will show up here.</p>
+      <a class="sbtn sbtn-primary" href="/create"><Icon name="sparkles" /> New pitch</a>
     </div>
   {:else}
-    <!-- ── Now playing: the video runs edge to edge ──────────────── -->
+    <!-- Now playing: the video runs edge to edge, under the glass nav. -->
     <section class="hero" aria-label="Now playing">
       <div class="screen">
-        {#if heroArtifact}
-          {#key heroArtifact.artifact_id}
-            {#if isVideo(heroArtifact) && heroArtifact.media_url}
-              <video
-                bind:this={heroVideo}
-                src={heroArtifact.media_url}
-                poster={heroArtifact.thumbnail_url}
-                muted={heroMuted}
-                autoplay
-                loop
-                playsinline
-                aria-label={heroArtifact.title}
-                transition:fade={{ duration: 400 }}
-              ></video>
-            {:else}
-              <ArtifactPreview artifact={heroArtifact} />
-            {/if}
+        {#if heroTake}
+          {#key heroTake.id}
+            <video
+              bind:this={heroVideo}
+              src={heroTake.artifact.media_url}
+              poster={heroTake.artifact.thumbnail_url}
+              muted={heroMuted}
+              autoplay
+              loop
+              playsinline
+              aria-label={featured.title}
+              transition:fade={{ duration: 400 }}
+            ></video>
           {/key}
         {:else}
-          <p class="screen-empty">No render for this project yet</p>
+          <p class="screen-empty muted">No render for this project yet</p>
         {/if}
         <div class="screen-scrim" aria-hidden="true"></div>
-
-        {#if heroArtifact && isVideo(heroArtifact)}
-          <button
-            type="button"
-            class="icon-btn screen-sound"
-            aria-label={heroMuted ? 'Turn sound on' : 'Turn sound off'}
-            aria-pressed={!heroMuted}
-            onclick={() => (heroMuted = !heroMuted)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 9v6h4l5 4V5L8 9H4z" />
-              {#if heroMuted}
-                <path d="m17 9 5 5m0-5-5 5" />
-              {:else}
-                <path d="M17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12" />
-              {/if}
-            </svg>
-          </button>
-        {/if}
       </div>
 
-      {#key selectedProject?.run_id}
-        <div class="card" in:fade={{ duration: 350 }}>
-          <h1 class="card-title" title={selectedProject?.title}>{showTitle(selectedProject?.title)}</h1>
-          <p class="card-logline">{logline}</p>
-          <p class="card-facts">
-            <span>Take {heroTake} of {projectVersions.length || 1}</span>
-            <span>{modelOf(heroArtifact)}</span>
-            <span>{statusLabel(selectedProject?.status)}</span>
-          </p>
-          <div class="card-actions">
-            <a class="btn btn-solid" href={`${resolve('/comparisons')}?run=${selectedProject?.run_id}`}>
-              Open project
-            </a>
-            <button
-              type="button"
-              class="btn"
-              onclick={() => openTake(Math.max(0, heroTake - 1))}
-              disabled={!projectVersions.length}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
-              Watch takes
-            </button>
-            {#if projects.length > 1}
-              <div class="card-switch">
-                <button type="button" class="icon-btn" aria-label="Previous project" onclick={() => move(-1)}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+      <div class="hero-overlay studio-column">
+        {#key featured.runId}
+          <div class="title-card glass-panel" in:fade={{ duration: 300 }}>
+            <div class="tags">
+              <span class="stag tone-{toneFor(featured.status)}">{featured.status}</span>
+              {#if heroTake}
+                <span class="stag tone-{toneFor(heroTake.model || heroTake.writer)}">
+                  {heroTake.code}{heroTake.writer ? ` · ${heroTake.writer}` : ''}{heroTake.model ? ` × ${heroTake.model}` : ''}
+                </span>
+              {/if}
+            </div>
+            <h1 class="t-page" title={featured.fullTitle}>{featured.title}</h1>
+            <p class="logline">{featured.logline}</p>
+            <div class="actions">
+              {#if heroTake}
+                <a class="sbtn sbtn-primary" href={takeHref(heroTake)}>
+                  <Icon name="play" size={12} filled /> Review {heroTake.code}
+                </a>
+              {/if}
+              <a class="sbtn" href={`/comparisons?run=${featured.runId}`}>
+                <span class="wide-only">Compare all takes</span><span class="narrow-only">All takes</span> ({featured.takes.length}) <Icon name="up-right" />
+              </a>
+              {#if heroTake}
+                <button type="button" class="sbtn sbtn-icon" onclick={togglePlay} aria-label={heroPlaying ? 'Pause hero video' : 'Play hero video'}>
+                  <Icon name={heroPlaying ? 'pause' : 'play'} filled={!heroPlaying} />
                 </button>
-                <span>{selectedIndex + 1} / {projects.length}</span>
-                <button type="button" class="icon-btn" aria-label="Next project" onclick={() => move(1)}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                <button type="button" class="sbtn sbtn-icon" onclick={() => (heroMuted = !heroMuted)} aria-label={heroMuted ? 'Turn sound on' : 'Turn sound off'} aria-pressed={!heroMuted}>
+                  <Icon name={heroMuted ? 'mute' : 'volume'} />
                 </button>
-              </div>
-            {/if}
+              {/if}
+            </div>
           </div>
-        </div>
-      {/key}
+        {/key}
+
+        {#if projects.length > 1}
+          <div class="switcher">
+            <span class="dim counter">{pad(heroIndex + 1)} / {pad(projects.length)}</span>
+            <button type="button" class="sbtn sbtn-icon glassy" onclick={() => move(-1)} aria-label="Previous featured project">
+              <Icon name="left" size={16} />
+            </button>
+            <button type="button" class="sbtn sbtn-icon glassy" onclick={() => move(1)} aria-label="Next featured project">
+              <Icon name="right" size={16} />
+            </button>
+          </div>
+        {/if}
+      </div>
     </section>
 
-    <!-- ── Latest renders: one row, however many clips there are ──── -->
-    {#if latestMedia.length}
-      <section class="section" aria-labelledby="latest-title">
-        <div class="home-wrap row-head">
-          <h2 id="latest-title">Latest renders</h2>
-          <div class="row-arrows">
-            <button type="button" class="icon-btn" aria-label="Scroll latest renders back" onclick={() => scrollRow(latestRow, -1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
-            </button>
-            <button type="button" class="icon-btn" aria-label="Scroll latest renders forward" onclick={() => scrollRow(latestRow, 1)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-            </button>
+    <div class="studio-column rows">
+      {#if latest.length}
+        <section aria-labelledby="latest-title">
+          <div class="row-head">
+            <div class="row-title">
+              <h2 id="latest-title" class="t-section">Latest renders</h2>
+              <span class="dim row-note">Newest takes across every project</span>
+            </div>
+            <a class="sbtn" href="/create"><Icon name="sparkles" /> New pitch</a>
           </div>
-        </div>
+          <div class="grid-clips">
+            {#each latest as take (take.id)}
+              {@const project = studio.project(take.runId)}
+              <ClipCard
+                title={project?.title ?? showTitle(take.artifact.title)}
+                fullTitle={project?.fullTitle}
+                takeLabel={take.code}
+                writer={take.writer}
+                videoModel={take.model}
+                status={take.selected ? 'Selected' : ''}
+                videoUrl={take.artifact.media_url}
+                thumbnailUrl={take.artifact.thumbnail_url}
+                isNewest={take.isNewest}
+                playOnHover={studio.playOnHover}
+                onselect={() => openTake(take)}
+              />
+            {/each}
+          </div>
+        </section>
+      {/if}
 
-        <div class="row row-clips" bind:this={latestRow}>
-          {#each latestMedia as item (item.artifact_id)}
-            {@const project = projects.find((p) => p.run_id === item.run_id)}
-            <button type="button" class="clip" onclick={() => openClip(item)}>
-              <span class="clip-media">
-                <ArtifactPreview artifact={item} />
-                {#if item.version_number}<span class="clip-badge">v{item.version_number}</span>{/if}
-              </span>
-              <span class="clip-title">{showTitle(project?.title ?? item.title)}</span>
-              <span class="clip-meta">{modelOf(item)}, {shortDate(item.created_at)}</span>
-            </button>
+      <section aria-labelledby="projects-title">
+        <div class="row-head">
+          <div class="row-title">
+            <h2 id="projects-title" class="t-section">Projects</h2>
+            <span class="dim row-note">{projects.length} in the library</span>
+          </div>
+          <a class="sbtn" href="/comparisons">Open review bay <Icon name="up-right" /></a>
+        </div>
+        <div class="grid-posters">
+          {#each projects as project, i (project.runId)}
+            <ProjectCard
+              title={project.title}
+              fullTitle={project.fullTitle}
+              cover={project.takes.at(-1)?.artifact ?? project.shotGrids[0]}
+              status={project.status}
+              takeCount={project.takes.length}
+              selected={i === heroIndex}
+              onselect={() => goto(`/comparisons?run=${project.runId}`)}
+            />
           {/each}
         </div>
       </section>
-    {/if}
-
-    <!-- ── Projects row ──────────────────────────────────────────── -->
-    <section class="section" aria-labelledby="projects-title">
-      <div class="home-wrap row-head">
-        <h2 id="projects-title">Projects</h2>
-        <a class="row-link" href={resolve('/comparisons')}>See all</a>
-      </div>
-
-      <div class="row row-posters">
-        {#each projects as project, i (project.run_id)}
-          {@const thumb = thumbForRun(project.run_id)}
-          <button
-            type="button"
-            class="poster"
-            class:active={i === selectedIndex}
-            aria-pressed={i === selectedIndex}
-            onclick={() => selectProject(i)}
-          >
-            <span class="poster-media">{#if thumb}<ArtifactPreview artifact={thumb} />{/if}</span>
-            <span class="poster-copy">
-              <span class="poster-title" title={project.title}>{showTitle(project.title)}</span>
-              <span class="poster-meta">{plural(project.artifact_count, 'render')}, {statusLabel(project.status)}</span>
-            </span>
-          </button>
-        {/each}
-      </div>
-    </section>
+    </div>
   {/if}
 </div>
 
 <style>
-  /*
-   * Directors Cut home. One layout from phone to widescreen: columns come
-   * from minmax/auto-fit and type from clamp(). The hero reads its own width
-   * (container query) to decide whether the copy sits over the video or
-   * under it. Colour comes from the footage; the chrome stays black/white.
-   * Every title is one line.
-   */
   .home {
-    --pad: var(--dc-gutter-x);
-    --max: calc(var(--dc-page-max) + 2 * var(--pad));
-    --ink: #e7e5e4;
-    --ink-2: #bdb7b1;
-    --ink-3: #938d87;
-    --line: rgba(255, 255, 255, 0.08);
-    --line-2: rgba(255, 255, 255, 0.18);
-    --raise: #0e0e0e;
-
-    padding-bottom: clamp(40px, 6vw, 80px);
-    overflow-x: clip;
-    background: #000;
-    color: var(--ink);
+    padding-bottom: clamp(48px, 6vw, 88px);
   }
 
-  @media (min-width: 861px) {
-    .home {
-      height: 100%;
-      overflow-y: auto;
-    }
-  }
-
-  /* The player is open: the page underneath holds still. */
-  .home.frozen {
-    overflow: hidden;
-  }
-
-  .home-wrap {
-    max-width: var(--max);
-    margin: 0 auto;
-    padding-right: max(var(--pad), var(--dc-safe-r));
-    padding-left: max(var(--pad), var(--dc-safe-l));
-  }
-
-  .home-state {
-    margin: 40px 0 0;
-    color: var(--ink-2);
-    font-size: 15px;
-  }
-
-  .home-state h1 {
-    margin: 0 0 8px;
-    color: var(--ink);
-    font: 400 40px / 1.1 var(--dc-font-serif);
-  }
-
-  .home-state p {
-    margin: 0 0 20px;
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.75;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* ── Controls ────────────────────────────────────────────────── */
-
-  .btn {
-    display: inline-flex;
+  .state {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 28px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.14);
-    color: var(--ink);
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.15s ease;
+    gap: 10px;
+    padding-block: 96px;
+    color: var(--dc-text-muted);
+    font-size: 14px;
   }
 
-  .btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.24);
-  }
-
-  .btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .btn svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-    stroke: none;
-  }
-
-  .btn-solid {
-    background: rgba(255, 255, 255, 0.7);
-    color: #000;
-  }
-
-  .btn-solid:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  .icon-btn {
+  .state-empty {
     display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--ink);
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: background 0.15s ease;
+    justify-items: start;
+    gap: 12px;
+    padding-block: 64px;
   }
 
-  .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.24);
+  .state-empty p {
+    margin: 0;
   }
 
-  .btn:focus-visible,
-  .icon-btn:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 2px;
-  }
-
-  /* ── Hero ────────────────────────────────────────────────────── */
+  /* ── Hero ─────────────────────────────────────────────────────── */
 
   .hero {
     position: relative;
+    /* Run under the floating nav so the glass has picture behind it. */
+    margin-top: calc(-1 * var(--dc-nav-offset));
     container-type: inline-size;
   }
 
@@ -487,15 +272,13 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    max-height: calc(100dvh - var(--dc-nav-height) - 64px);
-    min-height: 210px;
+    max-height: calc(100dvh - 40px);
+    min-height: 240px;
     overflow: hidden;
     background: #000;
   }
 
-  .screen video,
-  .screen :global(img),
-  .screen :global(video) {
+  .screen video {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -508,7 +291,6 @@
     height: 100%;
     margin: 0;
     place-items: center;
-    color: var(--ink-2);
     font-size: 14px;
   }
 
@@ -516,325 +298,171 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0) 26%);
+    background:
+      linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0) 30%),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 18%);
   }
 
-  .screen-sound {
-    position: absolute;
-    z-index: 2;
-    top: 14px;
-    right: max(14px, var(--dc-safe-r));
-  }
-
-  .card {
+  .hero-overlay {
     position: relative;
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 4px var(--pad) 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: -24px;
   }
 
-  .card-title {
-    max-width: 100%;
-    margin: 0;
+  .title-card {
+    min-width: 0;
+    padding: 18px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    height: 20px;
+    margin-bottom: 10px;
     overflow: hidden;
-    font: 400 clamp(28px, 3.2cqi, 44px) / 1.15 var(--dc-font-serif);
-    letter-spacing: -0.01em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
-  .card-logline {
+  .tags .stag {
+    max-width: 100%;
+  }
+
+  .logline {
     display: -webkit-box;
-    /* Narrow enough that even a short logline wraps to fill both lines. */
-    max-width: 46ch;
+    height: calc(2 * 1.5em);
     margin: 8px 0 0;
     overflow: hidden;
-    color: #d6d3d1;
+    color: var(--dc-text-muted);
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.5;
     line-clamp: 2;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    /* Always two lines tall, so switching projects never moves the buttons. */
-    height: calc(2 * 1.55em);
   }
 
-  .card-facts {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px 18px;
-    height: 1.4em;
-    margin: 10px 0 0;
-    overflow: hidden;
-    white-space: nowrap;
-    color: var(--ink-2);
-    font-size: 12px;
-  }
-
-  .card-facts span:first-child {
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  .card-actions {
+  .actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    margin-top: 18px;
+    margin-top: 16px;
   }
 
-  .card-switch {
+  .switcher {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-left: auto;
-    color: var(--ink-2);
+    gap: 8px;
+  }
+
+  .counter {
+    margin-right: 4px;
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Wide enough to be a screen: the copy sits over the video, lower left. */
+  .glassy {
+    background: rgba(22, 22, 22, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Wide enough to be a screen: the glass card sits over the picture. */
   @container (min-width: 760px) {
     .screen-scrim {
       background:
-        linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0.35) 24%, rgba(0, 0, 0, 0) 48%),
-        linear-gradient(to right, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 45%);
+        linear-gradient(to top, #000 0%, rgba(0, 0, 0, 0.3) 26%, rgba(0, 0, 0, 0) 50%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 50%),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 16%);
     }
 
-    .card {
+    .hero-overlay {
       position: absolute;
       right: 0;
-      bottom: 0;
+      bottom: clamp(24px, 4cqi, 56px);
       left: 0;
-      padding-bottom: clamp(20px, 3cqi, 44px);
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 0;
     }
 
-    .card-title {
-      max-width: min(62%, 900px);
-    }
-
-    .card-title,
-    .card-logline {
-      /* The lighter shade leaves the copy to carry its own contrast. */
-      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+    .title-card {
+      width: min(560px, 60%);
+      padding: 22px 24px;
+      background: rgba(22, 22, 22, 0.55);
     }
   }
 
-  /* ── Sections ────────────────────────────────────────────────── */
+  /* ── Rows ─────────────────────────────────────────────────────── */
 
-  .section {
-    margin-top: clamp(36px, 4.5vw, 64px);
+  .rows {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 64px);
+    margin-top: clamp(32px, 4vw, 48px);
   }
-
-  /* ── Rows ────────────────────────────────────────────────────── */
 
   .row-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
-  .row-head h2 {
-    margin: 0;
-    font: 400 clamp(20px, 1.7vw, 24px) / 1.15 var(--dc-font-serif);
+  .row-title {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .row-title .t-section {
+    flex-shrink: 0;
+  }
+
+  .row-note {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .row-arrows {
-    display: flex;
-    gap: 8px;
-  }
-
-  /* Touch screens swipe; the arrows only earn their space with a mouse. */
-  @media (hover: none) {
-    .row-arrows {
-      display: none;
-    }
-  }
-
-  .row-link {
-    color: var(--ink-2);
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-  }
-
-  .row-link:hover {
-    color: var(--ink);
-  }
-
-  /* Rows sit inside the page margins, flush with the headings and arrows. */
-  .row {
+  .grid-clips {
     display: grid;
-    grid-auto-flow: column;
-    gap: 12px;
-    max-width: calc(var(--max) - 2 * var(--pad));
-    margin: 0 max(var(--pad), calc((100% - var(--max)) / 2 + var(--pad)));
-    padding: 4px 0 8px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
   }
 
-  .row::-webkit-scrollbar {
+  .grid-posters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+  }
+
+  .narrow-only {
     display: none;
   }
 
-  .row-clips {
-    grid-auto-columns: clamp(200px, 18vw, 270px);
-  }
+  @media (max-width: 560px) {
+    .wide-only {
+      display: none;
+    }
 
-  .row-posters {
-    grid-auto-columns: clamp(240px, 26vw, 380px);
-  }
+    .narrow-only {
+      display: inline;
+    }
 
-  .clip {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
-    scroll-snap-align: start;
-  }
+    .row-note {
+      display: none;
+    }
 
-  .clip-media {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-radius: 4px;
-    background: #111;
-  }
-
-  .clip-media :global(img),
-  .clip-media :global(video),
-  .poster-media :global(img),
-  .poster-media :global(video) {
-    object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-
-  .clip:hover .clip-media :global(img),
-  .clip:hover .clip-media :global(video),
-  .poster:hover .poster-media :global(img),
-  .poster:hover .poster-media :global(video) {
-    transform: scale(1.05);
-  }
-
-  .clip-badge {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  .clip-title {
-    overflow: hidden;
-    font-size: 13px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .clip-meta {
-    margin-top: -2px;
-    overflow: hidden;
-    color: var(--ink-2);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .poster {
-    position: relative;
-    display: block;
-    min-width: 0;
-    aspect-ratio: 16 / 9;
-    padding: 0;
-    overflow: hidden;
-    border: 0;
-    border-radius: 6px;
-    background: #111;
-    color: var(--ink);
-    text-align: left;
-    cursor: pointer;
-    scroll-snap-align: start;
-  }
-
-  .poster-media {
-    position: absolute;
-    inset: 0;
-    filter: brightness(0.7);
-    transition: filter 0.2s ease;
-  }
-
-  .poster:hover .poster-media,
-  .poster.active .poster-media {
-    filter: none;
-  }
-
-  /* The project on screen gets a bar, not a box. */
-  .poster.active::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.7);
-  }
-
-  .poster-copy {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 40px 16px 14px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 25%, transparent);
-  }
-
-  .poster-title {
-    overflow: hidden;
-    font: 400 clamp(18px, 1.5vw, 22px) / 1.2 var(--dc-font-serif);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .poster-meta {
-    overflow: hidden;
-    color: var(--ink-2);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .clip:focus-visible,
-  .poster:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .clip-media :global(img),
-    .clip-media :global(video),
-    .poster-media :global(img),
-    .poster-media :global(video) {
-      transition: none;
+    .grid-clips,
+    .grid-posters {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
   }
 </style>

@@ -1,14 +1,11 @@
 /**
- * Single source of truth for navigation, shared by the desktop top bar and the
- * mobile tab bar so the two surfaces can never drift apart.
+ * Single source of truth for navigation. The same five tabs show at every
+ * width, from phone to widescreen.
  */
 export interface NavLink {
   href: string;
   label: string;
-  /** Shorter label for the tab bar, where width is scarce. */
-  short?: string;
   hint: string;
-  icon: string;
   match: (pathname: string) => boolean;
 }
 
@@ -16,52 +13,31 @@ export const NAV_LINKS: NavLink[] = [
   {
     href: '/',
     label: 'Home',
-    hint: 'Dashboard and latest media',
-    icon: 'home',
+    hint: 'Now playing and latest renders',
     match: (p) => p === '/',
   },
   {
     href: '/comparisons',
     label: 'Projects',
-    hint: 'Compare runs and outputs',
-    icon: 'projects',
+    hint: 'Review and compare takes',
     match: (p) => p.startsWith('/comparisons'),
-  },
-  {
-    href: '/create',
-    label: 'Create',
-    hint: 'Start a new prompt project',
-    icon: 'create',
-    match: (p) => p.startsWith('/create'),
   },
   {
     href: '/prompts',
     label: 'Prompts',
     hint: 'Browse prompt recipes',
-    icon: 'library',
     match: (p) => p.startsWith('/prompts'),
+  },
+  {
+    href: '/create',
+    label: 'Create',
+    hint: 'Pitch a new project',
+    match: (p) => p.startsWith('/create'),
   },
   {
     href: '/sources',
     label: 'Sources',
     hint: 'Where the prompt library came from',
-    icon: 'sources',
     match: (p) => p.startsWith('/sources'),
   },
 ];
-
-/** Four destinations flank the centred Create tab; the rest live in "More". */
-const TAB_HREFS = ['/', '/prompts', '/create', '/comparisons'];
-
-export const TAB_LINKS: NavLink[] = TAB_HREFS.map(
-  (href) => NAV_LINKS.find((link) => link.href === href)!,
-);
-
-export const MORE_LINKS: NavLink[] = NAV_LINKS.filter(
-  (link) => !TAB_HREFS.includes(link.href),
-);
-
-/** True when the current route lives behind the "More" tab. */
-export function isMoreActive(pathname: string): boolean {
-  return MORE_LINKS.some((link) => link.match(pathname));
-}

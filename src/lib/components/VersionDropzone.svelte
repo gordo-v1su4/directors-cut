@@ -40,6 +40,8 @@
     } catch(error) { failed=true;message=error instanceof Error ? error.message : 'Retry failed'; }
     finally {uploading=false;}
   }
+  /** Lets a drop target elsewhere on the page hand files straight in. */
+  export function add(files: File[]) { void upload(files); }
   async function upload(files:File[]) {
     dragging=false;
     if(mediaApi && !ownerToken()) {showLogin=true;message='Sign in before adding videos.';return;}
@@ -78,36 +80,36 @@
 </script>
 
 <div class="version-upload">
-  <input bind:this={picker} type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" multiple hidden aria-label="Choose trailer versions" onchange={(event)=>void upload(Array.from(event.currentTarget.files || []))} />
-  <button type="button" class:dragging disabled={uploading}
+  <input bind:this={picker} type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" multiple hidden aria-label="Choose takes to import" onchange={(event)=>void upload(Array.from(event.currentTarget.files || []))} />
+  <button type="button" class="drop" class:dragging disabled={uploading}
     ondragover={(event)=>{event.preventDefault();dragging=true;}}
     ondragleave={()=>dragging=false}
     ondrop={(event)=>{event.preventDefault();void upload(Array.from(event.dataTransfer?.files || []));}}
     onclick={()=>{if(mediaApi && !ownerToken())showLogin=true;else picker.click();}}>
-    <strong>{uploading ? 'Saving versions…' : 'Drop new versions here'}</strong>
-    <span>{uploading ? 'Creating thumbnails and saving video' : 'or choose files · v2, v3…'}</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+    <strong>{uploading ? "Saving takes…" : "Drop cuts here"}</strong>
+    <span>{uploading ? "Creating thumbnails and saving video" : "or choose files. MP4, MOV or WebM, each becomes the next take."}</span>
   </button>
   {#if showLogin}
     <form onsubmit={signIn}>
-      <label>Owner password <input type="password" autocomplete="current-password" bind:value={password} required /></label>
-      <button type="submit">Sign in as gordo</button>
+      <input class="sinput" type="password" autocomplete="current-password" bind:value={password} placeholder="Owner password" aria-label="Owner password" required />
+      <button type="submit" class="sbtn sbtn-primary">Sign in</button>
     </form>
   {/if}
-  {#if retryId && failed}<button type="button" onclick={retryProcessing} disabled={uploading}>Retry processing</button>{/if}
+  {#if retryId && failed}<button type="button" class="sbtn retry" onclick={retryProcessing} disabled={uploading}>Retry processing</button>{/if}
   {#if message}<p class:error={failed} role="status">{message}</p>{/if}
 </div>
 
 <style>
-  form { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  label { font-size:12px; flex:1; }
-  input { display:block; width:100%; padding:8px 10px; background:#141414; color:var(--dc-text); border:0; border-radius:4px; }
-  form button { width:auto; }
-  .version-upload { margin-top:14px; }
-  button { display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; padding:18px 12px; border:0; border-radius:6px; background:#0e0e0e; color:var(--dc-text-muted); cursor:pointer; transition:background .15s ease; }
-  button:hover, button.dragging, button:focus-visible { background:#1a1a1a; color:var(--dc-text); outline:none; }
-  button:disabled { opacity:.6;cursor:wait; }
-  strong { font-size:13px; font-weight:600; color:var(--dc-text); }
-  span, p { font-size:12px;line-height:1.4; }
-  p { margin:8px 0 0;color:var(--dc-text-muted); }
-  p.error { color:#f59b9b; }
+  .drop { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; padding:32px 16px; border:0; border-radius:8px; background:#0e0e0e; color:var(--dc-text-muted); font:inherit; text-align:center; cursor:pointer; transition:background .15s ease; }
+  .drop:hover, .drop.dragging { background:#1a1a1a; color:var(--dc-text); }
+  .drop:focus-visible { outline:none; box-shadow:0 0 0 3px rgba(231,229,228,.18); }
+  .drop:disabled { opacity:.6; cursor:wait; }
+  .drop svg { width:20px; height:20px; fill:none; stroke:var(--dc-text); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  strong { color:var(--dc-text); font-size:14px; font-weight:600; }
+  span, p { font-size:12px; line-height:1.45; }
+  form { display:flex; gap:8px; margin-top:12px; }
+  .retry { margin-top:10px; }
+  p { margin:10px 0 0; color:var(--dc-text-muted); }
+  p.error { color:#f0a8a0; }
 </style>

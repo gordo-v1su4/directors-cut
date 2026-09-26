@@ -1,167 +1,175 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { NAV_LINKS } from '$lib/nav';
+  import { studio } from '$lib/ui/studio.svelte';
+  import { showTitle } from '$lib/data/titles';
+  import Icon from './Icon.svelte';
 
-  let pathname = $derived($page.url.pathname);
+  const pathname = $derived(page.url.pathname);
+  const newest = $derived(studio.newest);
+  const newestProject = $derived(newest ? studio.project(newest.runId) : undefined);
 
-  /** Section name shown beside the brand on small screens. */
-  let sectionLabel = $derived(
-    NAV_LINKS.find((link) => link.match(pathname))?.label ?? '',
-  );
-
-  const browseLinks = NAV_LINKS.filter((link) => link.href !== '/create');
-  const createLink = NAV_LINKS.find((link) => link.href === '/create');
+  $effect(() => {
+    void studio.ensure();
+  });
 </script>
 
-<nav class="dc-top-nav" aria-label="Main">
-  <div class="dc-top-nav-bar">
-    <a class="dc-brand" href="/">Directors Cut</a>
+<header class="nav">
+  <div class="nav-bar">
+    <a class="brand" href="/" title="Directors Cut, the private trailer screening room">
+      <Icon name="film" size={16} />
+      <span>Directors Cut</span>
+    </a>
 
-    {#if sectionLabel}
-      <span class="dc-section-crumb" aria-hidden="true">{sectionLabel}</span>
-    {/if}
-
-    <div class="dc-nav-links">
-      {#each browseLinks as link (link.href)}
+    <nav class="tabs" aria-label="Main">
+      {#each NAV_LINKS as link (link.href)}
         <a
           href={link.href}
+          class="tab"
           class:active={link.match(pathname)}
+          title={link.hint}
           aria-current={link.match(pathname) ? 'page' : undefined}
         >
           {link.label}
         </a>
       {/each}
-    </div>
+    </nav>
 
-    {#if createLink}
+    {#if newest && newestProject}
       <a
-        class="dc-nav-create"
-        href={createLink.href}
-        aria-current={createLink.match(pathname) ? 'page' : undefined}
+        class="sbtn sbtn-primary newest"
+        href={`/comparisons?run=${newest.runId}&take=${newest.id}`}
+        title={`Jump to the newest take: ${newestProject.fullTitle} (${newest.code})`}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        New project
+        <Icon name="play" size={12} filled />
+        <span class="newest-text">Newest: {showTitle(newestProject.title)} ({newest.code})</span>
       </a>
     {/if}
   </div>
-</nav>
+</header>
 
 <style>
-  .dc-top-nav {
-    position: relative;
+  .nav {
+    position: fixed;
     z-index: 50;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    top: 0;
+    right: 0;
+    left: 0;
     padding-top: var(--dc-safe-t);
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
   }
 
-  .dc-top-nav-bar {
+  .nav-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-height: var(--dc-nav-height);
-    max-width: calc(var(--dc-page-max) + 2 * var(--dc-gutter-x));
+    gap: clamp(8px, 2vw, 24px);
+    height: var(--dc-nav-height);
+    max-width: var(--dc-page-max);
     margin: 0 auto;
-    padding: 0 max(var(--dc-gutter-x), var(--dc-safe-r)) 0 max(var(--dc-gutter-x), var(--dc-safe-l));
+    padding-inline: max(var(--dc-gutter-x), var(--dc-safe-l)) max(var(--dc-gutter-x), var(--dc-safe-r));
   }
 
-  .dc-brand {
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
     color: var(--dc-text);
-    font: 400 22px / 1 var(--dc-font-serif);
-    letter-spacing: -0.005em;
+    font: 400 20px / 1 var(--dc-font-serif);
+    letter-spacing: -0.01em;
     text-decoration: none;
     white-space: nowrap;
   }
 
-  /*
-   * Mobile: the bottom tab bar owns navigation, so the top bar is reduced to
-   * identity plus the current section. It scrolls away with the page, which
-   * hands the full viewport back to the video.
-   */
-  .dc-section-crumb {
-    margin-left: auto;
-    overflow: hidden;
-    color: var(--dc-text-muted);
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .tabs {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .dc-nav-links,
-  .dc-nav-create {
+  .tabs::-webkit-scrollbar {
     display: none;
   }
 
-  @media (min-width: 861px) {
-    .dc-section-crumb {
+  .tab {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 4px;
+    color: var(--dc-text-muted);
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .tab:hover {
+    color: var(--dc-text);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .tab.active {
+    color: var(--dc-text);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .newest {
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .newest-text {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Narrow phones: all five tabs win over the logo mark. */
+  @media (max-width: 400px) {
+    .brand {
+      display: none;
+    }
+  }
+
+  .brand:focus-visible,
+  .tab:focus-visible,
+  .newest:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(231, 229, 228, 0.2);
+  }
+
+  /* Phones: the icon stands in for the wordmark and the newest take for its label. */
+  @media (max-width: 720px) {
+    .brand span {
       display: none;
     }
 
-    .dc-nav-links {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-left: 28px;
-    }
-
-    .dc-nav-links a {
-      display: inline-flex;
-      align-items: center;
-      min-height: 36px;
-      padding: 0 12px;
-      color: var(--dc-text-muted);
-      font-size: 13px;
-      text-decoration: none;
-      transition: color 0.15s ease;
-      white-space: nowrap;
-    }
-
-    .dc-nav-links a:hover {
-      color: var(--dc-text);
-    }
-
-    .dc-nav-links a.active {
-      color: var(--dc-text);
-      font-weight: 600;
-    }
-
-    .dc-nav-create {
-      display: inline-flex;
-      align-items: center;
+    .nav-bar {
       gap: 6px;
-      min-height: 28px;
-      margin-left: auto;
-      padding: 0 14px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.7);
-      color: #000;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: background 0.15s ease;
     }
 
-    .dc-nav-create:hover {
-      background: rgba(255, 255, 255, 0.8);
+    .tabs {
+      flex: 1;
     }
 
-    .dc-nav-create svg {
-      width: 16px;
-      height: 16px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
+    .tab {
+      padding: 0 7px;
     }
 
-    .dc-brand:focus-visible,
-    .dc-nav-links a:focus-visible,
-    .dc-nav-create:focus-visible {
-      outline: 2px solid var(--dc-text);
-      outline-offset: 3px;
+    .newest {
+      width: 28px;
+      padding: 0;
+    }
+
+    .newest-text {
+      display: none;
     }
   }
 </style>
