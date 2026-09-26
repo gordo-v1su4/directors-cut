@@ -1,5 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import { resolve } from '$app/paths';
+  import Select from './Select.svelte';
+  import LegacyText from './LegacyText.svelte';
+  import { SEEDANCE_MODELS, seedanceCreateUrl, type SeedanceModel } from '$lib/create/models';
+  let targetModel = $state<SeedanceModel>('seedance-2.5');
   import type { ComparisonRow, ComparisonRun, ComparisonRunDetail, GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
   import GlassModal from './GlassModal.svelte';
   import { toneFor } from '$lib/ui/tones';
@@ -11,20 +16,16 @@
     GetVideoGenerationStatusOutput,
     QuoteImageGenerationInput,
     QuoteImageGenerationOutput,
-    QuoteVideoGenerationInput,
     QuoteVideoGenerationOutput,
     RecordConceptDecisionInput,
     RecordConceptDecisionOutput,
     SubmitImageGenerationInput,
     SubmitImageGenerationOutput,
-    SubmitVideoGenerationInput,
-    SubmitVideoGenerationOutput,
   } from '$lib/bridge/types';
 
   /*
-   * Generate another take: approve a writer's idea, get a live quote from the
-   * bridge, then confirm the credits. Always mounted so a generation started
-   * earlier keeps polling; the modal only shows while open.
+   * Adapt saved concepts for Seedance. Existing image-grid tools and historical
+   * job polling remain available; this dialog cannot submit a new Sora video.
    */
   let {
     run,
@@ -50,7 +51,7 @@
 
   interface RowGenerationState {
     quote?: QuoteVideoGenerationOutput;
-    submission?: SubmitVideoGenerationOutput | GetVideoGenerationStatusOutput;
+    submission?: GetVideoGenerationStatusOutput;
     busy?: boolean;
     error?: string;
   }
@@ -224,49 +225,6 @@
     }
   }
 
-  async function requestQuote(row: ComparisonRow) {
-    if (!row.canGenerate || !BRIDGE_TOKEN) {
-      updateGeneration(row.answer.answer_id, { error: BRIDGE_TOKEN ? 'Approve this exact idea before requesting a quote.' : 'Bridge token is not configured for this local UI session.' });
-      return;
-    }
-    updateGeneration(row.answer.answer_id, { busy: true, error: '', quote: undefined, submission: undefined });
-    try {
-      const quote = await callBridgeTool<QuoteVideoGenerationInput, QuoteVideoGenerationOutput>(
-        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'quote_video_generation',
-        { run_id: run.run_id, answer_ids: [row.answer.answer_id], provider: 'higgsfield' },
-      );
-      if (!['sora2_video', 'open_sora_video', 'sora_2', 'sora-2'].includes(quote.model)) {
-        throw new Error(`Regular Sora 2 was requested, but the service returned ${quote.model}. No generation was submitted.`);
-      }
-      updateGeneration(row.answer.answer_id, { quote });
-    } catch (error) {
-      updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
-    } finally {
-      updateGeneration(row.answer.answer_id, { busy: false });
-    }
-  }
-
-  async function confirmGeneration(row: ComparisonRow) {
-    const quote = generationByAnswer[row.answer.answer_id]?.quote;
-    if (!quote || quote.quote_status !== 'quoted' || !['sora2_video', 'open_sora_video', 'sora_2', 'sora-2'].includes(quote.model)) return;
-    updateGeneration(row.answer.answer_id, { busy: true, error: '' });
-    try {
-      const submission = await callBridgeTool<SubmitVideoGenerationInput, SubmitVideoGenerationOutput>(
-        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'submit_video_generation',
-        { quote_id: quote.quote_id, confirmed: true },
-      );
-      updateGeneration(row.answer.answer_id, { submission });
-      localStorage.setItem(storageKey(row.answer.answer_id), submission.generation_id);
-      schedulePoll(row, submission.generation_id, 1200);
-    } catch (error) {
-      updateGeneration(row.answer.answer_id, { error: error instanceof Error ? error.message : String(error) });
-    } finally {
-      updateGeneration(row.answer.answer_id, { busy: false });
-    }
-  }
-
   function schedulePoll(row: ComparisonRow, generationId: string, delay = 5000) {
     const existing = pollTimers.get(row.answer.answer_id);
     if (existing) clearTimeout(existing);
@@ -313,10 +271,9 @@
 </script>
 
 {#if open}
-  <GlassModal title="Generate take" fullTitle="Generate another take for this project" width={720} onclose={() => onclose?.()}>
-    {#if !BRIDGE_TOKEN}
-      <p class="note">Generation runs through the local Raycast bridge. Start the bridge and set its token for this session to quote and generate takes.</p>
-    {/if}
+  <GlassModal title="Prepare Seedance take" fullTitle="Reuse a saved prompt in a Seedance workflow" width={720} onclose={() => onclose?.()}>
+    <p class="note"><LegacyText text="Sora" /> is unavailable. Keep the original takes and adapt a saved prompt for Seedance. Render it in your video tool, then use Import cut to add the result here.</p>
+    <div class="model-picker"><Select label="Video model" bind:value={targetModel} options={[...SEEDANCE_MODELS]} /></div>
     {#if rows.some((row) => row.answer.ui_status !== 'missing')}
       <div class="cards">
         {#each rows as row (row.answer.answer_id)}
@@ -340,12 +297,7 @@
                 {#if grid?.quote && !grid?.submission}
                   <button class="sbtn sbtn-primary" disabled={grid?.busy} onclick={() => confirmGridGeneration(row)}>Confirm {grid.quote.credit_cost_total} credits</button>
                 {/if}
-                {#if row.canGenerate && generationStatus !== 'Ready'}
-                  <button class="sbtn" disabled={generation?.busy || !!generation?.submission} onclick={() => requestQuote(row)}>Quote Sora 2 take</button>
-                {/if}
-                {#if generation?.quote?.quote_status === 'quoted' && !generation.submission}
-                  <button class="sbtn sbtn-primary" disabled={generation.busy} onclick={() => confirmGeneration(row)}>Confirm {generation.quote.credit_cost_total} credits and generate</button>
-                {/if}
+                <a class="sbtn sbtn-primary" href={resolve(seedanceCreateUrl({ run: run.run_id, answer: row.answer.answer_id }, targetModel))}>Adapt for Seedance</a>
               </div>
               {#if decisionError[row.answer.answer_id]}<p class="error">{decisionError[row.answer.answer_id]}</p>{/if}
               {#if generation?.error}<p class="error">{generation.error}</p>{/if}
@@ -355,12 +307,13 @@
         {/each}
       </div>
     {:else}
-      <p class="note">No writer ideas in this project yet. Pitch it from Create to get treatments to generate from.</p>
+      <p class="note">No saved writer prompts in this project. Use a take’s saved prompt below its player, or start a new Seedance brief in Create.</p>
     {/if}
   </GlassModal>
 {/if}
 
 <style>
+  .model-picker { margin-bottom:16px; }
   .note {
     margin: 0 0 14px;
     color: var(--dc-text-muted);

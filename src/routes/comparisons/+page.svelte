@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import ProjectCard from '$lib/components/ProjectCard.svelte';
@@ -212,10 +213,10 @@
           </form>
         {:else}
           <div class="title-row">
-            <h1 class="t-page" title={project.fullTitle}>{project.title}</h1>
+            <h1 class="t-page" title={project.fullTitle}><LegacyText text={project.title} /></h1>
             <button type="button" class="sbtn" onclick={startRename}><Icon name="edit" size={12} /> Rename</button>
           </div>
-          <p class="logline" title={project.logline}>{project.logline}</p>
+          <p class="logline" title={project.logline}><LegacyText text={project.logline} /></p>
         {/if}
         {#if studio.pending.includes(project.runId)}
           <p class="pending" role="status"><Icon name="loader" size={12} /> Saved. Showing the change here as soon as the catalog can be read again.</p>
@@ -230,7 +231,7 @@
       </div>
       <div class="head-actions">
         <button type="button" class="sbtn" onclick={() => (importOpen = true)}><Icon name="upload" /> Import cut</button>
-        <button type="button" class="sbtn sbtn-primary" onclick={() => (generateOpen = true)}><Icon name="sparkles" /> Generate take</button>
+        <button type="button" class="sbtn sbtn-primary" onclick={() => (generateOpen = true)}><Icon name="sparkles" /> Prepare Seedance take</button>
       </div>
     </header>
 
@@ -296,7 +297,7 @@
             <div class="panel-head">
               <div class="panel-title">
                 <h2 class="t-body">Take {take.code}</h2>
-                {#if take.model}<span class="stag tone-{toneFor(take.model)}">{take.model}</span>{/if}
+                {#if take.model}<span class="stag tone-{toneFor(take.model)}"><LegacyText text={take.model} /></span>{/if}
               </div>
               {#if mediaApi}
                 <button type="button" class="sbtn" onclick={() => details?.edit()}><Icon name="edit" size={12} /> Edit version details</button>
@@ -328,9 +329,9 @@
               {#if writer}
                 {@const concept = writerConcept(writer)}
                 <div class="treatment raised">
-                  {#if concept.title}<p class="t-card">{concept.title}</p>{/if}
-                  {#if concept.logline}<p class="treatment-logline">{concept.logline}</p>{/if}
-                  <p class="treatment-body">{concept.body}</p>
+                  {#if concept.title}<p class="t-card"><LegacyText text={concept.title} /></p>{/if}
+                  {#if concept.logline}<p class="treatment-logline"><LegacyText text={concept.logline} /></p>{/if}
+                  <p class="treatment-body"><LegacyText text={concept.body} /></p>
                   <div class="treatment-actions"><CopyButton text={concept.body} label="Copy" /></div>
                 </div>
               {/if}
@@ -383,9 +384,9 @@
         </div>
       {:else}
         <div class="panel glass-panel source">
-          {#if brief}<p class="source-brief">{brief}</p>{/if}
+          {#if brief}<p class="source-brief"><LegacyText text={brief} /></p>{/if}
           {#if question}
-            <pre>{question}</pre>
+            <pre><LegacyText text={question} /></pre>
           {:else}
             <p class="muted">No source saved for this project.</p>
           {/if}

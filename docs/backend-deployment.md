@@ -23,6 +23,26 @@ SHA256 deduplication. Processing failure has a retry button. A gateway restart
 can lose its in-memory job; Directors Cut retains the source and allows retry.
 No paid generation is submitted by this backend.
 
+## Creating projects from uploads
+
+Create has two tabs: **Write a prompt** and **Upload videos**. Upload projects
+need an owner session but no prompt, writer capture, or generation bridge.
+`POST /runs` accepts a title, optional logline, format and tags, plus a
+32-character lowercase hex `request_id`. The resulting `upload-<request_id>`
+record and its four empty document lists are created in one transaction.
+Replaying the same request returns that project; conflicting details return 409.
+
+The browser validates the selected files before creating the project and sends
+them through the existing `/versions` flow. Each becomes a separate take.
+Optional per-video model and prompt details are saved after processing.
+Retries retain the project and upload IDs, skip completed videos, and can resume
+processing or metadata saves without duplicating successful takes. The first
+processed video moves an upload project from draft to ready for review.
+
+Deploy the backend's `POST /runs` route before enabling the new frontend in
+production. Local development continues to use the live catalog, so the new
+project flow also requires that backend deployment when testing on port 5191.
+
 ## Renaming projects
 
 `POST /runs/:run_id` with `{"title": "..."}` (and optionally `"logline"`)

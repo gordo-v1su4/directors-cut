@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import type { GenerationPrompt } from '$lib/types/comparison';
   import CopyButton from './CopyButton.svelte';
 
@@ -34,19 +35,19 @@
         {#if prompt.model}
           <span class="dc-modal-meta-item">
             <span class="dc-modal-meta-label">Model</span>
-            <span>{prompt.model}</span>
+            <span><LegacyText text={prompt.model} /></span>
           </span>
         {/if}
         {#if prompt.provider}
           <span class="dc-modal-meta-item">
             <span class="dc-modal-meta-label">Provider</span>
-            <span>{prompt.provider}</span>
+            <span><LegacyText text={prompt.provider} /></span>
           </span>
         {/if}
         {#if prompt.slot_type}
           <span class="dc-modal-meta-item">
             <span class="dc-modal-meta-label">Slot</span>
-            <span>{prompt.slot_type}</span>
+            <span><LegacyText text={prompt.slot_type} /></span>
           </span>
         {/if}
         {#if prompt.created_at}
@@ -60,7 +61,7 @@
 
     <div class="dc-modal-body">
       <div class="dc-modal-prompt-wrap">
-        <pre class="dc-modal-prompt">{prompt.prompt_text}</pre>
+        <pre class="dc-modal-prompt"><LegacyText text={prompt.prompt_text} /></pre>
         <div class="dc-modal-prompt-actions">
           <CopyButton text={prompt.prompt_text} label="Copy prompt" size={12} />
         </div>
@@ -69,7 +70,7 @@
       {#if prompt.notes}
         <div class="dc-modal-notes">
           <span class="dc-modal-meta-label">Notes</span>
-          <p>{prompt.notes}</p>
+          <p><LegacyText text={prompt.notes} /></p>
         </div>
       {/if}
 

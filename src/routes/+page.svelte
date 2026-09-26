@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import { fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
   import MediaLightbox from '$lib/components/MediaLightbox.svelte';
@@ -136,12 +137,12 @@
               <span class="stag tone-{toneFor(featured.status)}">{featured.status}</span>
               {#if heroTake}
                 <span class="stag tone-{toneFor(heroTake.model || heroTake.writer)}">
-                  {heroTake.code}{heroTake.writer ? ` · ${heroTake.writer}` : ''}{heroTake.model ? ` × ${heroTake.model}` : ''}
+                  {heroTake.code}{heroTake.writer ? ` · ${heroTake.writer}` : ''}{#if heroTake.model} · <LegacyText text={heroTake.model} />{/if}
                 </span>
               {/if}
             </div>
-            <h1 class="t-page" title={featured.fullTitle}>{featured.title}</h1>
-            <p class="logline">{featured.logline}</p>
+            <h1 class="t-page" title={featured.fullTitle}><LegacyText text={featured.title} /></h1>
+            <p class="logline"><LegacyText text={featured.logline} /></p>
             <div class="actions">
               {#if heroTake}
                 <a class="sbtn sbtn-primary" href={takeHref(heroTake)}>

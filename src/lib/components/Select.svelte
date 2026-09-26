@@ -1,4 +1,5 @@
 <script lang="ts" generics="T extends string | number">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   /**
    * Dark dropdown that replaces the native <select>, whose option list the OS
    * draws in white with a blue highlight. Keyboard: arrows move, Enter or
@@ -79,7 +80,7 @@
     onclick={() => (open ? (open = false) : show())}
     {onkeydown}
   >
-    <span>{current?.label}</span>
+    <span><LegacyText text={current?.label ?? ""} /></span>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
   </button>
 
@@ -91,9 +92,12 @@
           aria-selected={option.value === value}
           class:highlighted={i === highlighted}
           onpointerenter={() => (highlighted = i)}
-          onpointerdown={(e) => { e.preventDefault(); pick(i); }}
+          tabindex="-1"
+          onpointerdown={(e) => e.preventDefault()}
+          onclick={() => pick(i)}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } }}
         >
-          {option.label}
+          <LegacyText text={option.label} />
           {#if option.value === value}
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
           {/if}

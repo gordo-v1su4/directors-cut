@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import LegacyText from '$lib/components/LegacyText.svelte';
+  import { SEEDANCE_MODELS, seedanceCreateUrl, isLegacySora, type SeedanceModel } from '$lib/create/models';
+  let targetModel = $state<SeedanceModel>('seedance-2.5');
   import { loadPromptCards } from '$lib/data/loader';
   import type { PromptCardIndex } from '$lib/types/prompt-card';
   import Select from '$lib/components/Select.svelte';
@@ -57,6 +61,7 @@
   const filtering = $derived(!!(search || family || confidence || tested));
 
   function familyLabel(value: string) {
+    if (value === 'sora') return 'Sora · unavailable';
     if (value === 'general_video') return 'General video';
     if (value === 'cross-model') return 'Cross model';
     return value.charAt(0).toUpperCase() + value.slice(1);
@@ -157,21 +162,22 @@
 
 {#snippet detail(card: PromptCardIndex, inSheet: boolean)}
   <div class="detail-body">
-    {#if !inSheet}<h2 class="t-section" title={card.title}>{card.title}</h2>{/if}
+    {#if !inSheet}<h2 class="t-section" title={card.title}><LegacyText text={card.title} /></h2>{/if}
     <div class="tags">
-      {#each card.model_targets as target (target)}<span class="stag tone-{toneFor(target)}">{target}</span>{/each}
+      {#each card.model_targets as target (target)}<span class="stag tone-{toneFor(target)}"><LegacyText text={target} /></span>{/each}
       <span class="stag tone-{card.confidence === 'high' ? 'approved' : card.confidence === 'medium' ? 'review' : 'warm'}">{card.confidence} confidence</span>
       {#if card.tested_by_us}<span class="stag tone-approved">Tested</span>{/if}
     </div>
 
+    {#if isLegacySora([card.model_family, ...card.model_targets].join(" "))}<p class="legacy-note"><LegacyText text="Sora" /> is unavailable. This original recipe is kept for reference; adapt a working copy for Seedance below.</p>{/if}
     <div class="block raised">
       <span class="label">Recipe line</span>
-      <p class="block-lead">{card.summary}</p>
+      <p class="block-lead"><LegacyText text={card.summary} /></p>
     </div>
 
     <div class="block raised">
-      <span class="label">Full model prompt</span>
-      <p class="block-text">{promptText(card)}</p>
+      <span class="label">Original source prompt</span>
+      <p class="block-text"><LegacyText text={promptText(card)} /></p>
     </div>
 
     <div class="specs">
@@ -189,17 +195,18 @@
       </div>
     {/if}
 
+    <Select label="Adapt to" bind:value={targetModel} options={[...SEEDANCE_MODELS]} />
     <div class="detail-actions">
       <button type="button" class="sbtn" onclick={() => copy(card)}>
-        <Icon name={copiedId === card.id ? 'check' : 'copy'} /> {copiedId === card.id ? 'Copied' : 'Copy prompt'}
+        <Icon name={copiedId === card.id ? 'check' : 'copy'} /> {copiedId === card.id ? 'Copied' : 'Copy original'}
       </button>
       {#if BRIDGE_TOKEN}
         <button type="button" class="sbtn" disabled={gridBusy} onclick={() => generateGrid(card)}>
           <Icon name="sparkles" /> {gridBusy ? 'Generating…' : 'Generate grid'}
         </button>
       {/if}
-      <button type="button" class="sbtn sbtn-primary" onclick={() => goto(`/create?recipe=${card.slug}`)}>
-        <Icon name="sparkles" /> Use in Create
+      <button type="button" class="sbtn sbtn-primary" onclick={() => goto(resolve(seedanceCreateUrl({ recipe: card.slug }, targetModel)))}>
+        <Icon name="sparkles" /> Adapt for Seedance
       </button>
     </div>
     {#if gridJob && gridJob.cardId === card.id}
@@ -228,22 +235,25 @@
     <span class="dim head-note">{filtered.length} reusable {filtered.length === 1 ? 'recipe' : 'recipes'}</span>
   </header>
 
+  <p class="legacy-note"><LegacyText text="Sora" /> is unavailable. Its prompts remain as a legacy library. Prepare new work for Seedance 2.5 or 2.0.</p>
+
   {#if active}
     <section class="spotlight glass-panel" aria-label="Selected recipe">
       <div class="spotlight-copy">
         <div class="spotlight-tags">
           <span class="label">Recipe line</span>
-          <span class="stag tone-{toneFor(active.model_family)}">{familyLabel(active.model_family)}</span>
+          <span class="stag tone-{toneFor(active.model_family)}"><LegacyText text={familyLabel(active.model_family)} /></span>
           <span class="stag">{active.aspect_ratio}</span>
         </div>
-        <p class="spotlight-line" title={active.summary}>{active.summary}</p>
+        <p class="spotlight-line" title={active.summary}><LegacyText text={active.summary} /></p>
       </div>
       <div class="spotlight-actions">
+        <Select label="Adapt to" bind:value={targetModel} options={[...SEEDANCE_MODELS]} />
         <button type="button" class="sbtn" onclick={() => copy(active)}>
-          <Icon name={copiedId === active.id ? 'check' : 'copy'} /> {copiedId === active.id ? 'Copied' : 'Copy prompt'}
+          <Icon name={copiedId === active.id ? 'check' : 'copy'} /> {copiedId === active.id ? 'Copied' : 'Copy original'}
         </button>
-        <button type="button" class="sbtn sbtn-primary" onclick={() => goto(`/create?recipe=${active.slug}`)}>
-          <Icon name="sparkles" /> Use in Create
+        <button type="button" class="sbtn sbtn-primary" onclick={() => goto(resolve(seedanceCreateUrl({ recipe: active.slug }, targetModel)))}>
+          <Icon name="sparkles" /> Adapt for Seedance
         </button>
       </div>
     </section>
@@ -267,7 +277,7 @@
       <div class="list-head" aria-hidden="true">
         <span>Recipe</span>
         <span>Recipe line</span>
-        <span>Pair</span>
+        <span>Source model</span>
         <span class="num">Sources</span>
       </div>
       {#if !loaded}
@@ -285,10 +295,10 @@
           title={card.title}
           onclick={() => select(card)}
         >
-          <span class="t-body">{card.title}</span>
-          <span class="row-line">{card.summary}</span>
+          <span class="t-body"><LegacyText text={card.title} /></span>
+          <span class="row-line"><LegacyText text={card.summary} /></span>
           <span class="row-tags">
-            <span class="stag tone-{toneFor(card.model_family)}">{familyLabel(card.model_family)}</span>
+            <span class="stag tone-{toneFor(card.model_family)}"><LegacyText text={familyLabel(card.model_family)} /></span>
             <span class="stag tone-{card.confidence === 'high' ? 'approved' : card.confidence === 'medium' ? 'review' : 'warm'}">{card.confidence}</span>
           </span>
           <span class="num dim">{card.source_count}</span>
@@ -311,6 +321,7 @@
 {/if}
 
 <style>
+  .legacy-note { margin:0; font-size:13px; line-height:1.5; color:var(--dc-text-muted); }
   .prompts {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

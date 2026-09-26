@@ -270,6 +270,46 @@ def version_details(request: Request):
     return reply(request, {'artifact':target})
 
 
+@app.post('/runs')
+def create_run(request: Request):
+    """Create an upload-first project, safely replaying a lost response."""
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to create a project'}, 401)
+    try:
+        payload = json.loads(request.body)
+        if not isinstance(payload, dict):
+            raise ValueError()
+        request_id = payload.get('request_id', '')
+        title = payload.get('title', '')
+        logline = payload.get('logline', '')
+        tags = payload.get('tags', [])
+        project_format = payload.get('format', '')
+        if not isinstance(request_id, str) or not re.fullmatch(r'[a-f0-9]{32}', request_id):
+            raise ValueError()
+        if not isinstance(title, str) or not 1 <= len(title.strip()) <= 120:
+            raise ValueError()
+        if not isinstance(logline, str) or len(logline) > 600:
+            raise ValueError()
+        if not isinstance(tags, list) or len(tags) > 20 or any(not isinstance(tag, str) or not 1 <= len(tag.strip()) <= 40 for tag in tags):
+            raise ValueError()
+        if project_format not in ('', 'trailer', 'music video', 'commercial', 'short film scene', 'visual concept', 'other'):
+            raise ValueError()
+    except (ValueError, TypeError):
+        return reply(request, {'error': 'Provide a project name (up to 120 characters), description (up to 600), and up to 20 tags (40 characters each).'}, 400)
+    run_id = 'upload-' + request_id
+    fields = {'title': title.strip(), 'logline': logline.strip(), 'tags': list(dict.fromkeys(tag.strip() for tag in tags)), 'format': project_format}
+    with lock, connect() as db:
+        existing = document(db, run_id, 'run')
+        if existing:
+            if any(existing.get(key) != value for key, value in fields.items()):
+                return reply(request, {'error': 'This project was already created with different details. Open it in Projects to edit.'}, 409)
+            return reply(request, {'run': existing})
+        run = {**fields, 'run_id': run_id, 'question': '', 'created': datetime.now(timezone.utc).isoformat(), 'created_by': 'gordo', 'status': 'draft', 'models_requested': [], 'target_models': [], 'source_refs': []}
+        for kind, value in [('run', run), ('answers', []), ('artifacts', []), ('prompts', []), ('decisions', [])]:
+            db.execute('INSERT INTO documents VALUES (?,?,?)', (run_id, kind, json.dumps(value)))
+    return reply(request, {'run': run}, 201)
+
+
 @app.post('/runs/:run_id')
 def run_details(request: Request):
     """Rename a project or rewrite its logline after the fact."""
@@ -350,6 +390,9 @@ def process_once():
                         if not any(a['artifact_id']==item['id'] for a in artifacts):
                             artifacts.append(artifact)
                             db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='artifacts'",(json.dumps(artifacts),item['run_id']))
+                        if item['run_id'].startswith('upload-') and run.get('status') == 'draft':
+                            run['status'] = 'ready_for_review'
+                            db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), item['run_id']))
                         db.execute("UPDATE uploads SET status='ready',error=NULL WHERE id=?",(item['id'],))
             except (ValueError,KeyError):
                 with connect() as db:

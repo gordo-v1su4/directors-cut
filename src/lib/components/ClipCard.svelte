@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import Icon from './Icon.svelte';
   import { toneFor } from '$lib/ui/tones';
 
@@ -100,7 +101,7 @@
     {#if density === 'thumb'}
       <div class="clip-bottom-tags">
         {#if writer}<span class="stag tone-{toneFor(writer)}">{writer}</span>{/if}
-        {#if videoModel}<span class="stag tone-{toneFor(videoModel)}">{videoModel}</span>{/if}
+        {#if videoModel}<span class="stag tone-{toneFor(videoModel)}"><LegacyText text={videoModel} /></span>{/if}
       </div>
     {:else if videoUrl}
       <div class="clip-actions">
@@ -120,7 +121,7 @@
       </div>
       <div class="clip-tags">
         {#if writer}<span class="stag tone-{toneFor(writer)}">{writer}</span>{/if}
-        {#if videoModel}<span class="stag tone-{toneFor(videoModel)}">{videoModel}</span>{/if}
+        {#if videoModel}<span class="stag tone-{toneFor(videoModel)}"><LegacyText text={videoModel} /></span>{/if}
       </div>
     </div>
   {/if}

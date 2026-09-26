@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { resolve } from '$app/paths';
+  import { seedanceCreateUrl, isLegacySora } from '$lib/create/models';
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import type { ComparisonArtifact, GenerationPrompt } from '$lib/types/comparison';
   import { mediaApi, ownerToken } from '$lib/data/media-api';
   import { versionPrompt, videoModel } from '$lib/data/version-context';
@@ -63,12 +66,12 @@
 </script>
 
 <section class="version-details" aria-label="Version details">
-  {#if showHeading}<div class="heading"><span class="model">{videoModel(artifact)}</span>{#if mediaApi && editable}<button class="edit" onclick={edit}>Edit version details</button>{/if}</div>{/if}
+  {#if showHeading}<div class="heading"><span class="model"><LegacyText text={videoModel(artifact)} /></span>{#if mediaApi && editable}<button class="edit" onclick={edit}>Edit version details</button>{/if}</div>{/if}
   {#if editing}
     <dialog use:openDialog class="editor-dialog" aria-label="Edit version details" oncancel={(e)=>{e.preventDefault();if(!busy)editing=false;}}><form onsubmit={save}>
       <h3>Edit version details</h3>
-      <label>Video model<input bind:value={model} list="video-models" placeholder="e.g. Sora 2" maxlength="100" disabled={busy} /></label>
-      <datalist id="video-models"><option>Sora 2</option><option>Sora 2 Pro</option><option>Seedance 2.0</option><option>Seedance 2.5</option><option>Mini Max H3</option><option>Veo 3.1</option><option>Kling</option><option>Other / edited</option></datalist>
+      <label>Video model<input bind:value={model} list="video-models" placeholder="e.g. Seedance 2.5" maxlength="100" disabled={busy} /></label>
+      <datalist id="video-models"><option>Seedance 2.0</option><option>Seedance 2.5</option><option>Mini Max H3</option><option>Veo 3.1</option><option>Kling</option><option>Other / edited</option></datalist>
       <label>Prompt for this version<textarea bind:value={prompt} rows="9" maxlength="100000" placeholder="Paste the exact prompt used for this video…" disabled={busy}></textarea></label>
       <div class="field">Shot grid
         <Select
@@ -89,9 +92,14 @@
       <p class="save-status" role="status">{message || (busy ? 'Saving…' : 'Changes apply to this video version.')}</p>
     </form></dialog>
   {/if}
+    {#if isLegacySora(videoModel(artifact))}<p class="legacy-note"><LegacyText text={videoModel(artifact)} /> is unavailable. This take and its original prompt remain available as legacy material.</p>{/if}
+    {#if savedPrompt}<div class="reuse-actions">
+      <a class="sbtn" href={resolve(seedanceCreateUrl({ run: artifact.run_id, take: artifact.artifact_id }, 'seedance-2.5'))}>Adapt for Seedance 2.5</a>
+      <a class="sbtn" href={resolve(seedanceCreateUrl({ run: artifact.run_id, take: artifact.artifact_id }, 'seedance-2.0'))}>Adapt for Seedance 2.0</a>
+    </div>{/if}
     <div class="context-grid">
       <div><div class="heading"><h3>Prompt</h3>{#if savedPrompt}<CopyButton text={savedPrompt} label="Copy" />{/if}</div>
-        {#if savedPrompt}<p class="prompt">{savedPrompt}</p>{:else}<p class="empty">No prompt saved for this version.</p>{/if}
+        {#if savedPrompt}<p class="prompt"><LegacyText text={savedPrompt} /></p>{:else}<p class="empty">No prompt saved for this version.</p>{/if}
       </div>
       <div><div class="heading"><h3>Shot grid</h3></div>{#if artifact.shot_grid_url}<a href={artifact.shot_grid_url} target="_blank" rel="noreferrer" aria-label="Open shot grid"><img src={artifact.shot_grid_url} alt="Shot grid for this video version" /></a>{:else}<div class="empty-grid">No shot grid attached to this version.</div>{/if}</div>
     </div>
@@ -99,6 +107,8 @@
 </section>
 
 <style>
+  .legacy-note { color:var(--dc-text-muted); font-size:12px; margin:0 0 12px; }
+  .reuse-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
   .version-details {min-width:0; color:var(--dc-text);}
   /* Every header row here is 28px tall with 12px below, so rows line up across columns. */
   .heading {height:28px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}

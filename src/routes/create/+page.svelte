@@ -1,26 +1,35 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import Tabs from '$lib/components/Tabs.svelte';
   import { page } from '$app/state';
-  import { onDestroy, onMount } from 'svelte';
-  import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions, type CaptureHandoffMode } from '$lib/create/brief';
-  import { callBridgeTool, bridgeHealth } from '$lib/bridge/types';
+  import { onDestroy } from 'svelte';
+  import { buildCanonicalConceptBrief, QUICK_START_PRESETS, resolveProjectTitle, suggestTitleOptions } from '$lib/create/brief';
+  import { loadComparisonRun } from '$lib/data/comparisons';
+  import { versionPrompt } from '$lib/data/version-context';
+  import { SEEDANCE_MODELS, seedanceModel, seedanceLabel, seedanceWorkingCopy, isLegacySora, type SeedanceModel } from '$lib/create/models';
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import { loadPromptCardBySlug } from '$lib/data/loader';
   import Icon from '$lib/components/Icon.svelte';
-  import { toneFor } from '$lib/ui/tones';
-  import type {
-    CreateComparisonRunInput,
-    CreateComparisonRunOutput,
-    GetConceptCaptureStatusOutput,
-    PrepareConceptCaptureOutput,
-    RunConceptCaptureOutput,
-  } from '$lib/bridge/types';
+  import UploadProject from '$lib/components/UploadProject.svelte';
+  import Select from '$lib/components/Select.svelte';
 
+  let lane = $state<'prompt' | 'upload'>('prompt');
+  let selectedTemplate = $state('');
+  function selectTemplate(value: string) {
+    if (value === 'surprise') useSamplePrompt();
+    else {
+      const preset = QUICK_START_PRESETS.find(item => item.id === value);
+      if (preset) applyPreset(preset);
+    }
+    selectedTemplate = '';
+  }
   let projectTitle = $state('');
   let idea = $state('');
   let format = $state('trailer');
   let duration = $state('12');
   let includeAudio = $state(true);
-  let handoffMode = $state<CaptureHandoffMode>('automated');
+  let videoModel = $state<SeedanceModel>('seedance-2.5');
+  let sourceOriginal = $state('');
+  let sourceLegacy = $state(false);
   let referenceName = $state('');
   let referenceUrl = $state('');
   let request = $state('');
@@ -29,56 +38,67 @@
   let sampleSource = $state('');
   let recipeTitle = $state('');
   let titleManuallyEdited = $state(false);
-  let busy = $state(false);
-  let clapping = $state(false);
   let error = $state('');
-  let bridgeConnected = $state(false);
-  let automatedRun = $state<CreateComparisonRunOutput | null>(null);
-  let capturePrepared = $state<PrepareConceptCaptureOutput | null>(null);
-  let captureRunning = $state(false);
-  let captureStatus = $state<GetConceptCaptureStatusOutput | null>(null);
-  let pollTimer: ReturnType<typeof setTimeout> | undefined;
-  let bridgeLost = $state(false);
-  let pollSession = 0;
-
-  const BRIDGE_URL = import.meta.env.VITE_RAYCAST_BRIDGE_URL ?? 'http://127.0.0.1:8787';
-  const BRIDGE_TOKEN = import.meta.env.VITE_RAYCAST_BRIDGE_TOKEN ?? '';
-
-  onMount(() => {
-    void bridgeHealth(BRIDGE_URL).then((connected) => (bridgeConnected = connected));
-  });
-
-  // Prompts → "Use in Create" arrives with the recipe's slug. Follow the URL,
-  // so moving between recipes (or back) always shows the matching pitch.
-  const recipeSlug = $derived(page.url.searchParams.get('recipe'));
+  let sourceLoading = $state(false);
+  const sourceQuery = $derived(page.url.searchParams.toString());
   $effect(() => {
-    const slug = recipeSlug;
-    if (!slug) {
-      recipeTitle = '';
-      return;
-    }
+    const params = new URLSearchParams(sourceQuery);
+    videoModel = seedanceModel(params.get('model'));
+    const recipe = params.get('recipe');
+    const runId = params.get('run');
+    if (!recipe && !runId) return;
     let stale = false;
-    void loadPromptCardBySlug(slug).then((card) => {
-      if (stale || !card) return;
-      idea = card.prompt_pattern || card.summary;
-      sampleSource = card.title;
-      recipeTitle = card.title;
-      const uses = card.use_cases.join(' ');
-      if (/music/.test(uses)) format = 'music video';
-      else if (/product|commercial|\bad\b/.test(uses)) format = 'commercial';
-      else if (/teaser|trailer/.test(uses)) format = 'trailer';
-      else format = 'visual concept';
-      titleManuallyEdited = false;
-      resetRun();
-    });
-    return () => {
-      stale = true;
+    sourceLoading = true;
+    error = '';
+    const load = async () => {
+      let text = '';
+      let title = '';
+      let legacy = false;
+      let sourceDuration = '12';
+      if (recipe) {
+        const card = await loadPromptCardBySlug(recipe);
+        if (!card) throw new Error('This recipe could not be loaded. Choose it again from Prompts.');
+        text = card.prompt_pattern || card.body_excerpt || card.summary;
+        if (card.runtime_seconds) sourceDuration = String(card.runtime_seconds);
+        title = card.title;
+        legacy = isLegacySora([card.model_family, ...card.model_targets, card.title].join(' '));
+      } else if (runId) {
+        const detail = await loadComparisonRun(runId, undefined, { strict: true });
+        if (!detail) throw new Error('This project could not be loaded.');
+        title = detail.title;
+        const artifact = detail.artifacts.find(item => item.artifact_id === params.get('take'));
+        const answer = detail.answers.find(item => item.answer_id === params.get('answer'));
+        if (artifact) {
+          text = versionPrompt(artifact, new Map(detail.prompts.map(item => [item.prompt_id, item])));
+          sourceDuration = text.match(/\b(\d+)(?:-| )second/i)?.[1] ?? String(artifact.duration_seconds ?? 12);
+          legacy = isLegacySora([artifact.video_model, artifact.model, artifact.target_model, artifact.provider].join(' '));
+        } else if (answer) {
+          const pkg = answer.structured_prompt;
+          text = pkg && typeof pkg === 'object' && 'sora_prompt' in pkg && typeof pkg.sora_prompt === 'string' ? pkg.sora_prompt : answer.answer_text;
+          legacy = isLegacySora(answer.target_model) || !!(pkg && typeof pkg === 'object' && 'sora_prompt' in pkg);
+        }
+        if (!text.trim()) throw new Error('No saved prompt was found for that take. Start with a new idea below.');
+      }
+      if (stale) return;
+      duration = sourceDuration;
+      lane = 'prompt';
+      sourceOriginal = text;
+      sourceLegacy = legacy || isLegacySora(text);
+      idea = seedanceWorkingCopy(text, videoModel);
+      recipeTitle = title;
+      sampleSource = title;
+      projectTitle = seedanceWorkingCopy(title, videoModel);
+      titleManuallyEdited = true;
+      request = '';
     };
+    void load().catch(caught => { if (!stale) error = caught instanceof Error ? caught.message : 'Could not load the source prompt.'; })
+      .finally(() => { if (!stale) sourceLoading = false; });
+    return () => { stale = true; };
   });
 
   let titleOptions = $derived(suggestTitleOptions(idea, format, sampleSource));
   let effectiveTitle = $derived(resolveProjectTitle(projectTitle, idea, format, sampleSource));
-  let canSubmit = $derived(!!idea.trim() && !busy);
+  let canSubmit = $derived(!!idea.trim() && !sourceLoading);
 
   $effect(() => {
     if (!idea.trim() || titleManuallyEdited) return;
@@ -94,13 +114,13 @@
       text: '12-second premium streaming teaser, 16:9, cinematic thriller grade. 0-3s: an isolated cliffside hotel glows beneath an incoming storm as rain moves sideways across an empty terrace and distant thunder rolls. 3-6s: slow push toward a woman in silver eveningwear facing a dark window; her reflection turns toward camera half a beat before she does. 6-9s: a crack races through the pane, every light cuts out, and a red handprint appears on the inside with one sharp bass impact. 9-12s: smash cut to black; AFTER CHECKOUT slams into frame in elegant chrome serif type as the thunder decays into silence. No extra logos, no subtitles, no watermark.',
     },
     {
-      source: 'Sora World-Simulator Physics Loop',
+      source: 'World-Simulator Physics Loop',
       format: 'visual concept',
       duration: '8',
       text: 'An 8-second physically coherent tabletop world inside a dark watchmaker’s studio. A miniature glass city rests inside an open silver pocket watch. Warm steam from a nearby espresso cup drifts across the city, condensing on the towers and gathering into droplets that run down the streets like rivers. The camera makes one slow macro orbit while gears beneath the city turn, streetlights flicker in response, and loose paper fibers lift naturally in the warm air. Amber task lighting and deep black shadows define the scene. In the final second, the largest droplet rolls back into its starting position for a seamless loop. Natural room tone, tiny gear clicks, and soft steam hiss.',
     },
     {
-      source: 'Sora Audio-First Micro Documentary',
+      source: 'Audio-First Micro Documentary',
       format: 'short film scene',
       duration: '15',
       text: 'A 15-second observational documentary scene inside a family-run neon-sign workshop before sunrise. Audio leads from the first frame: transformer hum, rain tapping the skylight, glass tubing clinking, and the short hiss of a blue flame timed exactly to the artisan’s hands. The camera begins wide among stacked signs, moves into a shoulder-level tracking shot as she bends a glowing pink tube, then ends on a macro view of the finished letter flickering alive. Moist concrete, worn tools, realistic handheld movement, cool window light mixed with magenta neon. A calm voice says, “You can hear when the glass is ready.” No subtitles.',
@@ -115,22 +135,19 @@
     { value: 'visual concept', label: 'Visual concept' },
   ];
   const formatLabel = $derived(FORMATS.find((f) => f.value === format)?.label ?? format);
-  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const slateNumber = String(new Date().getDate()).padStart(2, '0');
 
-  /**
-   * Clear the last run before a new pitch. A capture still in flight keeps
-   * its run, status and Projects link; a finished one also stops polling.
-   */
   function resetRun() {
-    if (busy || captureRunning) return;
     error = '';
-    stopPolling();
     request = '';
-    automatedRun = null;
-    capturePrepared = null;
-    captureRunning = false;
-    captureStatus = null;
+    sourceOriginal = '';
+    sourceLegacy = false;
+  }
+
+  function changeModel(model: string) {
+    videoModel = seedanceModel(model);
+    idea = seedanceWorkingCopy(idea, videoModel);
+    projectTitle = seedanceWorkingCopy(projectTitle, videoModel);
+    request = '';
   }
 
   function applyPreset(preset: (typeof QUICK_START_PRESETS)[number]) {
@@ -138,8 +155,8 @@
     format = preset.format;
     duration = preset.duration;
     projectTitle = preset.title;
-    titleManuallyEdited = false;
-    sampleSource = preset.label;
+    titleManuallyEdited = true;
+    sampleSource = preset.title;
     recipeTitle = '';
     resetRun();
   }
@@ -177,6 +194,7 @@
       format,
       duration,
       includeAudio,
+      videoModel,
       referenceName: referenceName || undefined,
     });
   }
@@ -184,8 +202,6 @@
   function prepareRequest() {
     request = briefInput();
     copied = false;
-    automatedRun = null;
-    captureStatus = null;
     error = '';
   }
 
@@ -194,132 +210,7 @@
     copied = true;
   }
 
-  function stopPolling() {
-    pollSession += 1;
-    if (pollTimer) clearTimeout(pollTimer);
-    pollTimer = undefined;
-    bridgeLost = false;
-  }
-
-  async function refreshCaptureStatus(runId: string): Promise<GetConceptCaptureStatusOutput | null> {
-    if (!BRIDGE_TOKEN) return null;
-    const status = await callBridgeTool<{ run_id: string }, GetConceptCaptureStatusOutput>(
-      { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-      'get_concept_capture_status',
-      { run_id: runId },
-    );
-    captureStatus = status;
-    return status;
-  }
-
-  /** End a capture that stopped: clear the running state and say why. */
-  function endCapture(message = '') {
-    captureRunning = false;
-    stopPolling();
-    if (message) error = message;
-  }
-
-  /**
-   * Follow a capture until it finishes. If the bridge stops answering, keep
-   * trying with a growing wait (up to 30 s) and say so; the capture itself
-   * may still finish, and its answers appear as soon as the bridge is back.
-   */
-  function startPolling(runId: string) {
-    stopPolling();
-    // A reply that lands after polling stopped (page closed, run reset) must
-    // not schedule another check.
-    const session = pollSession;
-    let failures = 0;
-    const tick = () => {
-      refreshCaptureStatus(runId)
-        .then((status) => {
-          if (session !== pollSession) return;
-          failures = 0;
-          bridgeLost = false;
-          if (status && (status.capture_job_status === 'complete' || status.ready_for_projects)) return endCapture();
-          // The result panel explains a capture that went idle before finishing.
-          if (status?.capture_job_status === 'idle') return endCapture();
-          pollTimer = setTimeout(tick, 3000);
-        })
-        .catch(() => {
-          if (session !== pollSession) return;
-          failures += 1;
-          if (failures >= 3) bridgeLost = true;
-          pollTimer = setTimeout(tick, Math.min(30_000, 3000 * 2 ** Math.min(failures, 4)));
-        });
-    };
-    pollTimer = setTimeout(tick, 3000);
-  }
-
-  async function startConceptRun() {
-    // The slate claps before anything else happens.
-    clapping = true;
-    setTimeout(() => (clapping = false), 420);
-    error = '';
-    busy = true;
-    automatedRun = null;
-    capturePrepared = null;
-    captureRunning = false;
-    captureStatus = null;
-    request = briefInput();
-
-    try {
-      if (handoffMode === 'manual') {
-        prepareRequest();
-        return;
-      }
-
-      if (!BRIDGE_TOKEN) {
-        error = 'Automated capture needs VITE_RAYCAST_BRIDGE_TOKEN in .env.local and the bridge running on :8787.';
-        return;
-      }
-
-      bridgeConnected = await bridgeHealth(BRIDGE_URL);
-      if (!bridgeConnected) {
-        error = 'The bridge is offline. Start it on port 8787, or switch Run mode to Manual.';
-        return;
-      }
-
-      const input: CreateComparisonRunInput = {
-        title: effectiveTitle,
-        question: request,
-        capture_mode: 'automated',
-        models_requested: ['ChatGPT', 'Claude'],
-        target_models: ['sora-2'],
-      };
-
-      automatedRun = await callBridgeTool<CreateComparisonRunInput, CreateComparisonRunOutput>(
-        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'create_comparison_run',
-        input,
-      );
-      capturePrepared = await callBridgeTool<{ run_id: string }, PrepareConceptCaptureOutput>(
-        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'prepare_concept_capture',
-        { run_id: automatedRun.run_id },
-      );
-      captureRunning = true;
-      await callBridgeTool<{ run_id: string; prepare_first: boolean }, RunConceptCaptureOutput>(
-        { baseUrl: BRIDGE_URL, token: BRIDGE_TOKEN },
-        'run_concept_capture',
-        { run_id: automatedRun.run_id, prepare_first: false },
-      );
-      await refreshCaptureStatus(automatedRun.run_id);
-      startPolling(automatedRun.run_id);
-    } catch (caught) {
-      endCapture(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      busy = false;
-    }
-  }
-
-  async function openProjects() {
-    const runId = automatedRun?.run_id;
-    if (runId) await goto(`/comparisons?run=${encodeURIComponent(runId)}`);
-    else await goto('/comparisons');
-  }
-
-  onDestroy(stopPolling);
+  onDestroy(() => { if (referenceUrl) URL.revokeObjectURL(referenceUrl); });
 </script>
 
 <svelte:head><title>Create · Directors Cut</title></svelte:head>
@@ -327,48 +218,39 @@
 <div class="studio-column create">
   <header class="head">
     <div class="head-title">
-      <h1 class="t-page">Create</h1>
-      <span class="dim head-note">Pitch it once. ChatGPT and Claude each write a take, and both land in Projects.</span>
+      <h1 class="t-page">Create a project</h1>
+      <span class="dim head-note">Start with an idea or bring videos you already have.</span>
     </div>
-    {#if recipeTitle}<span class="stag tone-review recipe-tag">Loaded recipe: {recipeTitle}</span>{/if}
+    {#if recipeTitle}<span class="stag tone-review recipe-tag">Source: <LegacyText text={recipeTitle} /></span>{/if}
   </header>
 
-  <section aria-labelledby="templates-title">
-    <div class="section-head">
-      <h2 id="templates-title" class="t-section">Start from a template</h2>
-      <span class="dim section-note">Or write your own below</span>
-    </div>
-    <div class="templates">
-      {#each QUICK_START_PRESETS as preset (preset.id)}
-        <button type="button" class="template" class:is-selected={sampleSource === preset.label} onclick={() => applyPreset(preset)}>
-          <span class="template-tags">
-            <span class="stag">{preset.label}</span>
-            <span class="stag tone-review">{FORMATS.find((f) => f.value === preset.format)?.label ?? preset.format}</span>
-          </span>
-          <span class="t-card">{preset.title.replace(/\s+—.*$/, '')}</span>
-          <span class="template-idea">{preset.idea}</span>
-        </button>
-      {/each}
-      <button type="button" class="template" class:is-selected={SAMPLE_PROMPTS.some((s) => s.source === sampleSource)} onclick={useSamplePrompt}>
-        <span class="template-tags">
-          <span class="stag tone-warm">Example</span>
-          <span class="stag">From the library</span>
-        </span>
-        <span class="t-card">Surprise me</span>
-        <span class="template-idea">Load a tested prompt from the recipe library. Click again for another.</span>
-      </button>
-    </div>
-  </section>
+  <Tabs id="create" label="Create a project" bind:value={lane} items={[
+    { value: 'prompt', label: 'Write a prompt' }, { value: 'upload', label: 'Upload videos' },
+  ]} />
 
+  <div class="lane" id="create-upload-panel" role="tabpanel" aria-labelledby="create-upload-tab" hidden={lane !== 'upload'} tabindex="0">
+    <UploadProject />
+  </div>
+  <div class="lane prompt-lane" id="create-prompt-panel" role="tabpanel" aria-labelledby="create-prompt-tab" hidden={lane !== 'prompt'} tabindex="0">
   <div class="desk">
     <section class="form glass-panel" aria-label="Pitch">
+      {#if sourceLoading}<p class="hint" role="status">Loading source prompt…</p>{/if}
+      {#if sourceLegacy}<p class="legacy-note"><LegacyText text="Sora" /> is unavailable. This is a working copy for {seedanceLabel(videoModel)}; the original is preserved.</p>{/if}
+      <div class="template-picker">
+        <span class="field-label">Need a starting point?</span>
+        <Select label="Prompt examples" bind:value={selectedTemplate} options={[
+          { value: '', label: 'Choose an example…' },
+          ...QUICK_START_PRESETS.map(preset => ({ value: preset.id, label: `${preset.title} · ${preset.label}` })),
+          { value: 'surprise', label: 'Surprise me · From the library' },
+        ]} onchange={selectTemplate} />
+      </div>
       <div class="field">
         <label class="field-label" for="project-title">Working title</label>
         <input id="project-title" class="sinput" bind:value={projectTitle} placeholder="Named from your idea as you type" oninput={() => (titleManuallyEdited = true)} />
         {#if titleOptions.length && idea.trim()}
           <div class="chips" role="group" aria-label="Suggested titles">
             {#each titleOptions as option (option)}
-              <button type="button" class="stag" class:selected={projectTitle === option} onclick={() => selectTitle(option)}>{option}</button>
+              <button type="button" class="stag" class:selected={projectTitle === option} onclick={() => selectTitle(option)}><LegacyText text={option} /></button>
             {/each}
           </div>
         {/if}
@@ -383,7 +265,8 @@
           rows="7"
           placeholder="A 15-second fashion trailer in a rain-soaked motel. One woman, electric-blue light, uneasy handheld camera, ending on a hard title reveal…"
         ></textarea>
-        {#if sampleSource}<p class="hint">Adapted from {sampleSource}.</p>{/if}
+        {#if sampleSource}<p class="hint">Adapted from <LegacyText text={sampleSource} />.</p>{/if}
+        {#if sourceOriginal}<details class="original-source"><summary>Original source prompt</summary><pre><LegacyText text={sourceOriginal} /></pre></details>{/if}
       </div>
 
       <div class="field">
@@ -399,12 +282,9 @@
 
       <div class="field-pair">
         <div class="field">
-          <span class="field-label">Run mode</span>
-          <div class="options" role="radiogroup" aria-label="Run mode">
-            <button type="button" role="radio" class="sbtn" class:sbtn-primary={handoffMode === 'automated'} aria-checked={handoffMode === 'automated'} onclick={() => (handoffMode = 'automated')}>Automated</button>
-            <button type="button" role="radio" class="sbtn" class:sbtn-primary={handoffMode === 'manual'} aria-checked={handoffMode === 'manual'} onclick={() => (handoffMode = 'manual')}>Manual</button>
-          </div>
-          <p class="hint">{handoffMode === 'automated' ? 'The bridge creates the run and captures both writers.' : 'Copy the brief and run it from Raycast yourself.'}</p>
+          <span class="field-label">Video model</span>
+          <Select label="Video model" value={videoModel} options={[...SEEDANCE_MODELS]} onchange={changeModel} />
+          <p class="hint">Prepare a brief, render in your video tool, then upload the result.</p>
         </div>
         <div class="field">
           <span class="field-label">Sound</span>
@@ -428,123 +308,48 @@
       </label>
     </section>
 
-    <!-- The slate fills in as the pitch takes shape, and claps on Start. -->
-    <aside class="slate glass-panel" aria-label="Slate">
-      <div class="sticks" class:clap={clapping} aria-hidden="true">
-        {#each Array(12) as _, i (i)}<span></span>{/each}
+    <aside class="project-preview glass-panel" aria-label="Prompt project details">
+      <h2 class="t-section">Project details</h2>
+      <div class="preview-title">
+        <span class="field-label">Project name</span>
+        <strong class:empty={!idea.trim()}><LegacyText text={idea.trim() ? effectiveTitle : 'Untitled project'} /></strong>
       </div>
-      <div class="slate-body">
-        <div class="slate-top">
-          <div class="slate-name">
-            <span class="label">Production</span>
-            <span class="t-section" class:empty={!idea.trim()}>{idea.trim() ? effectiveTitle : 'Untitled'}</span>
-          </div>
-          <span class="slate-icon"><Icon name="clapper" size={16} /></span>
-        </div>
-
-        <div class="cells">
-          <div class="cell raised"><span class="label">Roll / Slate</span><span class="cell-big">A{slateNumber}</span></div>
-          <div class="cell raised"><span class="label">Format</span><span class="cell-value">{formatLabel}</span></div>
-          <div class="cell raised"><span class="label">Length</span><span class="cell-value">12 sec · {today}</span></div>
-        </div>
-
-        <div class="cells cells-2">
-          <div class="cell raised">
-            <span class="label">Writers room</span>
-            <span class="cell-tags"><span class="stag tone-chatgpt">ChatGPT</span><span class="stag tone-claude">Claude</span></span>
-          </div>
-          <div class="cell raised">
-            <span class="label">Camera</span>
-            <span class="cell-tags"><span class="stag tone-sora">Sora 2</span><span class="stag">{includeAudio ? 'Sound on' : 'No sound'}</span></span>
-          </div>
-        </div>
-
-        <div class="slate-go">
-          <p class="status">
-            <span class="dot" class:live={handoffMode === 'manual' || (bridgeConnected && !!BRIDGE_TOKEN)}></span>
-            <span>
-              {#if handoffMode === 'manual'}
-                Next, copy the brief into Raycast.
-              {:else if BRIDGE_TOKEN && bridgeConnected}
-                Bridge connected.
-              {:else if BRIDGE_TOKEN}
-                Bridge offline. Start it on port 8787.
-              {:else}
-                Automated runs need the bridge token. Switch to Manual to go without it.
-              {/if}
-            </span>
-          </p>
-          <button class="sbtn sbtn-primary start" type="button" disabled={!canSubmit} onclick={startConceptRun}>
-            <Icon name="play" size={12} filled />
-            {busy ? 'Starting…' : handoffMode === 'manual' ? 'Prepare brief' : 'Start'}
-          </button>
-        </div>
-        {#if error}<p class="error" role="alert">{error}</p>{/if}
+      <dl class="preview-fields">
+        <div><dt>Format</dt><dd>{formatLabel}</dd></div>
+        <div><dt>Length</dt><dd>{duration} seconds</dd></div>
+        <div><dt>Workflow</dt><dd>Prepare, render, upload</dd></div>
+        <div><dt>Video model</dt><dd>{seedanceLabel(videoModel)}</dd></div>
+        <div><dt>Sound</dt><dd>{includeAudio ? 'In the prompt' : 'Picture only'}</dd></div>
+        <div><dt>Source</dt><dd>{sourceLegacy ? 'Legacy prompt' : 'New prompt'}</dd></div>
+      </dl>
+      <div class="preview-go">
+        <p class="status">Prepare one prompt brief for {seedanceLabel(videoModel)}. No generation is submitted here.</p>
+        <button class="sbtn sbtn-primary start" type="button" disabled={!canSubmit} onclick={prepareRequest}><Icon name="sparkles" /> Prepare Seedance brief</button>
       </div>
+      {#if error}<p class="error" role="alert">{error}</p>{/if}
     </aside>
   </div>
 
-  {#if automatedRun}
-    <section class="result glass-panel" aria-labelledby="run-title">
-      <div class="result-head">
-        <div>
-          <span class="label">Run started</span>
-          <h2 id="run-title" class="t-section">{automatedRun.title}</h2>
-        </div>
-        <button class="sbtn sbtn-primary" type="button" onclick={openProjects}>Open in Projects <Icon name="up-right" /></button>
-      </div>
-      <div class="result-tags">
-        <span class="stag tone-{toneFor(captureStatus?.run_status ?? automatedRun.run_status)}">{captureStatus?.run_status ?? automatedRun.run_status}</span>
-        <span class="stag">{captureStatus?.captured_valid_count ?? 0} of 2 captured</span>
-        <span class="stag">{captureRunning ? 'Capturing' : captureStatus?.capture_job_status ?? 'Idle'}</span>
-        {#each captureStatus?.models ?? [] as model (model.label)}
-          <span class="stag tone-{toneFor(model.label)}">{model.label}: {model.status}</span>
-        {/each}
-      </div>
-      {#if captureStatus?.answers?.length}
-        <div class="answers">
-          {#each captureStatus.answers as answer (answer.answer_id)}
-            <article class="raised answer">
-              <span class="stag tone-{toneFor(answer.model_name)}">{answer.model_name}</span>
-              {#if answer.title}<h3 class="t-card">{answer.title}</h3>{/if}
-              {#if answer.logline}<p class="muted">{answer.logline}</p>{/if}
-            </article>
-          {/each}
-        </div>
-      {/if}
-      <p class="hint">
-        {#if captureRunning && bridgeLost}
-          The bridge stopped answering. Still checking; answers appear here once it is back.
-        {:else if captureRunning}
-          Raycast is capturing ChatGPT first, then Claude. Answers appear here as they land.
-        {:else if capturePrepared && !captureStatus?.ready_for_projects}
-          Capture stopped before both answers came back. Check that Raycast is open and has Accessibility access.
-        {:else if captureStatus?.ready_for_projects}
-          Both concepts are in. Open Projects to compare them.
-        {/if}
-      </p>
-    </section>
-  {/if}
-
-  {#if request && handoffMode === 'manual'}
+  {#if request}
     <section class="result glass-panel" aria-labelledby="brief-title">
       <div class="result-head">
         <div>
-          <span class="label">Ready for Raycast</span>
-          <h2 id="brief-title" class="t-section">Concept brief</h2>
+          <span class="label">Ready for your prompt writer</span>
+          <h2 id="brief-title" class="t-section">{seedanceLabel(videoModel)} brief</h2>
         </div>
         <button class="sbtn" type="button" onclick={copyRequest}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copied' : 'Copy brief'}</button>
       </div>
       <pre class="brief">{request}</pre>
     </section>
   {/if}
+  </div>
 </div>
 
 <style>
   .create {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
+    gap: 24px;
     padding-top: 24px;
     padding-bottom: 64px;
   }
@@ -561,78 +366,19 @@
     max-width: 100%;
   }
 
-  .head-title,
-  .section-head {
-    display: flex;
-    min-width: 0;
-    align-items: baseline;
-    gap: 12px;
-  }
+  .head-title { display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; }
+  .head-title .t-page { width:auto; }
+  .head-note { font-size:13px; }
+  .lane { margin-top:-24px; }
+  .legacy-note { margin:0; color:var(--dc-text-muted); font-size:13px; line-height:1.5; }
+  .original-source { color:var(--dc-text-muted); font-size:12px; }
+  .original-source summary { cursor:pointer; }
+  .original-source pre { white-space:pre-wrap; max-height:220px; overflow:auto; font:inherit; line-height:1.6; }
+  .lane[hidden] { display:none; }
+  .prompt-lane { display:grid; gap:24px; }
+  .template-picker { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding-bottom:16px; border-bottom:1px solid var(--dc-border); }
 
-  .head-title .t-page,
-  .section-head .t-section {
-    flex-shrink: 0;
-    width: auto;
-  }
-
-  .head-note,
-  .section-note {
-    overflow: hidden;
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .section-head {
-    margin-bottom: 12px;
-  }
-
-  /* ── Templates ────────────────────────────────────────────────── */
-
-  .templates {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .template {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px;
-    border: 0;
-    border-radius: 8px;
-    background: #0e0e0e;
-    color: var(--dc-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .template:hover {
-    background: #161616;
-  }
-
-  .template-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .template-idea {
-    display: -webkit-box;
-    overflow: hidden;
-    color: var(--dc-text-muted);
-    font-size: 13px;
-    line-height: 1.4;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  /* ── Desk: pitch form + slate ─────────────────────────────────── */
+  /* ── Desk: pitch form + project details ─────────────────────────────────── */
 
   .desk {
     display: grid;
@@ -742,119 +488,16 @@
     border-radius: 4px;
   }
 
-  /* ── Slate ────────────────────────────────────────────────────── */
-
-  .slate {
-    position: sticky;
-    top: calc(var(--dc-nav-offset) + 16px);
-    overflow: hidden;
-  }
-
-  .sticks {
-    display: flex;
-    height: 32px;
-    overflow: hidden;
-    background: #161616;
-    transform-origin: 0 100%;
-    transition: transform 0.2s ease;
-  }
-
-  .sticks span {
-    flex-shrink: 0;
-    width: 40px;
-    height: 100%;
-    transform: skewX(-24deg);
-  }
-
-  .sticks span:nth-child(odd) {
-    background: rgba(255, 255, 255, 0.7);
-  }
-
-  /* Start lifts the sticks and snaps them shut. */
-  .sticks.clap {
-    animation: clap 0.42s ease;
-  }
-
-  @keyframes clap {
-    0% { transform: rotate(0); }
-    45% { transform: rotate(-9deg); }
-    100% { transform: rotate(0); }
-  }
-
-  .slate-body {
-    display: grid;
-    gap: 16px;
-    padding: 20px;
-  }
-
-  .slate-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .slate-name {
-    display: grid;
-    min-width: 0;
-    gap: 4px;
-  }
-
-  .slate-name .empty {
-    color: var(--dc-text-dim);
-  }
-
-  .slate-icon {
-    display: grid;
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    place-items: center;
-    border-radius: 6px;
-    background: #161616;
-  }
-
-  .cells {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .cells-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .cell {
-    display: grid;
-    align-content: start;
-    gap: 6px;
-    min-width: 0;
-    padding: 10px 12px;
-  }
-
-  .cell-big {
-    font: 400 22px / 1 var(--dc-font-serif);
-  }
-
-  .cell-value {
-    overflow: hidden;
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .cell-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .slate-go {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
+  .project-preview { display:grid; gap:20px; padding:24px; position:sticky; top:calc(var(--dc-nav-offset) + 16px); }
+  .preview-title { display:grid; gap:8px; }
+  .preview-title strong { font-size:16px; font-weight:500; overflow-wrap:anywhere; }
+  .preview-title .empty { color:var(--dc-text-dim); }
+  .preview-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 16px; margin:0; }
+  .preview-fields div { display:grid; gap:8px; }
+  .preview-fields dt { color:var(--dc-text-muted); font-size:13px; }
+  .preview-fields dd { margin:0; font-size:14px; }
+  .preview-go { display:grid; gap:12px; border-top:1px solid var(--dc-border); padding-top:20px; }
+  .preview-go .start { min-height:38px; }
 
   .status {
     display: flex;
@@ -865,19 +508,6 @@
     color: var(--dc-text-muted);
     font-size: 12px;
     line-height: 1.4;
-  }
-
-  .dot {
-    flex-shrink: 0;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #6b6560;
-  }
-
-  .dot.live {
-    background: #9fd4a8;
-    box-shadow: 0 0 10px rgba(159, 212, 168, 0.6);
   }
 
   .start {
@@ -906,30 +536,6 @@
     gap: 12px;
   }
 
-  .result-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .answers {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-    gap: 10px;
-  }
-
-  .answer {
-    display: grid;
-    gap: 8px;
-    padding: 14px;
-  }
-
-  .answer p {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
   .brief {
     margin: 0;
     color: var(--dc-text-muted);
@@ -939,18 +545,12 @@
 
   /* ── Tablet and phone ─────────────────────────────────────────── */
 
-  @media (max-width: 1100px) {
-    .templates {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
   @media (max-width: 900px) {
     .desk {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .slate {
+    .project-preview {
       position: static;
     }
   }
@@ -961,38 +561,15 @@
       padding-top: 16px;
     }
 
-    .head-note,
-    .section-note {
-      display: none;
-    }
-
-    .templates {
-      display: flex;
-      margin-inline: calc(-1 * var(--dc-gutter-x));
-      padding-inline: var(--dc-gutter-x);
-      overflow-x: auto;
-      scrollbar-width: none;
-      scroll-snap-type: x mandatory;
-    }
-
-    .template {
-      flex: 0 0 78%;
-      scroll-snap-align: start;
-    }
 
     .field-pair {
       grid-template-columns: minmax(0, 1fr);
     }
 
     .form,
-    .slate-body {
+    .project-preview {
       padding: 16px;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .sticks.clap {
-      animation: none;
-    }
-  }
 </style>

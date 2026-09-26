@@ -25,6 +25,7 @@
 </script>
 
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   let { label, color = 'var(--dc-text-muted)', active = false }: { label: string; color?: string; active?: boolean } = $props();
 </script>
 
@@ -35,5 +36,5 @@
   style:background={active ? color : `color-mix(in srgb, ${color} 16%, transparent)`}
   style:border-color="transparent"
 >
-  {label.replace(/_/g, ' ')}
+  <LegacyText text={label.replace(/_/g, ' ')} />
 </span>

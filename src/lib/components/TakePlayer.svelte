@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import Icon from './Icon.svelte';
   import { toneFor } from '$lib/ui/tones';
   import { timecode, type Take } from '$lib/ui/studio.svelte';
@@ -241,11 +242,11 @@
       <div class="tags">
         <span class="stag">{primary.code}</span>
         {#if primary.writer}<span class="stag tone-{toneFor(primary.writer)}">{primary.writer}</span>{/if}
-        {#if primary.model}<span class="stag tone-{toneFor(primary.model)}">{primary.model}</span>{/if}
+        {#if primary.model}<span class="stag tone-{toneFor(primary.model)}"><LegacyText text={primary.model} /></span>{/if}
         {#if comparing && secondary}
           <span class="versus dim">vs</span>
           <span class="stag tone-warm">{secondary.code}</span>
-          {#if secondary.model}<span class="stag tone-{toneFor(secondary.model)} hide-sm">{secondary.model}</span>{/if}
+          {#if secondary.model}<span class="stag tone-{toneFor(secondary.model)} hide-sm"><LegacyText text={secondary.model} /></span>{/if}
         {/if}
       </div>
       {#if duration}<span class="time">{timecode(current)} / {timecode(duration)}</span>{/if}

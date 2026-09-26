@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import ArtifactPreview from './ArtifactPreview.svelte';
   import { toneFor } from '$lib/ui/tones';
   import { plural } from '$lib/ui/studio.svelte';
@@ -46,7 +47,7 @@
     <span class="poster-status stag tone-{toneFor(status)}">{status}</span>
   {/if}
   <span class="poster-copy">
-    <span class="t-card">{title}</span>
+    <span class="t-card"><LegacyText text={title} /></span>
     {#if !compact}<span class="poster-meta">{plural(takeCount, 'take')}</span>{/if}
   </span>
 </svelte:element>

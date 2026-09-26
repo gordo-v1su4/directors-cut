@@ -9,6 +9,6 @@ export function videoModel(artifact: ComparisonArtifact) {
   const model = artifact.model || artifact.target_model;
   if (!model || model === 'manual') return 'Model not set';
   const normalized = model.toLowerCase().replace(/_/g, '-');
-  const labels: Record<string,string> = {'sora-2':'Sora 2','sora-2-pro':'Sora 2 Pro','seedance-2-0':'Seedance 2.0','seedance-2.0':'Seedance 2.0'};
+  const labels: Record<string,string> = {'sora-2':'Sora 2','sora-2-pro':'Sora 2 Pro','seedance-2-0':'Seedance 2.0','seedance-2.0':'Seedance 2.0','seedance-2-5':'Seedance 2.5','seedance-2.5':'Seedance 2.5'};
   return labels[normalized] || model.replace(/_/g, ' ');
 }

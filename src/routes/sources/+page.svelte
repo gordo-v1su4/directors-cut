@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import { onMount } from 'svelte';
   import { loadPromptCards } from '$lib/data/loader';
   import type { PromptCardIndex } from '$lib/types/prompt-card';
@@ -92,12 +93,12 @@
       <article class="repo glass-panel">
         <div class="repo-top">
           <div class="repo-name">
-            <h2 class="t-card" title={source.name}>{source.name}</h2>
+            <h2 class="t-card" title={source.name}><LegacyText text={source.name} /></h2>
             <span class="dim repo-path" title={source.path}>{source.path}</span>
           </div>
         </div>
         <div class="tags">
-          {#each source.families as fam (fam)}<span class="stag tone-{toneFor(fam)}">{familyLabel(fam)}</span>{/each}
+          {#each source.families as fam (fam)}<span class="stag tone-{toneFor(fam)}"><LegacyText text={familyLabel(fam)} /></span>{/each}
         </div>
         <p class="repo-cites muted">
           Cited by {source.cards.map((c) => c.title).join(', ')}.

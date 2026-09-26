@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LegacyText from '$lib/components/LegacyText.svelte';
   import { onMount, type Snippet } from 'svelte';
   import Icon from './Icon.svelte';
 
@@ -75,7 +76,7 @@
 <div class="backdrop" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div bind:this={dialog} class="modal glass-modal" role="dialog" aria-modal="true" aria-label={fullTitle} tabindex="-1" style:max-width="{width}px">
     <div class="head">
-      <h2 class="t-section" title={fullTitle}>{title}</h2>
+      <h2 class="t-section" title={fullTitle}><LegacyText text={title} /></h2>
       <button type="button" class="sbtn sbtn-icon" onclick={onclose} aria-label="Close">
         <Icon name="x" size={16} />
       </button>

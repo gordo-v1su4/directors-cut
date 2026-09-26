@@ -1,3 +1,5 @@
+import { seedanceLabel, seedanceWorkingCopy, type SeedanceModel } from './models';
+
 export type CaptureHandoffMode = 'manual' | 'automated';
 
 export interface CreateBriefInput {
@@ -7,6 +9,7 @@ export interface CreateBriefInput {
   duration: string;
   includeAudio: boolean;
   referenceName?: string;
+  videoModel?: SeedanceModel;
 }
 
 const FORMAT_SUFFIX: Record<string, string> = {
@@ -30,6 +33,40 @@ export interface QuickStartPreset {
 
 export const QUICK_START_PRESETS: QuickStartPreset[] = [
   {
+    id: 'suspense-trailer-build',
+    label: 'Pacing formula',
+    format: 'trailer',
+    duration: '12',
+    title: 'Suspense trailer build',
+    idea: `Create a 12-second suspense teaser using this reusable trailer formula. Build around my premise if I provide one; otherwise propose an original suspense premise with one central character, one familiar setting, and one unanswered question.
+
+CORE PRINCIPLE
+Withhold information while compressing time. This is a question for the audience, not a plot summary.
+
+STRUCTURE
+Hook → Setup → Disruption → Accelerating escalation → Peak → Brake → Title + Stinger.
+
+12-SECOND TIMING GUIDE
+0:00–0:01 — Hook: one arresting image or short line, with no explanation. Silence or a single tone.
+0:01–0:03.5 — Setup: establish the person and a calm, ordinary world long enough to feel safe. Low drone or sparse piano.
+0:03.5–0:05 — Disruption: violate that safety. Show a disturbing effect and plant the central question. First riser or strings.
+0:05–0:08 — Escalation: increasingly short glimpses, fragments of dialogue, and accumulating consequences. Stack sound layers and tighten the cutting.
+0:08–0:09 — Peak: the fastest cuts and the single largest image. One decisive bass impact.
+0:09–0:10 — Brake: cut abruptly to silence. Hold a breath, an image, or one very short line.
+0:10–0:11 — Title: a clean title reveal with a signature sting.
+0:11–0:12 — Stinger: one final unsettling button that reopens the question without answering it.
+
+EDITING AND SUSPENSE RULES
+- Shorten average shot length through the escalation, not through every beat. A longer trailer might build from 3s to 2s to 1s to 0.5s to 0.25s; scale that curve to this runtime. Avoid an even cutting rhythm through the build, and preserve the held brake.
+- Let the music drive the edit: use downbeats, risers, a sustained tone, one major bass hit, then sudden silence. Sound and negative space carry the tension.
+- Show the threat's effects rather than a complete reveal. Withhold the answer and the outcome.
+- Use one recurring image three times: plant it, escalate its meaning, then subvert it at the peak.
+- If dialogue is used, limit it to a character line, a threat line, or a question line. Keep it speakable within the runtime; remove plot explanation.
+- Reserve the biggest image for the peak. Do not spend it in the opening hook.
+- Keep the setup calm enough to establish trust. For a dread-led variation, add a brief earlier brake and restart the build, while retaining the held breath before the title.
+- For a longer edit, expand the calm setup and escalation rather than stretching every beat equally. Preserve the contrast between speed and stillness.`,
+  },
+  {
     id: 'netflix-teaser',
     label: 'Netflix teaser',
     format: 'trailer',
@@ -45,7 +82,7 @@ export const QUICK_START_PRESETS: QuickStartPreset[] = [
     duration: '12',
     title: 'Festival After Midnight — Teaser',
     idea:
-      'Two estranged friends at a chaotic electronic-music festival discover a disposable camera showing a crime that has not happened yet. Premium YA thriller tone, friendship, identity, nightlife, sharp twist. One integrated 12-second Sora sizzler.',
+      'Two estranged friends at a chaotic electronic-music festival discover a disposable camera showing a crime that has not happened yet. Premium YA thriller tone, friendship, identity, nightlife, sharp twist. One integrated 12-second Seedance sizzler.',
   },
   {
     id: 'commercial',
@@ -134,29 +171,34 @@ export function resolveProjectTitle(projectTitle: string, idea: string, format: 
 
 export function buildCanonicalConceptBrief(input: CreateBriefInput): string {
   const title = resolveProjectTitle(input.projectTitle, input.idea, input.format);
+  const model = input.videoModel ?? 'seedance-2.5';
   const audioRule = input.includeAudio
     ? '\n- Include intentional audio, music, ambience, dialogue, and SFX direction inside the prompt'
-    : '';
+    : '\n- Picture only: no dialogue, music, or sound effects; express rhythm through the edit';
   const referenceRule = input.referenceName
     ? `- Visual reference selected locally: ${input.referenceName}. Use only its visible composition, character, product, or style cues; do not invent unseen details.`
     : '- No visual reference supplied.';
 
   return `PROJECT TITLE
-${title}
+${seedanceWorkingCopy(title, model)}
+
+TARGET MODEL
+${seedanceLabel(model)}
 
 CREATIVE BRIEF
-Develop two independent premium ${input.format} concepts from this idea for a young-adult audience. ChatGPT and Claude will each receive the same brief through Raycast.
+Write one cinematic ${input.format} prompt for ${seedanceLabel(model)} using the idea below. Preserve its characters, story, visual identity, and intended suspense structure.
 
-${input.idea.trim()}
+${seedanceWorkingCopy(input.idea.trim(), model)}
 
 DELIVERY
-- Exactly one ${input.duration}-second timestamp sizzler prompt per model (opening paragraph + bracketed act blocks + Style closing)
-- Brutal pacing: 0.3–0.7s cuts, 0.2s flash-frames at peak, one silence beat before title, one impact on title
-- Integrate aesthetic palette, needle-drop/audio bed, camera modes, and negative rules inside the SORA PROMPT block
+- Exactly one ${input.duration}-second prompt: concept and identity locks, visual style, timestamped action beats, editing rhythm, and a concise closing rules section
+- Follow any explicit pacing curve and beat timings in the creative brief, including calm setup and held pauses. Otherwise use a fast teaser build: 0.3–0.7s cuts, 0.2s flash-frames at peak, one silence beat before title, one impact on title
+- Integrate palette, camera movement, physically clear action, editing, and continuity rules into the Seedance prompt
+- Adapt inherited model-specific instructions to ${seedanceLabel(model)}; do not assume that an archived recipe's technical limits or syntax apply unchanged
 - Prioritize immediate hook, emotional discovery, and sharp plot-turn payoff${audioRule}
 - Do not return multiple prompt options or claim a video was generated
 ${referenceRule}
 
-RAYCAST WORKFLOW
-Run “Start Directors Cut Concept Run.” Enter the project title as argument 1 and leave argument 2 blank to use this copied brief. The command saves the project, rebuilds the Projects index, and copies the canonical prompt for ChatGPT; capture ChatGPT, then repeat with Claude.`;
+WORKFLOW
+Use this brief with your preferred prompt writer. Review the resulting prompt, then render it with ${seedanceLabel(model)} in your video tool. Upload the finished video into Directors Cut and attach the prompt and model to its take. This brief does not submit a generation job.`;
 }
