@@ -121,8 +121,8 @@
    * its run, status and Projects link; a finished one also stops polling.
    */
   function resetRun() {
-    error = '';
     if (busy || captureRunning) return;
+    error = '';
     stopPolling();
     request = '';
     automatedRun = null;
@@ -208,17 +208,29 @@
     return status;
   }
 
+  /** End a capture that stopped: clear the running state and say why. */
+  function endCapture(message = '') {
+    captureRunning = false;
+    stopPolling();
+    if (message) error = message;
+  }
+
   function startPolling(runId: string) {
     stopPolling();
+    let failures = 0;
     pollTimer = setInterval(() => {
       refreshCaptureStatus(runId)
         .then((status) => {
-          if (status && (status.capture_job_status === 'complete' || status.ready_for_projects)) {
-            captureRunning = false;
-            stopPolling();
-          }
+          failures = 0;
+          if (!status) return;
+          if (status.capture_job_status === 'complete' || status.ready_for_projects) endCapture();
+          // The result panel explains a capture that went idle before finishing.
+          else if (status.capture_job_status === 'idle') endCapture();
         })
-        .catch(() => undefined);
+        .catch((caught) => {
+          failures += 1;
+          if (failures >= 5) endCapture(`Lost contact with the bridge: ${caught instanceof Error ? caught.message : String(caught)}`);
+        });
     }, 3000);
   }
 
@@ -278,7 +290,7 @@
       await refreshCaptureStatus(automatedRun.run_id);
       startPolling(automatedRun.run_id);
     } catch (caught) {
-      error = caught instanceof Error ? caught.message : String(caught);
+      endCapture(caught instanceof Error ? caught.message : String(caught));
     } finally {
       busy = false;
     }

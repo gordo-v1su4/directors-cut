@@ -212,7 +212,10 @@ class Studio {
     const startEpochs = new Map(this.epochs);
 
     const results = await mapLimit(summaries, 4, async (summary) => {
-      const detail = await loadComparisonRun(summary.run_id).catch(() => null);
+      // With good data already on screen, a failed read keeps it (strict);
+      // a first load takes whatever it can read.
+      const strict = !!this.project(summary.run_id);
+      const detail = await loadComparisonRun(summary.run_id, undefined, { strict }).catch(() => null);
       return { summary, detail, sig: detail ? JSON.stringify([summary, detail]) : '' };
     });
 
@@ -246,9 +249,9 @@ class Studio {
     if (!summary) return this.refresh(true);
     const epoch = (this.epochs.get(runId) ?? 0) + 1;
     this.epochs.set(runId, epoch);
-    const detail = await loadComparisonRun(runId);
-    // A later reload of the same project owns the result.
-    if (this.epochs.get(runId) !== epoch) return;
+    const detail = await loadComparisonRun(runId, undefined, { strict: true }).catch(() => null);
+    // A failed read keeps what is on screen; a later reload of the same project owns the result.
+    if (!detail || this.epochs.get(runId) !== epoch) return;
     const fresh = buildProject({ ...summary, title: detail.title, logline: detail.logline }, detail);
     this.sigs.delete(runId);
     this.projects = this.projects.map((project) => (project.runId === runId ? fresh : project));
