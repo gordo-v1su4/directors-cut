@@ -15,7 +15,7 @@
   import { toneFor } from '$lib/ui/tones';
   import { mediaApi } from '$lib/data/media-api';
   import { parseRunQuestion } from '$lib/data/run-brief';
-  import { saveProjectText, signInOwner, SignInRequired } from '$lib/data/titles';
+  import { removeProject, saveProjectText, signInOwner, SignInRequired } from '$lib/data/titles';
   import type { GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
 
   type Drawer = 'prompt' | 'shots' | 'versions' | 'source';
@@ -126,6 +126,41 @@
   let renameError = $state('');
   let needSignIn = $state(false);
   let password = $state('');
+  let removeOpen = $state(false);
+  let removeConfirm = $state('');
+  let removeBusy = $state(false);
+  let removeError = $state('');
+  let removePassword = $state('');
+  let removeNeedSignIn = $state(false);
+
+  function openRemove() {
+    removeConfirm = '';
+    removeError = '';
+    removePassword = '';
+    removeNeedSignIn = false;
+    removeOpen = true;
+  }
+
+  async function confirmRemove(event: SubmitEvent) {
+    event.preventDefault();
+    if (!project || removeConfirm !== project.title || removeBusy) return;
+    const runId = project.runId;
+    removeBusy = true;
+    removeError = '';
+    try {
+      if (removeNeedSignIn) await signInOwner(removePassword);
+      await removeProject(runId);
+      removeOpen = false;
+      studio.forget(runId);
+      const next = studio.projects[0];
+      await goto(next ? `/comparisons?run=${encodeURIComponent(next.runId)}` : '/comparisons', { replaceState: true });
+    } catch (error) {
+      if (error instanceof SignInRequired) removeNeedSignIn = true;
+      removeError = error instanceof Error ? error.message : 'Project removal failed';
+    } finally {
+      removeBusy = false;
+    }
+  }
 
   function startRename() {
     titleDraft = project?.fullTitle ?? '';
@@ -215,6 +250,7 @@
           <div class="title-row">
             <h1 class="t-page" title={project.fullTitle}><LegacyText text={project.title} /></h1>
             <button type="button" class="sbtn" onclick={startRename}><Icon name="edit" size={12} /> Rename</button>
+            <button type="button" class="sbtn" onclick={openRemove}>Remove project</button>
           </div>
           <p class="logline" title={project.logline}><LegacyText text={project.logline} /></p>
         {/if}
@@ -410,6 +446,24 @@
         <img class="shot-full" src={shotUrl} alt="Shot grid" />
       </GlassModal>
     {/if}
+    {#if removeOpen}
+      <GlassModal title="Remove project" fullTitle={`Remove ${project.fullTitle}`} onclose={() => { if (!removeBusy) removeOpen = false; }}>
+        <form class="rename" onsubmit={confirmRemove}>
+          <p>This permanently removes <strong>{project.title}</strong>, its {plural(takes.length, 'take')}, and uploaded video files stored for this project. This cannot be undone.</p>
+          <p class="muted">Project ID: <code>{project.runId}</code></p>
+          <p class="muted">Type the project title to confirm: <strong>{project.title}</strong></p>
+          <input class="sinput" bind:value={removeConfirm} aria-label="Type project title to confirm removal" autocomplete="off" disabled={removeBusy} />
+          {#if removeNeedSignIn}
+            <input class="sinput password" type="password" bind:value={removePassword} placeholder="Owner password" autocomplete="current-password" aria-label="Owner password" disabled={removeBusy} />
+          {/if}
+          {#if removeError}<p class="error" role="alert">{removeError}</p>{/if}
+          <div class="rename-actions">
+            <button type="submit" class="sbtn sbtn-danger" disabled={removeBusy || removeConfirm !== project.title || (removeNeedSignIn && !removePassword)}>{removeBusy ? 'Removing…' : 'Remove project and videos'}</button>
+            <button type="button" class="sbtn" onclick={() => (removeOpen = false)} disabled={removeBusy}>Cancel</button>
+          </div>
+        </form>
+      </GlassModal>
+    {/if}
   {/if}
 </div>
 
@@ -477,6 +531,7 @@
 
   .title-row {
     display: flex;
+    flex-wrap: wrap;
     min-width: 0;
     align-items: center;
     gap: 12px;
@@ -534,6 +589,15 @@
 
   .password {
     width: 200px;
+  }
+
+  .sbtn-danger {
+    background: #843b38;
+    color: #fff;
+  }
+
+  .sbtn-danger:hover:not(:disabled) {
+    background: #a14742;
   }
 
   .error {

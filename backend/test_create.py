@@ -12,6 +12,7 @@ class CreateProjectTests(unittest.TestCase):
         with app.connect() as db:
             db.execute('DELETE FROM documents WHERE run_id=?', (self.run_id,))
             db.execute('DELETE FROM uploads WHERE run_id=?', (self.run_id,))
+            db.execute('DELETE FROM deleted_runs WHERE run_id=?', (self.run_id,))
 
     def create(self, payload=None):
         return app.create_run(request(json.dumps(self.payload if payload is None else payload)))
@@ -47,6 +48,60 @@ class CreateProjectTests(unittest.TestCase):
         with app.connect() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM documents WHERE run_id=?', (self.run_id,)).fetchone()[0], 5)
             self.assertEqual(app.document(db, self.run_id, 'run')['title'], 'My own film')
+
+    def test_duplicate_display_title_is_rejected_on_create_and_rename(self):
+        second = {**self.payload, 'request_id': 'b' * 32, 'title': 'My own film — alternate cut'}
+        other_id = 'upload-' + second['request_id']
+        with app.connect() as db:
+            db.execute('DELETE FROM documents WHERE run_id=?', (other_id,))
+        with patch.object(app, 'authorized', return_value=True):
+            self.assertEqual(self.create().status_code, 201)
+            duplicate = self.create(second)
+            self.assertEqual(duplicate.status_code, 409)
+            self.assertEqual(json.loads(duplicate.description)['existing_run_id'], self.run_id)
+            second['title'] = 'Another film'
+            self.assertEqual(self.create(second).status_code, 201)
+            rename = app.run_details(request(json.dumps({'title': 'MY OWN FILM (2026)'}), params={'run_id': other_id}))
+            self.assertEqual(rename.status_code, 409)
+        with app.connect() as db:
+            self.assertEqual(app.document(db, other_id, 'run')['title'], 'Another film')
+
+    def test_removal_cleans_storage_then_tombstones_project(self):
+        with patch.object(app, 'authorized', return_value=True):
+            self.assertEqual(self.create().status_code, 201)
+        key = f'media-uploads/2026/09_27/{self.run_id}/versions/v1/video.mp4'
+        with app.connect() as db:
+            db.execute('INSERT INTO uploads VALUES (?,?,?,?,?,?,?,?,?,?)',
+                ('remove-qa', self.run_id, 'remove-sha', 1, key, None, None, 'failed', None, '2026-09-27'))
+        response = Mock(status_code=200)
+        response.json.return_value = {'deleted': 1, 'failed': []}
+        client = Mock()
+        client.post.return_value = response
+        with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as factory:
+            factory.return_value.__enter__.return_value = client
+            result = app.delete_run(request(json.dumps({'confirm_run_id': self.run_id}), params={'run_id': self.run_id}))
+        self.assertEqual(result.status_code, 200)
+        self.assertIn(f'media-uploads/2026/09_27/{self.run_id}/', client.post.call_args.kwargs['json']['prefixes'])
+        app.initialize()
+        with app.connect() as db:
+            self.assertIsNone(app.document(db, self.run_id, 'run'))
+            self.assertEqual(db.execute('SELECT count(*) FROM uploads WHERE run_id=?', (self.run_id,)).fetchone()[0], 0)
+        with patch.object(app, 'authorized', return_value=True):
+            self.assertEqual(self.create().status_code, 409)
+
+    def test_failed_storage_cleanup_keeps_project_for_retry(self):
+        with patch.object(app, 'authorized', return_value=True):
+            self.assertEqual(self.create().status_code, 201)
+        response = Mock(status_code=502)
+        response.raise_for_status.side_effect = app.httpx.HTTPError('storage offline')
+        client = Mock()
+        client.post.return_value = response
+        with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as factory:
+            factory.return_value.__enter__.return_value = client
+            result = app.delete_run(request(json.dumps({'confirm_run_id': self.run_id}), params={'run_id': self.run_id}))
+        self.assertEqual(result.status_code, 502)
+        with app.connect() as db:
+            self.assertIsNotNone(app.document(db, self.run_id, 'run'))
 
     def test_invalid_inputs_create_no_records(self):
         invalid = [None, [], {'title': ' '}, {'title': 'x' * 121}, {'logline': 'x' * 601}, {'tags': 'film'}, {'tags': [None]}, {'tags': [' ']}, {'tags': ['x' * 41]}, {'tags': ['x'] * 21}, {'format': 'invalid'}, {'request_id': '../other'}]

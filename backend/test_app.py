@@ -119,11 +119,11 @@ class RunDetailsTests(unittest.TestCase):
 
     def test_rename_updates_only_the_title(self):
         with patch.object(app,'authorized',return_value=True):
-            result=app.run_details(request(json.dumps({'title':'  The Pink Room  '}),params={'run_id':'rename-me'}))
+            result=app.run_details(request(json.dumps({'title':'  My unique pink room  '}),params={'run_id':'rename-me'}))
         self.assertEqual(result.status_code,200)
         with app.connect() as db:
             run=app.document(db,'rename-me','run')
-        self.assertEqual(run['title'],'The Pink Room')
+        self.assertEqual(run['title'],'My unique pink room')
         self.assertEqual(run['status'],'draft')
 
     def test_rename_rejects_blank_and_unknown(self):

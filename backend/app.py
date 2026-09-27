@@ -12,7 +12,7 @@ import secrets
 import sqlite3
 import threading
 import time
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 from datetime import datetime, timezone
 
 import httpx
@@ -50,11 +50,14 @@ def initialize():
         CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, run_id TEXT NOT NULL, sha TEXT NOT NULL, version INTEGER NOT NULL, object_key TEXT NOT NULL, media_url TEXT, job_id TEXT, status TEXT NOT NULL, error TEXT, created TEXT NOT NULL, UNIQUE(run_id,sha), UNIQUE(run_id,version));
         CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS login_attempts (ip TEXT PRIMARY KEY, count INTEGER, until REAL);
+        CREATE TABLE IF NOT EXISTS deleted_runs (run_id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL);
         PRAGMA user_version=1;
         ''')
         seed = Path(os.getenv('SEED_DIR', '/app/seed'))
         for folder in seed.glob('*'):
             if not folder.is_dir():
+                continue
+            if db.execute('SELECT 1 FROM deleted_runs WHERE run_id=?', (folder.name,)).fetchone():
                 continue
             for kind in ('run', 'answers', 'artifacts', 'prompts', 'decisions'):
                 path = folder / f'{kind}.json'
@@ -66,6 +69,48 @@ def initialize():
 def document(db, run_id, kind):
     row = db.execute('SELECT value FROM documents WHERE run_id=? AND kind=?', (run_id, kind)).fetchone()
     return json.loads(row['value']) if row else None
+
+
+def title_identity(title):
+    """Match the short project name shown in the screening room."""
+    head = re.sub(r'\s*\([^)]*\)', '', title).strip()
+    head = re.split(r'\s+[—–-]\s+', head, maxsplit=1)[0]
+    return ' '.join(head.split()).casefold()
+
+
+def project_with_title(db, title, exclude_run_id=None):
+    identity = title_identity(title)
+    for row in db.execute("SELECT run_id,value FROM documents WHERE kind='run'"):
+        if row['run_id'] != exclude_run_id and title_identity(json.loads(row['value']).get('title', '')) == identity:
+            return row['run_id']
+    return None
+
+
+def stored_key_from_url(url):
+    if not isinstance(url, str):
+        return None
+    parsed = urlsplit(url)
+    if parsed.scheme == 'https' and parsed.netloc == 's3.v1su4.dev' and parsed.path.startswith('/directors-cut/'):
+        return unquote(parsed.path[len('/directors-cut/'):])
+    return None
+
+
+def project_storage(db, run_id):
+    """Derive only this run's storage prefixes."""
+    prefixes = {f'version-assets/{run_id}/'}
+    uploads = [dict(row) for row in db.execute('SELECT * FROM uploads WHERE run_id=?', (run_id,))]
+    artifacts = document(db, run_id, 'artifacts') or []
+    for key in [*(row['object_key'] for row in uploads), *(
+        value for artifact in artifacts for value in (
+            artifact.get('object_key'), artifact.get('thumbnail_key'), artifact.get('shot_grid_object_key'),
+            stored_key_from_url(artifact.get('media_url')), stored_key_from_url(artifact.get('thumbnail_url')),
+            stored_key_from_url(artifact.get('shot_grid_url')),
+        ) if isinstance(value, str)
+    )]:
+        match = re.match(r'^media-uploads/(\d{4})/(\d{2}_\d{2})/' + re.escape(run_id) + r'/', key)
+        if match:
+            prefixes.add(f'media-uploads/{match[1]}/{match[2]}/{run_id}/')
+    return sorted(prefixes), uploads
 
 
 def reply(request, body, status=200):
@@ -299,11 +344,16 @@ def create_run(request: Request):
     run_id = 'upload-' + request_id
     fields = {'title': title.strip(), 'logline': logline.strip(), 'tags': list(dict.fromkeys(tag.strip() for tag in tags)), 'format': project_format}
     with lock, connect() as db:
+        if db.execute('SELECT 1 FROM deleted_runs WHERE run_id=?', (run_id,)).fetchone():
+            return reply(request, {'error': 'This project request was already removed. Start a new upload.'}, 409)
         existing = document(db, run_id, 'run')
         if existing:
             if any(existing.get(key) != value for key, value in fields.items()):
                 return reply(request, {'error': 'This project was already created with different details. Open it in Projects to edit.'}, 409)
             return reply(request, {'run': existing})
+        duplicate = project_with_title(db, fields['title'])
+        if duplicate:
+            return reply(request, {'error': 'A project with this title already exists. Open it in Projects or choose another title.', 'existing_run_id': duplicate}, 409)
         run = {**fields, 'run_id': run_id, 'question': '', 'created': datetime.now(timezone.utc).isoformat(), 'created_by': 'gordo', 'status': 'draft', 'models_requested': [], 'target_models': [], 'source_refs': []}
         for kind, value in [('run', run), ('answers', []), ('artifacts', []), ('prompts', []), ('decisions', [])]:
             db.execute('INSERT INTO documents VALUES (?,?,?)', (run_id, kind, json.dumps(value)))
@@ -337,9 +387,51 @@ def run_details(request: Request):
         run = document(db, run_id, 'run')
         if run is None:
             return reply(request, {'error': 'Project not found'}, 404)
+        if 'title' in changes:
+            duplicate = project_with_title(db, changes['title'], run_id)
+            if duplicate:
+                return reply(request, {'error': 'A project with this title already exists. Choose another title.', 'existing_run_id': duplicate}, 409)
         run.update(changes)
         db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), run_id))
     return reply(request, {'run': run})
+
+
+@app.post('/runs/:run_id/delete')
+def delete_run(request: Request):
+    """Remove an owner-confirmed project and every run-scoped RustFS object."""
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to remove this project'}, 401)
+    run_id = request.path_params['run_id']
+    try:
+        payload = json.loads(request.body)
+        if not isinstance(payload, dict) or payload.get('confirm_run_id') != run_id:
+            raise ValueError()
+    except (ValueError, TypeError):
+        return reply(request, {'error': 'Confirm the selected project before removing it'}, 400)
+    with lock, connect() as db:
+        run = document(db, run_id, 'run')
+        if not run:
+            if db.execute('SELECT 1 FROM deleted_runs WHERE run_id=?', (run_id,)).fetchone():
+                return reply(request, {'deleted': True, 'run_id': run_id})
+            return reply(request, {'error': 'Project not found'}, 404)
+        prefixes, uploads = project_storage(db, run_id)
+        if any(row['status'] in ('uploading', 'queued', 'processing') for row in uploads):
+            return reply(request, {'error': 'Wait for video processing to finish before removing this project'}, 409)
+        try:
+            with httpx.Client(timeout=300) as client:
+                cleanup = client.post(GATEWAY + '/directors-cut/delete-run-objects',
+                    headers={'Authorization': f'Bearer {TOKEN}'},
+                    json={'runId': run_id, 'prefixes': prefixes})
+                cleanup.raise_for_status()
+                if cleanup.json().get('failed'):
+                    raise ValueError('Storage cleanup incomplete')
+        except (httpx.HTTPError, ValueError):
+            return reply(request, {'error': 'Storage cleanup did not finish. The project is still listed; retry removal.'}, 502)
+        db.execute('INSERT OR IGNORE INTO deleted_runs VALUES (?,?)',
+            (run_id, datetime.now(timezone.utc).isoformat()))
+        db.execute('DELETE FROM uploads WHERE run_id=?', (run_id,))
+        db.execute('DELETE FROM documents WHERE run_id=?', (run_id,))
+    return reply(request, {'deleted': True, 'run_id': run_id})
 
 
 @app.get('/uploads/:id')

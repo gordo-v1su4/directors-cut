@@ -31,6 +31,10 @@ need an owner session but no prompt, writer capture, or generation bridge.
 32-character lowercase hex `request_id`. The resulting `upload-<request_id>`
 record and its four empty document lists are created in one transaction.
 Replaying the same request returns that project; conflicting details return 409.
+New titles must be unique by the short name shown in Projects: case,
+parentheticals, and subtitles after a spaced dash do not distinguish projects.
+The same check applies when renaming. Existing duplicate records are left for
+the owner to review and remove.
 
 The browser validates the selected files before creating the project and sends
 them through the existing `/versions` flow. Each becomes a separate take.
@@ -50,6 +54,18 @@ updates the stored project record. It requires the same owner session as
 uploads. Titles are 1–120 characters, loglines up to 600. The UI shows a short
 display name (subtitle and parentheticals dropped, all-caps titles set in title
 case) but saves exactly what the owner types.
+
+## Removing projects
+
+The Projects page offers **Remove project** with exact title confirmation and
+owner sign-in. `POST /runs/:run_id/delete` also requires `confirm_run_id` in
+the request body. The backend asks the RustFS media gateway to delete all
+objects under the project's dated upload and `version-assets` prefixes, then
+removes its SQLite documents and upload records. Derived worker artifacts under
+the source object's `.analysis/` path are included. If storage cleanup fails,
+the project stays listed for a retry. Deleted seeded projects are tombstoned so
+a backend restart does not import them again. Deploy the media gateway's
+`/directors-cut/delete-run-objects` route before this backend version.
 
 ## Configuration
 
