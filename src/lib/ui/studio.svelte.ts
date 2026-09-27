@@ -163,6 +163,7 @@ class Studio {
   private sigs = new Map<string, string>();
   /** Bumped by every reload, so an overlapping refresh never undoes one. */
   private epochs = new Map<string, number>();
+  private removed = new Set<string>();
   private loading: Promise<void> | null = null;
   private refreshing: Promise<void> | null = null;
 
@@ -209,7 +210,7 @@ class Studio {
   private async sync(force: boolean) {
     const index = await loadComparisonsIndex();
     const summaries = index.runs
-      .filter((run) => run.status !== 'promoted')
+      .filter((run) => run.status !== 'promoted' && !this.removed.has(run.run_id))
       .sort((a, b) => b.created.localeCompare(a.created));
     const startEpochs = new Map(this.epochs);
 
@@ -223,6 +224,7 @@ class Studio {
 
     let changed = force || results.length !== this.projects.length;
     const projects = results.flatMap(({ summary, detail, sig }): Project[] => {
+      if (this.removed.has(summary.run_id)) return [];
       const current = this.project(summary.run_id);
       // A reload finished while this refresh was reading: its data is newer.
       if (current && this.epochs.get(summary.run_id) !== startEpochs.get(summary.run_id)) return [current];
@@ -244,6 +246,15 @@ class Studio {
   private markNewest() {
     const newestId = this.takes[0]?.id;
     for (const project of this.projects) for (const take of project.takes) take.isNewest = take.id === newestId;
+  }
+
+  forget(runId: string) {
+    this.removed.add(runId);
+    this.epochs.set(runId, (this.epochs.get(runId) ?? 0) + 1);
+    this.sigs.delete(runId);
+    this.pending = this.pending.filter((id) => id !== runId);
+    this.projects = this.projects.filter((project) => project.runId !== runId);
+    this.markNewest();
   }
 
   /** Re-read one project after it changed (rename, upload, new take). */

@@ -42,6 +42,23 @@ export async function signInOwner(password: string): Promise<void> {
 
 export class SignInRequired extends Error {}
 
+/** Permanently remove a project after its owner confirms the exact project. */
+export async function removeProject(runId: string): Promise<void> {
+  const token = ownerToken();
+  if (!token) throw new SignInRequired('Sign in to remove this project.');
+  const response = await fetch(`${mediaApi}/runs/${encodeURIComponent(runId)}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ confirm_run_id: runId }),
+  });
+  if (response.status === 401) {
+    sessionStorage.removeItem('directors-cut-owner');
+    throw new SignInRequired('Your session expired. Sign in again to remove this project.');
+  }
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Project removal failed');
+}
+
 /**
  * Save a project's title and/or logline on the server.
  * Throws SignInRequired when the session is missing or expired.
