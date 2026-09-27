@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import ProjectCard from '$lib/components/ProjectCard.svelte';
+  import ProjectThumbnailPanel from '$lib/components/ProjectThumbnailPanel.svelte';
   import ClipCard from '$lib/components/ClipCard.svelte';
   import TakePlayer, { type CompareMode } from '$lib/components/TakePlayer.svelte';
   import GlassModal from '$lib/components/GlassModal.svelte';
@@ -18,7 +19,7 @@
   import { removeProject, saveProjectText, signInOwner, SignInRequired } from '$lib/data/titles';
   import type { GenerationPrompt, ModelAnswer } from '$lib/types/comparison';
 
-  type Drawer = 'prompt' | 'shots' | 'versions' | 'source';
+  type Drawer = 'prompt' | 'shots' | 'versions' | 'source' | 'thumbnail';
 
   const project = $derived(studio.project(page.url.searchParams.get('run')) ?? studio.projects[0]);
   const takes = $derived(project?.takes ?? []);
@@ -221,6 +222,7 @@
               title={p.title}
               fullTitle={p.fullTitle}
               cover={p.takes.at(-1)?.artifact ?? p.shotGrids[0]}
+              thumbnailUrl={p.projectThumbnailUrl}
               selected={p.runId === project.runId}
               onselect={() => selectProject(p.runId)}
             />
@@ -320,7 +322,7 @@
 
     <section class="drawer">
       <div class="drawer-tabs" role="tablist" aria-label="Project details">
-        {#each [['prompt', 'Prompt'], ['shots', `Shots${shots.length ? ` ${shots.length}` : ''}`], ['versions', `Versions ${takes.length}`], ['source', 'Source']] as [id, label] (id)}
+        {#each [['prompt', 'Prompt'], ['shots', `Shots${shots.length ? ` ${shots.length}` : ''}`], ['versions', `Versions ${takes.length}`], ['source', 'Source'], ['thumbnail', 'Thumbnail']] as [id, label] (id)}
           <button type="button" role="tab" class="tab" class:active={drawer === id} aria-selected={drawer === id} onclick={() => (drawer = id as Drawer)}>
             {label}
           </button>
@@ -418,7 +420,7 @@
             <span>Drop a cut</span>
           </button>
         </div>
-      {:else}
+      {:else if drawer === 'source'}
         <div class="panel glass-panel source">
           {#if brief}<p class="source-brief"><LegacyText text={brief} /></p>{/if}
           {#if question}
@@ -427,6 +429,8 @@
             <p class="muted">No source saved for this project.</p>
           {/if}
         </div>
+      {:else if drawer === 'thumbnail'}
+        {#key project.runId}<ProjectThumbnailPanel {project} onSaved={reload} />{/key}
       {/if}
     </section>
 

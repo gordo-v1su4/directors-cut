@@ -132,3 +132,61 @@ class RunDetailsTests(unittest.TestCase):
             missing=app.run_details(request(json.dumps({'title':'x'}),params={'run_id':'nope'}))
         self.assertEqual(blank.status_code,400)
         self.assertEqual(missing.status_code,404)
+
+
+class ProjectThumbnailTests(unittest.TestCase):
+    run_id = 'thumbnail-qa'
+    image = b'\x89PNG\r\n\x1a\nthumbnail data'
+
+    def setUp(self):
+        app.initialize()
+        with app.connect() as db:
+            db.execute('INSERT OR REPLACE INTO documents VALUES (?,?,?)',
+                (self.run_id, 'run', json.dumps({'run_id': self.run_id, 'title': 'Thumbnail QA'})))
+            db.execute('INSERT OR REPLACE INTO documents VALUES (?,?,?)',
+                (self.run_id, 'artifacts', json.dumps([{'artifact_id': 'v1', 'thumbnail_url': 'take.jpg'}])))
+
+    def upload(self, image=None, mime='image/png'):
+        return app.upload_project_thumbnail(request(self.image if image is None else image,
+            {'content-type': mime}, {'run_id': self.run_id}))
+
+    def test_upload_auth_validation_and_missing_project_never_touch_storage(self):
+        self.assertEqual(self.upload().status_code, 401)
+        with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as client:
+            self.assertEqual(self.upload(b'not an image').status_code, 400)
+            self.assertEqual(self.upload(mime='image/jpeg').status_code, 400)
+            self.assertEqual(self.upload(b'\x89PNG\r\n\x1a\n' + b'x' * 5_000_000).status_code, 400)
+            self.assertEqual(app.upload_project_thumbnail(request(self.image,
+                {'content-type': 'image/png'}, {'run_id': 'unknown'})).status_code, 404)
+        client.assert_not_called()
+
+    def test_upload_persists_only_project_cover_and_reset_deletes_exact_object(self):
+        key = f'version-assets/{self.run_id}/project-covers/{app.hashlib.sha256(self.image).hexdigest()}.png'
+        result = Mock(); result.json.return_value = {
+            'bucket': app.BUCKET, 'objectKey': key, 'publicUrl': 'https://s3.v1su4.dev/directors-cut/' + key}
+        deleted = Mock(); deleted.json.return_value = {'deleted': 1, 'failed': 0}
+        client = Mock(); client.post.side_effect = [result, deleted]
+        with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as factory:
+            factory.return_value.__enter__.return_value = client
+            self.assertEqual(self.upload().status_code, 200)
+            with app.connect() as db:
+                run = app.document(db, self.run_id, 'run')
+                self.assertEqual(run['project_thumbnail_object_key'], key)
+                self.assertEqual(app.document(db, self.run_id, 'artifacts'), [{'artifact_id': 'v1', 'thumbnail_url': 'take.jpg'}])
+            self.assertEqual(app.remove_project_thumbnail(request(params={'run_id': self.run_id})).status_code, 200)
+        self.assertEqual(client.post.call_args_list[1].kwargs['json'], {'bucket': app.BUCKET, 'objectKeys': [key]})
+        with app.connect() as db:
+            self.assertNotIn('project_thumbnail_url', app.document(db, self.run_id, 'run'))
+
+    def test_storage_failure_preserves_existing_cover(self):
+        with app.connect() as db:
+            run = app.document(db, self.run_id, 'run')
+            run.update(project_thumbnail_url='https://example.test/old.png',
+                project_thumbnail_object_key=f'version-assets/{self.run_id}/project-covers/old.png')
+            db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), self.run_id))
+        with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as factory:
+            factory.return_value.__enter__.return_value.post.side_effect = app.httpx.ConnectError('test')
+            self.assertEqual(self.upload().status_code, 502)
+            self.assertEqual(app.remove_project_thumbnail(request(params={'run_id': self.run_id})).status_code, 502)
+        with app.connect() as db:
+            self.assertEqual(app.document(db, self.run_id, 'run')['project_thumbnail_url'], 'https://example.test/old.png')

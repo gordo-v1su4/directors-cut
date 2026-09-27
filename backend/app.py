@@ -434,6 +434,89 @@ def delete_run(request: Request):
     return reply(request, {'deleted': True, 'run_id': run_id})
 
 
+def delete_project_thumbnail_object(key):
+    with httpx.Client(timeout=30) as client:
+        response = client.post(GATEWAY + '/delete',
+            headers={'Authorization': f'Bearer {TOKEN}'},
+            json={'bucket': BUCKET, 'objectKeys': [key]})
+        response.raise_for_status()
+        if response.json().get('failed') or response.json().get('deleted') != 1:
+            raise ValueError('Thumbnail cleanup incomplete')
+
+
+@app.post('/runs/:run_id/thumbnail')
+def upload_project_thumbnail(request: Request):
+    """Set a cover for the Projects strip without changing take artifacts."""
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to edit this project'}, 401)
+    image = request.body
+    if not isinstance(image, bytes) or not image or len(image) > 5 * 1000 * 1000:
+        return reply(request, {'error': 'Choose a PNG, JPEG or WebP image up to 5 MB'}, 400)
+    if image.startswith(b'\x89PNG\r\n\x1a\n'):
+        extension, mime = 'png', 'image/png'
+    elif image.startswith(b'\xff\xd8\xff'):
+        extension, mime = 'jpg', 'image/jpeg'
+    elif image.startswith(b'RIFF') and image[8:12] == b'WEBP':
+        extension, mime = 'webp', 'image/webp'
+    else:
+        return reply(request, {'error': 'Choose a PNG, JPEG or WebP image up to 5 MB'}, 400)
+    if request.headers.get('content-type', '').split(';')[0].strip().lower() != mime:
+        return reply(request, {'error': 'Image type does not match the file'}, 400)
+    run_id = request.path_params['run_id']
+    key = f'version-assets/{run_id}/project-covers/{hashlib.sha256(image).hexdigest()}.{extension}'
+    with lock, connect() as db:
+        run = document(db, run_id, 'run')
+        if run is None:
+            return reply(request, {'error': 'Project not found'}, 404)
+        try:
+            with httpx.Client(timeout=120) as client:
+                response = client.post(GATEWAY + '/upload',
+                    headers={'Authorization': f'Bearer {TOKEN}'},
+                    data={'bucket': BUCKET, 'userId': BUCKET, 'folder': key.rsplit('/', 1)[0], 'preserveFilename': 'true'},
+                    files={'file': (key.rsplit('/', 1)[1], image, mime)})
+                response.raise_for_status()
+                media = response.json()
+                if media.get('bucket') != BUCKET or media.get('objectKey') != key:
+                    raise ValueError('Unexpected object key')
+                url = media.get('publicUrl') or media['mediaUrl']
+                if not isinstance(url, str) or not url.startswith('https://'):
+                    raise ValueError('Invalid media URL')
+        except (httpx.HTTPError, ValueError, KeyError):
+            return reply(request, {'error': 'Thumbnail upload failed. The project was not changed.'}, 502)
+        old_key = run.get('project_thumbnail_object_key')
+        run.update(project_thumbnail_url=url, project_thumbnail_object_key=key)
+        db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), run_id))
+    if isinstance(old_key, str) and old_key != key and old_key.startswith(f'version-assets/{run_id}/project-covers/'):
+        try:
+            delete_project_thumbnail_object(old_key)
+        except (httpx.HTTPError, ValueError, KeyError):
+            pass  # The run-scoped project deletion still cleans up this old file.
+    return reply(request, {'project_thumbnail_url': url})
+
+
+@app.post('/runs/:run_id/thumbnail/remove')
+def remove_project_thumbnail(request: Request):
+    if not authorized(request):
+        return reply(request, {'error': 'Sign in to edit this project'}, 401)
+    run_id = request.path_params['run_id']
+    with lock, connect() as db:
+        run = document(db, run_id, 'run')
+        if run is None:
+            return reply(request, {'error': 'Project not found'}, 404)
+        key = run.get('project_thumbnail_object_key')
+        if key:
+            if not isinstance(key, str) or not key.startswith(f'version-assets/{run_id}/project-covers/'):
+                return reply(request, {'error': 'Thumbnail storage path is invalid'}, 409)
+            try:
+                delete_project_thumbnail_object(key)
+            except (httpx.HTTPError, ValueError, KeyError):
+                return reply(request, {'error': 'Thumbnail cleanup failed. Retry to use the automatic image.'}, 502)
+        run.pop('project_thumbnail_url', None)
+        run.pop('project_thumbnail_object_key', None)
+        db.execute("UPDATE documents SET value=? WHERE run_id=? AND kind='run'", (json.dumps(run), run_id))
+    return reply(request, {'project_thumbnail_url': None})
+
+
 @app.get('/uploads/:id')
 def upload_status(request: Request):
     if not authorized(request):
