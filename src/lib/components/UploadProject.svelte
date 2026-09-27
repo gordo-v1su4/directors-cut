@@ -21,7 +21,6 @@
   let password = $state('');
   let requestId = '';
   let runId = $state('');
-  let creationInput = $state<Parameters<typeof createUploadProject>[0]>();
   const tags = $derived([...new Set(tagText.split(',').map(tag => tag.trim()).filter(Boolean))]);
   const complete = $derived(!!runId && videos.length > 0 && videos.every(video => video.done));
   const totalSize = $derived(videos.reduce((sum, video) => sum + video.file.size, 0));
@@ -55,8 +54,7 @@
         signedIn = true;
       }
       requestId ||= crypto.randomUUID().replaceAll('-', '');
-      creationInput ??= { request_id: requestId, title: title.trim(), logline, format, tags };
-      if (!runId) runId = await createUploadProject(creationInput);
+      if (!runId) runId = await createUploadProject({ request_id: requestId, title: title.trim(), logline, format, tags });
       for (const video of videos) {
         try { await saveUploadVideo(runId, video); }
         catch (caught) { video.status = 'Needs attention'; throw caught; }
@@ -110,7 +108,7 @@
 
   <aside class="project glass-panel" aria-label="New project details">
     <h2 class="t-section">Project details</h2>
-    <fieldset disabled={busy || !!creationInput}>
+    <fieldset disabled={busy || !!runId}>
       <label>Project name<input class="sinput" bind:value={title} required maxlength="120" placeholder="Name your project" /></label>
       <label>Description <span class="dim">Optional</span><textarea class="stextarea" bind:value={logline} maxlength="600" rows="3" placeholder="What is this project about?"></textarea></label>
       <label>Format <span class="dim">Optional</span>
