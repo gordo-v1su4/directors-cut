@@ -25,6 +25,7 @@ export interface Take {
 
 export interface Project {
   runId: string;
+  projectThumbnailUrl?: string;
   title: string;
   fullTitle: string;
   logline: string;
@@ -108,6 +109,7 @@ function buildProject(summary: ComparisonRunSummary, detail: ComparisonRunDetail
 
   return {
     runId: summary.run_id,
+    projectThumbnailUrl: detail.project_thumbnail_url,
     title: showTitle(detail.title || summary.title),
     fullTitle: detail.title || summary.title,
     logline: loglineOf(detail, summary),

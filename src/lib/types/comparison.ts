@@ -28,6 +28,8 @@ export interface ComparisonRun {
   target_models?: string[];
   source_refs?: Record<string, unknown>[];
   tags?: string[];
+  project_thumbnail_url?: string;
+  project_thumbnail_object_key?: string;
 }
 
 export interface CreativeConceptPackage {
@@ -227,6 +229,7 @@ export interface ComparisonRunDetail extends ComparisonRun {
 
 export interface ComparisonRunSummary {
   logline?: string;
+  project_thumbnail_url?: string;
   run_id: string;
   title: string;
   status: ComparisonRun['status'];

@@ -9,6 +9,7 @@
     title,
     fullTitle = title,
     cover,
+    thumbnailUrl,
     status = '',
     takeCount = 0,
     selected = false,
@@ -19,6 +20,8 @@
     title: string;
     fullTitle?: string;
     cover?: ComparisonArtifact;
+    /** Optional project-only cover override, supplied by the Projects strip. */
+    thumbnailUrl?: string;
     status?: string;
     takeCount?: number;
     selected?: boolean;
@@ -27,6 +30,7 @@
     href?: string;
     onselect?: () => void;
   } = $props();
+  let failedThumbnail = $state<string | undefined>();
 </script>
 
 <svelte:element
@@ -41,7 +45,7 @@
   onclick={onselect}
   role={href ? undefined : 'button'}
 >
-  <span class="poster-media">{#if cover}<ArtifactPreview artifact={cover} />{/if}</span>
+  <span class="poster-media">{#if thumbnailUrl && failedThumbnail !== thumbnailUrl}<img src={thumbnailUrl} alt="" onerror={() => failedThumbnail = thumbnailUrl} />{:else if cover}<ArtifactPreview artifact={cover} />{/if}</span>
   <span class="poster-shade" aria-hidden="true"></span>
   {#if !compact && status}
     <span class="poster-status stag tone-{toneFor(status)}">{status}</span>

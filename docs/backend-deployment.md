@@ -67,6 +67,19 @@ the project stays listed for a retry. Deleted seeded projects are tombstoned so
 a backend restart does not import them again. Deploy the media gateway's
 `/directors-cut/delete-run-objects` route before this backend version.
 
+## Project thumbnails
+
+The **Thumbnail** tab in Projects sets a cover for that page's main project
+strip only. Version posters, playback, and Home keep their take-derived images.
+The owner can upload a PNG, JPEG, or WebP file up to 5 MB through
+`POST /runs/:run_id/thumbnail`. Robyn checks the image signature, stores it
+under `version-assets/<run_id>/project-covers/`, and writes the URL and object
+key to the run record. Replacements use content-addressed URLs so browser
+caches cannot show the previous image. **Use automatic thumbnail** calls
+`POST /runs/:run_id/thumbnail/remove`, deletes the exact stored object via the
+private gateway, and clears the run override. Project removal includes the
+same storage prefix. Both routes require the owner session.
+
 ## Configuration
 
 Runtime `/opt/directors-cut/runtime.env` is root-owned, mode 0600.
