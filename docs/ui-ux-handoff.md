@@ -1,4 +1,4 @@
-# Directors Cut Visual Browser — UI/UX Handoff
+# Trailer Feed Visual Browser — UI/UX Handoff
 
 Last updated: 2026-07-03 by Hermes.
 
@@ -6,7 +6,7 @@ Purpose: give a UI/UX designer or tomorrow's agent enough structure to design th
 
 ## 1. Product idea in one sentence
 
-Directors Cut is a visual prompt-library and comparison browser for AI video workflows: it helps Gordo see prompt cards, evidence, model fit, references, and real comparison outputs side-by-side instead of reading scattered markdown files.
+Trailer Feed is a visual prompt-library and comparison browser for AI video workflows: it helps Gordo see prompt cards, evidence, model fit, references, and real comparison outputs side-by-side instead of reading scattered markdown files.
 
 ## 2. Primary user
 
@@ -160,7 +160,7 @@ ASCII sketch:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ Directors Cut                                       [Search prompt cards...] │
+│ Trailer Feed                                       [Search prompt cards...] │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │  Cards 10   Sources 8   Tested 0   Seedance 3   Sora 4   Cross-model 3       │
 ├───────────────────────┬───────────────────────┬──────────────────────────────┤
@@ -331,7 +331,7 @@ Compact styling rules:
 
 Build only what the current data supports:
 
-1. Create Svelte app scaffold in `directors-cut`.
+1. Create Svelte app scaffold in `trailer-feed`.
 2. Load `public/data/prompt-cards.index.jsonl`.
 3. Render dashboard stats.
 4. Render filterable/sortable prompt-card table.

@@ -10,7 +10,7 @@ test('object layout isolates projects and rejects traversal', () => {
   expect(() => objectFolder('x','y','bad date')).toThrow();
 });
 test('job registration and asset import survive reopening without duplication', () => {
-  const dir=mkdtempSync(join(tmpdir(),'directors-cut-test-'));
+  const dir=mkdtempSync(join(tmpdir(),'trailer-feed-test-'));
   const file=join(dir,'catalog.sqlite');
   try {
     let db=catalog(file);

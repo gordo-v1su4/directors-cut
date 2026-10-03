@@ -134,7 +134,7 @@
   }
 
   function storageKey(answerId: string): string {
-    return `directors-cut:generation:${run.run_id}:${answerId}`;
+    return migrateGenerationKey(`trailer-feed:generation:${run.run_id}:${answerId}`);
   }
 
   function soraPromptForRow(row: ComparisonRow): string | null {
@@ -146,7 +146,17 @@
   }
 
   function gridStorageKey(answerId: string): string {
-    return `directors-cut:grid-generation:${run.run_id}:${answerId}`;
+    return migrateGenerationKey(`trailer-feed:grid-generation:${run.run_id}:${answerId}`);
+  }
+
+  function migrateGenerationKey(key: string): string {
+    const legacyKey = key.replace('trailer-feed:', 'directors-cut:');
+    const legacy = localStorage.getItem(legacyKey);
+    if (localStorage.getItem(key) === null && legacy !== null) {
+      localStorage.setItem(key, legacy);
+      localStorage.removeItem(legacyKey);
+    }
+    return key;
   }
 
   function updateGrid(answerId: string, patch: Partial<RowGridGenerationState>) {

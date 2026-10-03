@@ -1,4 +1,4 @@
-# Directors Cut Comparison Lab — B3b Requirements
+# Trailer Feed Comparison Lab — B3b Requirements
 
 Last updated: 2026-07-09 by Hermes.
 

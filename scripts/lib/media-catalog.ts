@@ -17,7 +17,7 @@ export function atomic(path: string, value: string) {
   writeFileSync(`${path}.tmp`, value);
   renameSync(`${path}.tmp`, path);
 }
-export function catalog(path = process.env.DIRECTORS_CUT_DATABASE || resolve(root, '.local/directors-cut.sqlite')) {
+export function catalog(path = process.env.TRAILER_FEED_DATABASE || resolve(root, '.local/trailer-feed.sqlite')) {
   mkdirSync(dirname(resolve(path)), { recursive: true, mode: 0o700 });
   const db = new Database(path, { create: true });
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
@@ -36,7 +36,7 @@ export function objectFolder(runId: string, generationId: string, created: strin
 }
 export async function upload(db: Database, file: string, folder: string, mime: string) {
   const bucket = process.env.MEDIA_GATEWAY_BUCKET;
-  if (bucket !== 'directors-cut' || process.env.MEDIA_GATEWAY_USER_ID !== bucket) throw new Error('Storage scope must be directors-cut');
+  if (bucket !== 'trailer-feed' || process.env.MEDIA_GATEWAY_USER_ID !== bucket) throw new Error('Storage scope must be trailer-feed');
   const gateway = process.env.MEDIA_GATEWAY_URL;
   const token = process.env.MEDIA_GATEWAY_TOKEN;
   if (!gateway || !token) throw new Error('Media gateway environment is not configured');

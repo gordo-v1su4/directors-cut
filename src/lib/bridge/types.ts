@@ -1,5 +1,5 @@
 /**
- * Directors Cut — bridge contract types (provenance-copied).
+ * Trailer Feed — bridge contract types (provenance-copied).
  *
  * Canonical source: raycast-pro-bridge/src/contracts/{tools,artifacts,errors}.ts
  * Copied at: 2026-07-09 from commit a3671a8.
@@ -9,7 +9,7 @@
  * Until then, keep this in sync with the canonical contract by re-copying after
  * any change to the bridge contract.
  *
- * These are TYPE-ONLY exports (no runtime zod dependency) so directors-cut
+ * These are TYPE-ONLY exports (no runtime zod dependency) so trailer-feed
  * can reference bridge shapes before it has zod installed. When zod arrives
  * (B3 SvelteKit scaffold), switch to importing the real Zod schemas for
  * runtime validation.
@@ -449,7 +449,7 @@ export async function callBridgeTool<TInput, TOutput>(
     headers: {
       Authorization: `Bearer ${options.token}`,
       'Content-Type': 'application/json',
-      'X-Caller': 'directors-cut',
+      'X-Caller': 'trailer-feed',
     },
     body: JSON.stringify(input),
   });

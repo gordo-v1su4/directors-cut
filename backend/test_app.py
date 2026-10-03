@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 TEMP=tempfile.TemporaryDirectory()
-os.environ.update(DATA_DIR=TEMP.name,SEED_DIR=str((Path(__file__).resolve().parents[1]/'public/data/comparisons') if (Path(__file__).resolve().parents[1]/'public/data/comparisons').exists() else Path('/app/seed')),MEDIA_GATEWAY_URL='http://invalid',MEDIA_GATEWAY_TOKEN='test',DIRECTORS_CUT_OWNER_PASSWORD='test')
+os.environ.update(DATA_DIR=TEMP.name,SEED_DIR=str((Path(__file__).resolve().parents[1]/'public/data/comparisons') if (Path(__file__).resolve().parents[1]/'public/data/comparisons').exists() else Path('/app/seed')),MEDIA_GATEWAY_URL='http://invalid',MEDIA_GATEWAY_TOKEN='test',TRAILER_FEED_OWNER_PASSWORD='test')
 import app
 
 
@@ -28,7 +28,7 @@ class CatalogTests(unittest.TestCase):
     def test_authentication_and_origin(self):
         denied=app.upload(request(b'video'))
         self.assertEqual(denied.status_code,401)
-        login=app.login(request(json.dumps({'username':'gordo','password':'test'}),{'origin':'https://directors-cut-two.vercel.app'}))
+        login=app.login(request(json.dumps({'username':'gordo','password':'test'}),{'origin':'https://trailer-feed.vercel.app'}))
         token=json.loads(login.description)['token']
         self.assertTrue(app.authorized(request(headers={'authorization':'Bearer '+token})))
         self.assertFalse(app.authorized(request(headers={'authorization':'Bearer '+token,'origin':'https://evil.example'})))
@@ -42,9 +42,9 @@ class CatalogTests(unittest.TestCase):
     def test_completed_job_publishes_exactly_once(self):
         run='20260914-the-last-prescription'
         with app.connect() as db:
-            db.execute("INSERT OR REPLACE INTO uploads VALUES ('test-job',?,'sha',99,'media-uploads/test.mp4','https://s3.v1su4.dev/directors-cut/test.mp4','job','processing',NULL,'2026-09-14')",(run,))
+            db.execute("INSERT OR REPLACE INTO uploads VALUES ('test-job',?,'sha',99,'media-uploads/test.mp4','https://s3.v1su4.dev/trailer-feed/test.mp4','job','processing',NULL,'2026-09-14')",(run,))
         status=Mock(status_code=200);status.json.return_value={'job':{'status':'completed'}}
-        result=Mock(status_code=200);result.json.return_value={'segments':[{'thumbnail_url':'https://s3.v1su4.dev/directors-cut/test.jpg'}],'duration_seconds':1}
+        result=Mock(status_code=200);result.json.return_value={'segments':[{'thumbnail_url':'https://s3.v1su4.dev/trailer-feed/test.jpg'}],'duration_seconds':1}
         client=Mock();client.get.side_effect=[status,result]
         with patch.object(app.httpx,'Client') as factory:
             factory.return_value.__enter__.return_value=client
@@ -163,7 +163,7 @@ class ProjectThumbnailTests(unittest.TestCase):
     def test_upload_persists_only_project_cover_and_reset_deletes_exact_object(self):
         key = f'version-assets/{self.run_id}/project-covers/{app.hashlib.sha256(self.image).hexdigest()}.png'
         result = Mock(); result.json.return_value = {
-            'bucket': app.BUCKET, 'objectKey': key, 'publicUrl': 'https://s3.v1su4.dev/directors-cut/' + key}
+            'bucket': app.BUCKET, 'objectKey': key, 'publicUrl': 'https://s3.v1su4.dev/trailer-feed/' + key}
         deleted = Mock(); deleted.json.return_value = {'deleted': 1, 'failed': 0}
         client = Mock(); client.post.side_effect = [result, deleted]
         with patch.object(app, 'authorized', return_value=True), patch.object(app.httpx, 'Client') as factory:

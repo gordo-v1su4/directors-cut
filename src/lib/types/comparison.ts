@@ -1,5 +1,5 @@
 /*
- * Directors Cut comparison lab types.
+ * Trailer Feed comparison lab types.
  *
  * Aligned with schemas/model-answer.schema.json and schemas/comparison-run.schema.json,
  * plus the artifact/versioning UX described in docs/comparison-lab-requirements.md.

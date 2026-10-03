@@ -1,4 +1,4 @@
-# Directors Cut — TODO / Tomorrow Pickup
+# Trailer Feed — TODO / Tomorrow Pickup
 
 Last updated: 2026-07-29 by Codex.
 
@@ -24,7 +24,7 @@ Last updated: 2026-07-29 by Codex.
 
 1. Inspect repo state:
    ```bash
-   cd /root/Github/directors-cut
+   cd /root/Github/trailer-feed
    git status --short --branch --untracked-files=all
    git pull --ff-only
    ```
@@ -67,9 +67,9 @@ Last updated: 2026-07-29 by Codex.
 
 ### 4. Obsidian milestone note
 - After the repo state is pushed and verified, optionally update the Obsidian project map with a concise pointer to:
-  - `/root/Github/directors-cut/docs/STATUS.md`
-  - `/root/Github/directors-cut/docs/TODO.md`
-  - `/root/Github/directors-cut/public/data/prompt-cards.index.jsonl`
+  - `/root/Github/trailer-feed/docs/STATUS.md`
+  - `/root/Github/trailer-feed/docs/TODO.md`
+  - `/root/Github/trailer-feed/public/data/prompt-cards.index.jsonl`
 
 ## Current Phase 0 artifact inventory
 

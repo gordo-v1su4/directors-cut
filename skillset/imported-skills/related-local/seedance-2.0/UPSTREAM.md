@@ -1,6 +1,6 @@
 # Vendored upstream
 
-This directory is a **vendored copy** of [Emily2040/seedance-2.0](https://github.com/Emily2040/seedance-2.0) kept inside `directors-cut`. It is not a nested git repository.
+This directory is a **vendored copy** of [Emily2040/seedance-2.0](https://github.com/Emily2040/seedance-2.0) kept inside `trailer-feed`. It is not a nested git repository.
 
 | Field | Value |
 |-------|-------|
@@ -24,7 +24,7 @@ rsync -a --delete \
   --exclude '.omx/' \
   --exclude '.DS_Store' \
   ./ \
-  ../directors-cut/skillset/imported-skills/related-local/seedance-2.0/
+  ../trailer-feed/skillset/imported-skills/related-local/seedance-2.0/
 ```
 
 Then update the commit hash in this file.

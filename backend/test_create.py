@@ -19,7 +19,7 @@ class CreateProjectTests(unittest.TestCase):
 
     def test_requires_owner_and_rejects_untrusted_origin(self):
         self.assertEqual(self.create().status_code, 401)
-        login = app.login(request(json.dumps({'username': 'gordo', 'password': 'test'}), {'origin': 'https://directors-cut-two.vercel.app'}))
+        login = app.login(request(json.dumps({'username': 'gordo', 'password': 'test'}), {'origin': 'https://trailer-feed.vercel.app'}))
         token = json.loads(login.description)['token']
         result = app.create_run(request(json.dumps(self.payload), {'authorization': 'Bearer ' + token, 'origin': 'https://evil.example'}))
         self.assertEqual(result.status_code, 401)
@@ -116,7 +116,7 @@ class CreateProjectTests(unittest.TestCase):
     def test_upload_without_writer_finishes_and_becomes_reviewable(self):
         with patch.object(app, 'authorized', return_value=True):
             self.create()
-        media = Mock(); media.json.return_value = {'bucket': 'directors-cut', 'objectKey': '', 'publicUrl': 'https://example.test/video.mp4'}
+        media = Mock(); media.json.return_value = {'bucket': 'trailer-feed', 'objectKey': '', 'publicUrl': 'https://example.test/video.mp4'}
         client = Mock()
         def store(*args, **kwargs):
             key = kwargs['data']['folder'] + '/' + kwargs['files']['file'][0]

@@ -1,17 +1,17 @@
 # Bridge Artifact Handshake
 
-> Single source of truth for how `raycast-pro-bridge` and `directors-cut`
+> Single source of truth for how `raycast-pro-bridge` and `trailer-feed`
 > exchange artifacts. Both sides cite this document.
 
 ## Ownership principle
 
-**Bridge produces DRAFT artifacts. Directors Cut owns ACCEPTED/persisted artifacts.**
+**Bridge produces DRAFT artifacts. Trailer Feed owns ACCEPTED/persisted artifacts.**
 
 The bridge may write research outputs (sources, candidates, draft cards) into
-ephemeral job directories. Directors Cut decides which drafts are promoted to
+ephemeral job directories. Trailer Feed decides which drafts are promoted to
 the canonical prompt library and comparison runs.
 
-## Research job artifacts (bridge → directors-cut)
+## Research job artifacts (bridge → trailer-feed)
 
 When `start_prompt_research` completes, the Hermes dispatcher writes artifacts
 under a job directory (default `~/.raycast-pro-bridge/jobs/<job_id>/`):
@@ -38,7 +38,7 @@ Each `candidates.jsonl` row follows `CandidateCard` shape (see
 }
 ```
 
-Directors Cut reads these via `read_research_artifact`, reviews them, then
+Trailer Feed reads these via `read_research_artifact`, reviews them, then
 promotes accepted cards into:
 
 ```
@@ -47,9 +47,9 @@ content/cards/<family>/<slug>.md
 
 The card frontmatter must satisfy `schemas/prompt-card.schema.json`.
 
-## Comparison run artifacts (directors-cut owned)
+## Comparison run artifacts (trailer-feed owned)
 
-Comparison runs live entirely in directors-cut. The bridge does NOT create
+Comparison runs live entirely in trailer-feed. The bridge does NOT create
 comparison artifacts — it only provides research that feeds into them.
 
 Layout:
@@ -69,7 +69,7 @@ The run metadata must satisfy `schemas/comparison-run.schema.json`.
 If real answers are unavailable, leave the directory empty and document
 the blocker in a `README.md` inside the comparison folder.
 
-## Bridge client (directors-cut side)
+## Bridge client (trailer-feed side)
 
 `src/lib/bridge/types.ts` contains the type contract copied from
 `raycast-pro-bridge/src/contracts/` with a provenance header.
@@ -101,18 +101,18 @@ Script Commands in `raycast-pro-bridge/script-commands/`:
 
 - **Bridge Status** — checks `/health` + lists `/tools`
 - **Bridge Call Tool** — POSTs to `/tools/<tool>` with bearer token
-- **Directors Cut Comparison Prompt** — copies the current project comparison
-  prompt to the clipboard (`directors-cut-comparison-prompt.sh`)
-- **Capture Directors Cut Answer** — appends the current clipboard as one
+- **Trailer Feed Comparison Prompt** — copies the current project comparison
+  prompt to the clipboard (`trailer-feed-comparison-prompt.sh`)
+- **Capture Trailer Feed Answer** — appends the current clipboard as one
   schema-shaped `answers.jsonl` row under
-  `directors-cut/content/comparisons/<run-id>/` and creates `comparison-run.md`
-  on first capture (`directors-cut-capture-answer.sh`). Args: exact model
+  `trailer-feed/content/comparisons/<run-id>/` and creates `comparison-run.md`
+  on first capture (`trailer-feed-capture-answer.sh`). Args: exact model
   label, optional run id, optional target model.
 
 Capture loop (no fabrication):
 1. Raycast AI chat → `Shift+Cmd+M` pick model
-2. Run **Directors Cut Comparison Prompt** → paste → send
-3. Copy the real answer → run **Capture Directors Cut Answer** with the exact
+2. Run **Trailer Feed Comparison Prompt** → paste → send
+3. Copy the real answer → run **Capture Trailer Feed Answer** with the exact
    model label Raycast showed
 4. Repeat for 3–5 models; only then build B3b comparison UI
 

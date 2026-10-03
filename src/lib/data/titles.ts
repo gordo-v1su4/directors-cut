@@ -37,7 +37,7 @@ export async function signInOwner(password: string): Promise<void> {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error || 'Sign in failed');
-  sessionStorage.setItem('directors-cut-owner', result.token);
+  sessionStorage.setItem('trailer-feed-owner', result.token);
 }
 
 export class SignInRequired extends Error {}
@@ -52,7 +52,7 @@ export async function removeProject(runId: string): Promise<void> {
     body: JSON.stringify({ confirm_run_id: runId }),
   });
   if (response.status === 401) {
-    sessionStorage.removeItem('directors-cut-owner');
+    sessionStorage.removeItem('trailer-feed-owner');
     throw new SignInRequired('Your session expired. Sign in again to remove this project.');
   }
   const result = await response.json().catch(() => ({}));
@@ -75,7 +75,7 @@ export async function saveProjectText(
     body: JSON.stringify(changes),
   });
   if (response.status === 401) {
-    sessionStorage.removeItem('directors-cut-owner');
+    sessionStorage.removeItem('trailer-feed-owner');
     throw new SignInRequired('Your session expired. Sign in again to save.');
   }
   const result = await response.json().catch(() => ({}));

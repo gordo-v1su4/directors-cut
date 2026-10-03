@@ -1,11 +1,11 @@
 FROM python:3.13-slim
 WORKDIR /app
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && useradd --uid 10001 --create-home directors-cut && mkdir /data && chown directors-cut /data
+RUN pip install --no-cache-dir -r requirements.txt && useradd --uid 10001 --create-home trailer-feed && mkdir /data && chown trailer-feed /data
 COPY backend/app.py backend/test_app.py backend/test_create.py ./
 COPY public/data/comparisons/ /app/seed/
 RUN python -m unittest discover -q
-USER directors-cut
+USER trailer-feed
 ENV DATA_DIR=/data PORT=18100
 EXPOSE 18100
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=4 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18100/health',timeout=3)"

@@ -20,9 +20,9 @@ question: |-
   - No visual reference supplied.
   
   RAYCAST WORKFLOW
-  Run “Start Directors Cut Concept Run.” Enter the project title as argument 1 and leave argument 2 blank to use this copied brief. The command saves the project, rebuilds the Projects index, and copies the canonical prompt for ChatGPT; capture ChatGPT, then repeat with Claude.
+  Run “Start Trailer Feed Concept Run.” Enter the project title as argument 1 and leave argument 2 blank to use this copied brief. The command saves the project, rebuilds the Projects index, and copies the canonical prompt for ChatGPT; capture ChatGPT, then repeat with Claude.
 created: 2026-08-18T18:03:20.143Z
-created_by: directors-cut-bridge
+created_by: trailer-feed-bridge
 status: generation_partial
 models_requested:
   - ChatGPT

@@ -158,7 +158,7 @@
   });
 </script>
 
-<svelte:head><title>Prompts · Directors Cut</title></svelte:head>
+<svelte:head><title>Prompts · Trailer Feed</title></svelte:head>
 
 {#snippet detail(card: PromptCardIndex, inSheet: boolean)}
   <div class="detail-body">

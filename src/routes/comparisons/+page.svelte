@@ -200,7 +200,7 @@
 </script>
 
 <svelte:head>
-  <title>{project ? `${project.title} · Projects` : 'Projects'} · Directors Cut</title>
+  <title>{project ? `${project.title} · Projects` : 'Projects'} · Trailer Feed</title>
 </svelte:head>
 
 <div class="studio-column projects">

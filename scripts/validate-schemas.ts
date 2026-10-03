@@ -11,8 +11,8 @@ import Ajv2020 from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import * as yaml from "js-yaml";
 
-const ROOT = process.env.DIRECTORS_CUT_ROOT
-  ? resolve(process.env.DIRECTORS_CUT_ROOT)
+const ROOT = process.env.TRAILER_FEED_ROOT
+  ? resolve(process.env.TRAILER_FEED_ROOT)
   : join(import.meta.dir, "..");
 const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true });
 addFormats(ajv);

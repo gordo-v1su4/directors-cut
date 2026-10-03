@@ -213,7 +213,7 @@
   onDestroy(() => { if (referenceUrl) URL.revokeObjectURL(referenceUrl); });
 </script>
 
-<svelte:head><title>Create · Directors Cut</title></svelte:head>
+<svelte:head><title>Create · Trailer Feed</title></svelte:head>
 
 <div class="studio-column create">
   <header class="head">

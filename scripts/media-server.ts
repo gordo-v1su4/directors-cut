@@ -3,7 +3,7 @@ import { mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { root, safeId, jsonLines, atomic, hash } from './lib/media-catalog';
 
-const port=Number(process.env.DIRECTORS_CUT_MEDIA_PORT || 8788);
+const port=Number(process.env.TRAILER_FEED_MEDIA_PORT || 8788);
 let queue:Promise<unknown>=Promise.resolve();
 let lastSyncError:string|null=null;
 function serialized<T>(work:()=>Promise<T>):Promise<T> {
@@ -72,7 +72,7 @@ Bun.serve({hostname:'127.0.0.1',port,maxRequestBodySize:512*1024*1024,idleTimeou
     return Response.json(await serialized(()=>addVersions(runId,files)));
   } catch(error) {return Response.json({error:String(error).replace(/^Error: /,'')},{status:400});}
 }});
-console.log(`Directors Cut media service on 127.0.0.1:${port}`);
+console.log(`Trailer Feed media service on 127.0.0.1:${port}`);
 void serialized(sync);
 let syncing=false;
 setInterval(()=>{if(syncing)return;syncing=true;void serialized(sync).finally(()=>{syncing=false;});},30000);

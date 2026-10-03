@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/gordo-v1su4/directors-cut/schemas/prompt-pack.schema.json",
-  "title": "Directors Cut Prompt Pack",
+  "$id": "https://github.com/gordo-v1su4/trailer-feed/schemas/prompt-pack.schema.json",
+  "title": "Trailer Feed Prompt Pack",
   "description": "Permissive v1 schema for grouped prompt cards/packs.",
   "type": "object",
   "additionalProperties": true,

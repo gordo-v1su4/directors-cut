@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "directors-cut",
+      "name": "trailer-feed",
       "devDependencies": {
         "@sveltejs/adapter-static": "^3.0.0",
         "@sveltejs/kit": "^2.0.0",

@@ -200,5 +200,5 @@ DELIVERY
 ${referenceRule}
 
 WORKFLOW
-Use this brief with your preferred prompt writer. Review the resulting prompt, then render it with ${seedanceLabel(model)} in your video tool. Upload the finished video into Directors Cut and attach the prompt and model to its take. This brief does not submit a generation job.`;
+Use this brief with your preferred prompt writer. Review the resulting prompt, then render it with ${seedanceLabel(model)} in your video tool. Upload the finished video into Trailer Feed and attach the prompt and model to its take. This brief does not submit a generation job.`;
 }

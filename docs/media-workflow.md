@@ -2,13 +2,13 @@
 
 # Media workflow
 
-Directors Cut keeps its existing project browser and three-column history: prompt source, shot grid, trailer versions. There is no vision judging or reference-assisted comparison table. Generation controls remain collapsed until needed.
+Trailer Feed keeps its existing project browser and three-column history: prompt source, shot grid, trailer versions. There is no vision judging or reference-assisted comparison table. Generation controls remain collapsed until needed.
 
 ## Run locally
 
 Run `bun run dev` and open **http://127.0.0.1:5191**. Use that exact address:
 `localhost` is a different browser origin. Development and production both read
-projects and versions from `https://media.v1su4.dev/directors-cut`; there is no
+projects and versions from `https://media.v1su4.dev/trailer-feed`; there is no
 repository-data fallback or environment override. The live backend stores uploaded
 versions independently of Git. Normal startup runs only Vite, without rebuilding
 local indexes or starting the local media importer. Vite fails if port 5191 is
@@ -37,30 +37,30 @@ The Last Prescription job `ab29cfc9-341f-46f3-932c-999d538ebd72` completed at 12
 
 ## Catalog and recovery
 
-SQLite `.local/directors-cut.sqlite` contains `projects`, `jobs`, `assets` and `uploads`. The job receipt and status are durable locally; assets and uploads use stable IDs/checksums to prevent duplicate imports. Back up SQLite with SQLite's backup command while it is running; never copy only its main file while WAL writes are active. `.local/` is ignored by Git and is not a browser asset.
+SQLite `.local/trailer-feed.sqlite` contains `projects`, `jobs`, `assets` and `uploads`. The job receipt and status are durable locally; assets and uploads use stable IDs/checksums to prevent duplicate imports. Back up SQLite with SQLite's backup command while it is running; never copy only its main file while WAL writes are active. `.local/` is ignored by Git and is not a browser asset.
 
 The existing Markdown/JSONL project files remain the editable creative source, and `public/data/` is the generated browser projection. This is a local ingestion catalog, not a deployed multi-user database. Keep `.local/` and `content/` together in workstation backups. If the worker is interrupted during storage upload, it retries and reuses the same content-addressed object keys. A stale `.local/media-sync.lock` may be removed after confirming no sync process is running.
 
 ## RustFS
 
-One dedicated bucket: **directors-cut**. Existing other-app buckets are unchanged. The shared gateway auto-provisions this bucket on the first authenticated upload and uses the same public-read/CORS policy as super-seed2.
+One dedicated bucket: **trailer-feed**. Existing other-app buckets are unchanged. The shared gateway auto-provisions this bucket on the first authenticated upload and uses the same public-read/CORS policy as super-seed2.
 
 ```text
-directors-cut/
+trailer-feed/
   media-uploads/YYYY/MM_DD/<run-id>/generations/<job-or-artifact-id>/
     original/<sha256>.mp4
     preview/<sha256>.jpg
 ```
 
-Images retain PNG/JPEG format. The app bucket is sent separately from the object key; it is never duplicated inside the key. The public URL base is `https://s3.v1su4.dev/directors-cut/`. Local originals are retained under each project's `media/` directory. Uploaded source containers are retained privately under `.local/uploads/`.
+Images retain PNG/JPEG format. The app bucket is sent separately from the object key; it is never duplicated inside the key. The public URL base is `https://s3.v1su4.dev/trailer-feed/`. Local originals are retained under each project's `media/` directory. Uploaded source containers are retained privately under `.local/uploads/`.
 
 ## Environment and secrets
 
-Local `.env.local` is gitignored, mode 0600. Only the existing media gateway URL/token were copied from super-seed2; project scope is set to `directors-cut`. Unrelated provider/OAuth credentials were not copied. The existing browser bridge configuration is preserved.
+Local `.env.local` is gitignored, mode 0600. Only the existing media gateway URL/token were copied from super-seed2; project scope is set to `trailer-feed`. Unrelated provider/OAuth credentials were not copied. The existing browser bridge configuration is preserved.
 
-Worker variables: `MEDIA_GATEWAY_URL`, `MEDIA_GATEWAY_TOKEN`, `MEDIA_GATEWAY_BUCKET`, `MEDIA_GATEWAY_USER_ID`, `MEDIA_GATEWAY_UPLOAD_PREFIX`, `DIRECTORS_CUT_DATABASE`. The worker deliberately refuses a bucket/user ID other than `directors-cut`. Tokens never use the VITE prefix or enter the generated data. Retrieve the shared gateway credential via the existing BWS mapping in super-seed2's `pipeline/object-storage.md` (`PROXMOX_HOME_HOSTINGER_MEDIA_GATEWAY_TOKEN`); no credential was created or rotated in this change.
+Worker variables: `MEDIA_GATEWAY_URL`, `MEDIA_GATEWAY_TOKEN`, `MEDIA_GATEWAY_BUCKET`, `MEDIA_GATEWAY_USER_ID`, `MEDIA_GATEWAY_UPLOAD_PREFIX`, `TRAILER_FEED_DATABASE`. The worker deliberately refuses a bucket/user ID other than `trailer-feed`. Tokens never use the VITE prefix or enter the generated data. Retrieve the shared gateway credential via the existing BWS mapping in super-seed2's `pipeline/object-storage.md` (`PROXMOX_HOME_HOSTINGER_MEDIA_GATEWAY_TOKEN`); no credential was created or rotated in this change.
 
-Canonical infrastructure layout: `proxmox-home/hostinger-ops/docs/rustfs-object-layout.md`. Obsidian pointer: `hermes-notebook-vault/04-Projects/Directors Cut/Directors Cut Deep-Dive Plan.md`.
+Canonical infrastructure layout: `proxmox-home/hostinger-ops/docs/rustfs-object-layout.md`. Obsidian pointer: `hermes-notebook-vault/04-Projects/Trailer Feed/Trailer Feed Deep-Dive Plan.md`.
 
 ## Verification
 
@@ -70,4 +70,4 @@ Canonical infrastructure layout: `proxmox-home/hostinger-ops/docs/rustfs-object-
 
 On Projects, select a trailer version and choose **Edit version details**. Save the exact prompt and video model (free text with common-model suggestions), then upload a PNG/JPEG/WebP shot grid up to 10 MB or select an existing project grid. **Save version details** commits the prompt, model and attachment together. Arrows and thumbnails select the entire version context. Missing attachments remain empty; legacy grids are never guessed or automatically paired. The expanded video preview also shows that version's prompt and grid.
 
-The owner-authenticated `POST /versions/:id/details` endpoint stores `version_prompt`, `video_model`, `shot_grid_url`, and `context_revision` in the video's existing SQLite artifact record. Original generation `prompt_text` and provider metadata remain intact. An omitted grid preserves its attachment; null explicitly detaches it. Stale saves return 409 rather than overwriting newer edits. Grid files are content-addressed under `directors-cut/version-assets/<run-id>/<artifact-hash>/shot-grids/<sha>.<ext>`; replacements never overwrite a different version's files. No image model tag or processing job is needed. Local development needs `VITE_MEDIA_API_URL` pointing at the backend for editing; production uses the public API.
+The owner-authenticated `POST /versions/:id/details` endpoint stores `version_prompt`, `video_model`, `shot_grid_url`, and `context_revision` in the video's existing SQLite artifact record. Original generation `prompt_text` and provider metadata remain intact. An omitted grid preserves its attachment; null explicitly detaches it. Stale saves return 409 rather than overwriting newer edits. Grid files are content-addressed under `trailer-feed/version-assets/<run-id>/<artifact-hash>/shot-grids/<sha>.<ext>`; replacements never overwrite a different version's files. No image model tag or processing job is needed. Local development needs `VITE_MEDIA_API_URL` pointing at the backend for editing; production uses the public API.

@@ -1,4 +1,4 @@
-"""Directors Cut catalog and upload adapter; all media processing stays in RustFS."""
+"""Trailer Feed catalog and upload adapter; all media processing stays in RustFS."""
 from contextlib import contextmanager
 import base64
 import binascii
@@ -20,12 +20,16 @@ from robyn import Robyn, Request, Response
 
 DATA = Path(os.getenv('DATA_DIR', '/data'))
 DATA.mkdir(parents=True, exist_ok=True)
-DB = DATA / 'directors-cut.sqlite'
+DB = DATA / 'trailer-feed.sqlite'
+# Upgrade existing volumes without creating an empty catalog or losing sessions.
+if not DB.exists() and (DATA / 'directors-cut.sqlite').exists():
+    with sqlite3.connect(DATA / 'directors-cut.sqlite') as source, sqlite3.connect(DB) as target:
+        source.backup(target)
 GATEWAY = os.environ['MEDIA_GATEWAY_URL'].rstrip('/')
 TOKEN = os.environ['MEDIA_GATEWAY_TOKEN']
-PASSWORD = os.environ['DIRECTORS_CUT_OWNER_PASSWORD']
-ORIGINS = set(os.getenv('ALLOWED_ORIGINS', 'https://directors-cut-two.vercel.app,http://127.0.0.1:5191').split(','))
-BUCKET = 'directors-cut'
+PASSWORD = os.getenv('TRAILER_FEED_OWNER_PASSWORD') or os.environ['DIRECTORS_CUT_OWNER_PASSWORD']
+ORIGINS = set(os.getenv('ALLOWED_ORIGINS', 'https://trailer-feed.vercel.app,https://directors-cut-two.vercel.app,http://127.0.0.1:5191').split(','))
+BUCKET = 'trailer-feed'
 lock = threading.RLock()
 app = Robyn(__file__)
 
@@ -90,8 +94,8 @@ def stored_key_from_url(url):
     if not isinstance(url, str):
         return None
     parsed = urlsplit(url)
-    if parsed.scheme == 'https' and parsed.netloc == 's3.v1su4.dev' and parsed.path.startswith('/directors-cut/'):
-        return unquote(parsed.path[len('/directors-cut/'):])
+    if parsed.scheme == 'https' and parsed.netloc == 's3.v1su4.dev' and parsed.path.startswith('/trailer-feed/'):
+        return unquote(parsed.path[len('/trailer-feed/'):])
     return None
 
 
@@ -137,7 +141,7 @@ def authorized(request):
 def health(request: Request):
     with connect() as db:
         count = db.execute("SELECT count(*) FROM documents WHERE kind='run'").fetchone()[0]
-    return reply(request, {'ok': True, 'service': 'directors-cut-api', 'projects': count, 'revision': os.getenv('RELEASE_SHA', 'local')})
+    return reply(request, {'ok': True, 'service': 'trailer-feed-api', 'projects': count, 'revision': os.getenv('RELEASE_SHA', 'local')})
 
 
 @app.options('/*path')
@@ -419,7 +423,7 @@ def delete_run(request: Request):
             return reply(request, {'error': 'Wait for video processing to finish before removing this project'}, 409)
         try:
             with httpx.Client(timeout=300) as client:
-                cleanup = client.post(GATEWAY + '/directors-cut/delete-run-objects',
+                cleanup = client.post(GATEWAY + '/trailer-feed/delete-run-objects',
                     headers={'Authorization': f'Bearer {TOKEN}'},
                     json={'runId': run_id, 'prefixes': prefixes})
                 cleanup.raise_for_status()
@@ -533,7 +537,7 @@ def process_once():
         for item in pending:
             try:
                 if not item['job_id']:
-                    result=client.post(GATEWAY+'/video/jobs',json={'bucket':BUCKET,'objectKey':item['object_key'],'metadata':{'project':'directors-cut','upload_id':item['id']}})
+                    result=client.post(GATEWAY+'/video/jobs',json={'bucket':BUCKET,'objectKey':item['object_key'],'metadata':{'project':'trailer-feed','upload_id':item['id']}})
                     result.raise_for_status()
                     job=result.json().get('job',result.json())
                     with connect() as db:

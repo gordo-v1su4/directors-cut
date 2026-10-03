@@ -91,7 +91,7 @@
   });
 </script>
 
-<svelte:head><title>Directors Cut</title></svelte:head>
+<svelte:head><title>Trailer Feed</title></svelte:head>
 
 {#if lightboxArtifacts}
   <MediaLightbox artifacts={lightboxArtifacts} activeIndex={lightboxIndex} showDetails={false} onClose={() => (lightboxArtifacts = null)} />

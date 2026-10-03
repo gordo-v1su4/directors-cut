@@ -1,19 +1,19 @@
 ---
-title: Directors Cut Deep-Dive Plan
-project: directors-cut
-repo: github.com/gordo-v1su4/directors-cut
+title: Trailer Feed Deep-Dive Plan
+project: trailer-feed
+repo: github.com/gordo-v1su4/trailer-feed
 status: draft-plan
 created: 2026-07-02
 owner: Hermes
 related_repos:
-  - github.com/gordo-v1su4/directors-cut
+  - github.com/gordo-v1su4/trailer-feed
   - github.com/gordo-v1su4/raycast-pro-bridge
 related_notes:
   - [[30-Mac-Automation/Raycast Hermes Integration Research]]
   - [[04-Projects/Mac Automation and Raycast Bridge]]
   - [[04-Projects/Syncthing Obsidian Vault Sync]]
 tags:
-  - directors-cut
+  - trailer-feed
   - prompt-library
   - seedance
   - sora
@@ -22,13 +22,13 @@ tags:
   - svelte
 ---
 
-# Directors Cut Deep-Dive Plan
+# Trailer Feed Deep-Dive Plan
 
-> **For Hermes / omp / Gordo:** `directors-cut` is the creative consumer repo. It should own prompt libraries, creative workflows, visual review/database UX, and eventually prompt-comparison outputs. `raycast-pro-bridge` owns the Raycast Pro layer and bridge plumbing. Hermes remains the durable backend/research/tool runner. Obsidian remains shared non-secret state. Bitwarden remains the secret source.
+> **For Hermes / omp / Gordo:** `trailer-feed` is the creative consumer repo. It should own prompt libraries, creative workflows, visual review/database UX, and eventually prompt-comparison outputs. `raycast-pro-bridge` owns the Raycast Pro layer and bridge plumbing. Hermes remains the durable backend/research/tool runner. Obsidian remains shared non-secret state. Bitwarden remains the secret source.
 
 ## Goal
 
-Build `directors-cut` into the visual creative prompt/workflow database for Seedance, Sora, trailer/teaser prompts, and future creative setups. It should let Gordo run short creative research sessions, compare multiple model/agent answers to the same prompt problem, curate the best outputs into prompt cards, browse them like a dense dark visual database, copy prompts quickly, and connect each card to videos, references, evidence, tests, and human ratings.
+Build `trailer-feed` into the visual creative prompt/workflow database for Seedance, Sora, trailer/teaser prompts, and future creative setups. It should let Gordo run short creative research sessions, compare multiple model/agent answers to the same prompt problem, curate the best outputs into prompt cards, browse them like a dense dark visual database, copy prompts quickly, and connect each card to videos, references, evidence, tests, and human ratings.
 
 ## Architecture summary
 
@@ -37,10 +37,10 @@ Raycast Pro UI / Agents / AI Commands
   -> raycast-pro-bridge HTTP MCP tools over Tailscale
   -> Hermes backend research/comparison jobs
   -> Obsidian prompt library files + JSONL indexes
-  -> directors-cut Svelte 5 visual browser
+  -> trailer-feed Svelte 5 visual browser
 ```
 
-`directors-cut` should not become the Raycast integration repo. It consumes Raycast/Hermes as services and owns the creative artifacts: prompt cards, prompt packs, references, model comparisons, video links, review/rating data, schemas, and the visual browsing app.
+`trailer-feed` should not become the Raycast integration repo. It consumes Raycast/Hermes as services and owns the creative artifacts: prompt cards, prompt packs, references, model comparisons, video links, review/rating data, schemas, and the visual browsing app.
 
 ## Non-negotiable constraints
 
@@ -66,7 +66,7 @@ id: seedance-camera-push-emotional-reveal
 slug: seedance-camera-push-emotional-reveal
 title: Emotional Camera Push Reveal
 summary: Slow cinematic push-in pattern for emotional reveal shots.
-repo_scope: directors-cut
+repo_scope: trailer-feed
 card_type: prompt_card # prompt_card | prompt_pack | comparison_result | workflow_setup
 created: 2026-07-02
 updated: 2026-07-02
@@ -101,7 +101,7 @@ runtime_seconds: 12
 
 Seedance-specific notes:
 - Hermes currently has `seedance-director`, which emphasizes English-only production-ready prose, shot-structure header, duration, aspect ratio, camera/action/environment/style ordering, no negative prompt field, and a `Total: <Ns> / <N> shot(s) / <ratio>` close.
-- omp also referenced a `seedance2-director` schema with EN+ZH JSON and scene archetype router (`action`, `general`, `dialogue`). `directors-cut` should support both by storing `prompt_mode` and `output_shape` separately.
+- omp also referenced a `seedance2-director` schema with EN+ZH JSON and scene archetype router (`action`, `general`, `dialogue`). `trailer-feed` should support both by storing `prompt_mode` and `output_shape` separately.
 - Do not collapse Sora and Seedance prompts together. Sora cards can share evidence/rating fields but need their own prompt structure and scoring rubric.
 
 ## 1.3 Evidence grading fields
@@ -155,7 +155,7 @@ human_rating:
 
 Workflow:
 1. `seed_pattern`: raw mined idea or source pattern.
-2. `adapted_template`: rewritten into a reusable Directors Cut card.
+2. `adapted_template`: rewritten into a reusable Trailer Feed card.
 3. `internally_tested`: rendered or dry-run through our tooling.
 4. `promoted`: recommended/top performer for a use case.
 5. `deprecated`: model drift, poor results, duplicate, or failed aesthetic fit.
@@ -208,13 +208,13 @@ Human taste notes and approvals/rejections.
 
 # 2. Obsidian folder structure
 
-Use this Obsidian layout as shared non-secret source of truth. `directors-cut` can later mirror or import these files into its repo.
+Use this Obsidian layout as shared non-secret source of truth. `trailer-feed` can later mirror or import these files into its repo.
 
 ```text
 20-Video-Workflows/
-  Directors Cut/
+  Trailer Feed/
     README.md
-    Directors Cut Deep-Dive Plan.md
+    Trailer Feed Deep-Dive Plan.md
 
     schemas/
       prompt-card.schema.json
@@ -266,7 +266,7 @@ Use this Obsidian layout as shared non-secret source of truth. `directors-cut` c
         notes.md
 ```
 
-In the `directors-cut` repo, mirror this as either:
+In the `trailer-feed` repo, mirror this as either:
 
 ```text
 content/prompt-library/...
@@ -280,7 +280,7 @@ public/data/prompt-cards.index.jsonl
 public/data/comparison-runs.index.jsonl
 ```
 
-Recommendation: for v1 app speed, copy generated JSONL indexes into `directors-cut/public/data/` and render from there. Keep Markdown canonical in Obsidian until the app needs full editing.
+Recommendation: for v1 app speed, copy generated JSONL indexes into `trailer-feed/public/data/` and render from there. Keep Markdown canonical in Obsidian until the app needs full editing.
 
 ---
 
@@ -314,7 +314,7 @@ Minimum useful comparison set:
 
 5. `Gordo Taste Proxy Agent` eventually
    - Learns from Gordo’s ratings and notes over time.
-   - In v1, this is just a rubric seeded from Pindeck/Directors Cut style notes and user comments.
+   - In v1, this is just a rubric seeded from Pindeck/Trailer Feed style notes and user comments.
 
 ## 3.3 Run artifact schema
 
@@ -390,14 +390,14 @@ source_refs:
 
 Raycast-first path:
 
-1. Gordo starts a Raycast Agent: “Prompt Comparison / Directors Cut.”
+1. Gordo starts a Raycast Agent: “Prompt Comparison / Trailer Feed.”
 2. Agent asks the same question to multiple Raycast models/agents where Raycast supports it.
 3. Agent calls `raycast-pro-bridge` MCP tool:
    - `save_comparison_answer(run_id, agent_name, model_name, answer_text, metadata)`
 4. Raycast calls Hermes via bridge:
    - `grade_comparison_run(run_id)`
    - `promote_winners_to_prompt_cards(run_id)`
-5. Directors Cut app reads `comparison-runs.index.jsonl` and shows the run.
+5. Trailer Feed app reads `comparison-runs.index.jsonl` and shows the run.
 
 Hermes-first path:
 
@@ -447,7 +447,7 @@ Preferred:
 Suggested repo structure:
 
 ```text
-directors-cut/
+trailer-feed/
   src/
     routes/
       +layout.svelte
@@ -706,7 +706,7 @@ UI tone:
 
 ---
 
-# 5. How Directors Cut consumes Raycast and Hermes
+# 5. How Trailer Feed consumes Raycast and Hermes
 
 ## 5.1 Boundary between repos
 
@@ -718,7 +718,7 @@ UI tone:
 - Raycast extension research/prototypes.
 - Tailscale/HTTP bridge docs.
 
-`directors-cut` owns:
+`trailer-feed` owns:
 - Prompt library schemas.
 - Prompt cards and prompt packs.
 - Comparison run artifacts.
@@ -727,7 +727,7 @@ UI tone:
 - Creative workflows.
 - Ratings and promotion workflow.
 
-## 5.2 MCP tools Directors Cut expects from raycast-pro-bridge
+## 5.2 MCP tools Trailer Feed expects from raycast-pro-bridge
 
 Minimum tool surface:
 
@@ -771,7 +771,7 @@ Comparison tools can be manual or Hermes-side until the library proves value.
    - extracted candidates
    - draft cards
    - indexes
-5. Directors Cut app reads JSONL index and displays cards/runs.
+5. Trailer Feed app reads JSONL index and displays cards/runs.
 6. Gordo rates/promotes cards.
 
 ## 5.4 Comparison flow
@@ -779,7 +779,7 @@ Comparison tools can be manual or Hermes-side until the library proves value.
 1. Raycast asks multiple Agents/models the same question.
 2. Raycast/bridge saves each answer to `comparisons/<run-id>/answers.jsonl`.
 3. Hermes grades with rubric and writes `grades.jsonl`.
-4. Directors Cut app displays rankings and copy buttons.
+4. Trailer Feed app displays rankings and copy buttons.
 5. Best answers become cards or pack entries.
 
 ## 5.5 Hermes responsibilities
@@ -804,7 +804,7 @@ Hermes should not pretend to be Raycast Pro. If a card or row uses Raycast model
 Goal: prove the creative loop before plumbing.
 
 Deliverables:
-- Obsidian folder structure under `20-Video-Workflows/Directors Cut/`.
+- Obsidian folder structure under `20-Video-Workflows/Trailer Feed/`.
 - `prompt-card.schema.json` draft.
 - 5-10 Markdown prompt cards for Seedance/Sora teaser patterns.
 - `prompt-cards.index.jsonl` generated manually or by a small script.
@@ -834,7 +834,7 @@ Success criteria:
 
 Goal: browse/search/copy the library.
 
-Deliverables in `directors-cut`:
+Deliverables in `trailer-feed`:
 - Svelte 5 app scaffold.
 - Pindeck-style tokens.
 - `/prompts` table reading `public/data/prompt-cards.index.jsonl`.
@@ -880,14 +880,14 @@ Goal: remove manual relay for research and saves.
 Dependency: `raycast-pro-bridge` HTTP MCP server exists.
 
 Deliverables:
-- Directors Cut docs describing expected bridge tools.
+- Trailer Feed docs describing expected bridge tools.
 - Import/sync scripts that consume bridge outputs.
 - Raycast workflow: start research -> save artifacts -> app shows results.
 
 Success criteria:
 - Raycast starts a prompt research run.
 - Hermes writes artifacts to Obsidian.
-- Directors Cut app sees updated JSONL after rebuild/copy.
+- Trailer Feed app sees updated JSONL after rebuild/copy.
 
 ## Phase 4 — Rating and aesthetic memory loop
 
@@ -925,14 +925,14 @@ Success criteria:
 Create:
 
 ```text
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/cards/seedance/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/cards/sora/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/cards/cross-model/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/comparisons/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/indexes/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/raw/
-/root/Github/hermes-notebook-vault/20-Video-Workflows/Directors Cut/schemas/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/cards/seedance/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/cards/sora/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/cards/cross-model/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/comparisons/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/indexes/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/raw/
+/root/Github/hermes-notebook-vault/20-Video-Workflows/Trailer Feed/schemas/
 ```
 
 ## Task 2: Write schema drafts
@@ -964,10 +964,10 @@ Recommended first card:
 
 ## Task 4: Generate JSONL index
 
-Write a small script in `directors-cut` later, but for Phase 0 a Hermes script can parse frontmatter and emit:
+Write a small script in `trailer-feed` later, but for Phase 0 a Hermes script can parse frontmatter and emit:
 
 ```text
-20-Video-Workflows/Directors Cut/indexes/prompt-cards.index.jsonl
+20-Video-Workflows/Trailer Feed/indexes/prompt-cards.index.jsonl
 ```
 
 ## Task 5: Scaffold app only after cards exist
@@ -978,7 +978,7 @@ Do not start with UI blank-state plumbing. Build the Svelte app against real car
 
 # 8. Open questions
 
-- Where should `directors-cut` keep a copy of prompt cards: mirrored from Obsidian into repo, or app reads exported JSONL only?
+- Where should `trailer-feed` keep a copy of prompt cards: mirrored from Obsidian into repo, or app reads exported JSONL only?
   - Recommendation: JSONL export only for v1, Markdown canonical in Obsidian.
 - Does Gordo want app-side editing in Phase 1?
   - Recommendation: no. Read/copy/filter first. Edit in Obsidian.
@@ -993,7 +993,7 @@ Do not start with UI blank-state plumbing. Build the Svelte app against real car
 
 # 9. Definition of done for this plan
 
-This plan is ready to pull into `directors-cut` when:
+This plan is ready to pull into `trailer-feed` when:
 
 - It is saved in the synced Obsidian vault.
 - The repo owner can copy the folder structure and schemas into the repo.

@@ -2,7 +2,7 @@
 name: teaser-series-package
 description: >-
   Builds the standard Concept Package after a Netflix/TV series idea or logline
-  is accepted in directors-cut/hype-slate. Use when the user accepts an idea,
+  is accepted in trailer-feed/hype-slate. Use when the user accepts an idea,
   asks for the package, wants Stage 3 expansion, or says to lock a series before
   trailers. Produces folder + series card + teaser rules. Does NOT generate image
   grids or Seedance/Sora trailer prompts unless the user explicitly starts Stage 4.

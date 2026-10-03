@@ -1,4 +1,4 @@
-# Directors Cut — Raycast → Sora Vertical Slice Handoff
+# Trailer Feed — Raycast → Sora Vertical Slice Handoff
 
 **Updated:** 2026-08-14
 
@@ -7,11 +7,11 @@
 
 ## Goal
 
-Turn one Directors Cut creative brief into two independently developed concepts through Raycast—one from ChatGPT and one from Claude—then carry each concept into exactly one open-ended 12-second Sora video prompt.
+Turn one Trailer Feed creative brief into two independently developed concepts through Raycast—one from ChatGPT and one from Claude—then carry each concept into exactly one open-ended 12-second Sora video prompt.
 
 The generated video is the creative submission. There is no editor/timeline role in this slice.
 
-## Implemented in Directors Cut
+## Implemented in Trailer Feed
 
 - `CreativeConceptPackage` contract with:
   - title
@@ -32,22 +32,22 @@ The generated video is the creative submission. There is no editor/timeline role
   - canonical ChatGPT + Claude Raycast brief
   - clear handoff to the Raycast Script Command workflow
 - Focused schema tests in `scripts/test-model-answer-schema.ts`.
-- Full implementation plan in `.hermes/plans/2026-08-14_022750-directors-cut-raycast-sora-vertical-slice.md`.
+- Full implementation plan in `.hermes/plans/2026-08-14_022750-trailer-feed-raycast-sora-vertical-slice.md`.
 - Generated `public/data` build artifacts are not staged by this handoff; the Projects index is rebuilt by the Raycast start command or the standard Bun build command.
 
 ## Implemented in Raycast Pro Bridge
 
 The companion repository contains these Script Commands:
 
-- `script-commands/directors-cut-start-concept-run.sh`
+- `script-commands/trailer-feed-start-concept-run.sh`
   - creates the canonical comparison run
   - requests ChatGPT and Claude
-  - rebuilds the Directors Cut Projects index
+  - rebuilds the Trailer Feed Projects index
   - copies the canonical model prompt
-- `script-commands/directors-cut-comparison-prompt.sh`
+- `script-commands/trailer-feed-comparison-prompt.sh`
   - reads `comparison-run.md`; no hard-coded Glass House prompt
   - appends the strict creative-concept response contract
-- `script-commands/directors-cut-capture-answer.sh`
+- `script-commands/trailer-feed-capture-answer.sh`
   - preserves real clipboard output verbatim
   - parses TITLE, LOGLINE, HOOK, and SORA PROMPT — 12 SECONDS
   - writes atomically
@@ -55,12 +55,12 @@ The companion repository contains these Script Commands:
   - records invalid parsing without repairing or fabricating output
   - advances `answers_partial` → `answers_collected`
 - Test coverage:
-  - `script-commands/test-directors-cut-start-run.sh`
-  - `script-commands/test-directors-cut-workflow.sh`
+  - `script-commands/test-trailer-feed-start-run.sh`
+  - `script-commands/test-trailer-feed-workflow.sh`
 
 ## Verified commands
 
-Directors Cut:
+Trailer Feed:
 
 ```bash
 bun run scripts/test-model-answer-schema.ts
@@ -79,9 +79,9 @@ Observed results before handoff:
 Raycast Pro Bridge:
 
 ```bash
-bash -n script-commands/directors-cut-*.sh
-./script-commands/test-directors-cut-start-run.sh
-./script-commands/test-directors-cut-workflow.sh
+bash -n script-commands/trailer-feed-*.sh
+./script-commands/test-trailer-feed-start-run.sh
+./script-commands/test-trailer-feed-workflow.sh
 bun run scripts/validate-contract.ts
 bun run scripts/validate-security.ts
 bun run scripts/smoke-server.ts
@@ -97,14 +97,14 @@ Observed results before handoff:
 
 ## Manual first-run workflow
 
-1. Open Directors Cut → **Create**.
+1. Open Trailer Feed → **Create**.
 2. Enter a project title and creative brief.
 3. Click **Prepare Raycast concept run** and copy the canonical brief.
-4. In Raycast, run **Start Directors Cut Concept Run**.
+4. In Raycast, run **Start Trailer Feed Concept Run**.
 5. Paste the copied prompt into ChatGPT in Raycast.
-6. Copy the complete response and run **Capture Directors Cut Answer** with model label `ChatGPT`.
+6. Copy the complete response and run **Capture Trailer Feed Answer** with model label `ChatGPT`.
 7. Repeat with Claude and exact model label `Claude`.
-8. Run the Directors Cut comparison index build or let the start command do it automatically.
+8. Run the Trailer Feed comparison index build or let the start command do it automatically.
 9. Open Projects/Comparisons and verify both packages.
 10. Submit each validated prompt to the existing Sora/Higgsfield workflow. Ask before any billable generation.
 

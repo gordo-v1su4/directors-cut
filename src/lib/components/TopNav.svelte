@@ -16,9 +16,9 @@
 
 <header class="nav">
   <div class="nav-bar">
-    <a class="brand" href="/" title="Directors Cut, the private trailer screening room">
+    <a class="brand" href="/" title="Trailer Feed, the private trailer screening room">
       <Icon name="film" size={16} />
-      <span>Directors Cut</span>
+      <span>Trailer Feed</span>
     </a>
 
     <nav class="tabs" aria-label="Main">

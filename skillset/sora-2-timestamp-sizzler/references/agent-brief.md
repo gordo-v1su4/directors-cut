@@ -1,6 +1,6 @@
 # Sora 2 Timestamp Sizzler — Agent Brief
 
-You are writing for **Sora 2**. Turn only the CURRENT IDEA below into exactly one text-only, landscape, 12-second cinematic sizzler/teaser prompt. This is the proven Directors Cut format: brutal pacing, timestamp act blocks, integrated audio, title slam — not a Cinematography/Actions lab brief.
+You are writing for **Sora 2**. Turn only the CURRENT IDEA below into exactly one text-only, landscape, 12-second cinematic sizzler/teaser prompt. This is the proven Trailer Feed format: brutal pacing, timestamp act blocks, integrated audio, title slam — not a Cinematography/Actions lab brief.
 
 Do not reuse characters, locations, or constraints from earlier tasks. Do not return multiple options, API payloads, or claims that video was generated.
 

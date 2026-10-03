@@ -1,10 +1,10 @@
-# Directors Cut Raycast → Sora Vertical Slice Plan
+# Trailer Feed Raycast → Sora Vertical Slice Plan
 
 > **For Hermes:** Execute with `subagent-driven-development`: implementer → spec review → quality review for each task.
 
-**Goal:** Turn one brief into two real Raycast concept packages (ChatGPT and Claude), persist them as repo-backed artifacts, submit one 12-second Sora prompt per model, and review the resulting videos in Directors Cut.
+**Goal:** Turn one brief into two real Raycast concept packages (ChatGPT and Claude), persist them as repo-backed artifacts, submit one 12-second Sora prompt per model, and review the resulting videos in Trailer Feed.
 
-**Architecture:** Directors Cut remains the canonical artifact store and visual review app. Raycast Pro is the first model surface; Script Commands capture real outputs without token replay or pretending Raycast is an API. The existing `raycast-pro-bridge` and Hermes automate persistence/indexing and optional generation handoff. Markdown/JSONL are canonical; `public/data` is generated.
+**Architecture:** Trailer Feed remains the canonical artifact store and visual review app. Raycast Pro is the first model surface; Script Commands capture real outputs without token replay or pretending Raycast is an API. The existing `raycast-pro-bridge` and Hermes automate persistence/indexing and optional generation handoff. Markdown/JSONL are canonical; `public/data` is generated.
 
 **Stack:** SvelteKit/Svelte 5, TypeScript, Bun, Raycast Script Commands, Hono/Zod bridge, Hermes, Sora via the existing Higgsfield workflow with manual fallback.
 
@@ -36,9 +36,9 @@
 
 # Pre-flight gates
 
-## Gate 0A — Protect Directors Cut work
+## Gate 0A — Protect Trailer Feed work
 
-Repo: `/Users/robertspaniolo/Documents/Github/directors-cut`
+Repo: `/Users/robertspaniolo/Documents/Github/trailer-feed`
 
 Current branch: `codex/camera-moves-pilot`.
 
@@ -155,7 +155,7 @@ Record ChatGPT and Claude as requested models before capture.
 **Repo:** `raycast-pro-bridge`
 
 **Files**
-- Modify `script-commands/directors-cut-comparison-prompt.sh`
+- Modify `script-commands/trailer-feed-comparison-prompt.sh`
 - Create/modify Script Command tests
 - Update README/STATUS
 
@@ -165,12 +165,12 @@ Replace hard-coded `THE GLASS HOUSE` text with run-aware behavior:
 3. copy its canonical question
 4. print requested model pair and next step
 
-Raycast command: **Directors Cut — Copy Current Brief**.
+Raycast command: **Trailer Feed — Copy Current Brief**.
 
 ## Task 5: Capture and structure each answer
 
 **Files**
-- Modify `script-commands/directors-cut-capture-answer.sh`
+- Modify `script-commands/trailer-feed-capture-answer.sh`
 - Create `scripts/parse-concept-package.ts`
 - Add tests
 
@@ -203,8 +203,8 @@ Likely files:
 - `raycast-pro-bridge/src/contracts/tools.ts`
 - `raycast-pro-bridge/src/server.ts`
 - `raycast-pro-bridge/src/dispatch/hermes.ts`
-- canonical contract sync into `directors-cut/src/lib/bridge/types.ts`
-- `directors-cut/src/routes/create/+page.svelte`
+- canonical contract sync into `trailer-feed/src/lib/bridge/types.ts`
+- `trailer-feed/src/routes/create/+page.svelte`
 
 Input: brief, requested models, target, runtime, format. Output: run ID + saved paths. The browser must not supply arbitrary filesystem paths.
 
@@ -288,9 +288,9 @@ Do not add an editor timeline. Persist review state as repo-backed data. Show pr
 
 # Milestone 7 — Creative team profile
 
-## Task 12: Create a Directors Cut creative profile after the vertical slice works
+## Task 12: Create a Trailer Feed creative profile after the vertical slice works
 
-Possible profile name: `directors-cut` or `creative-room`.
+Possible profile name: `trailer-feed` or `creative-room`.
 
 Roles:
 1. Creative Director — premise, tone, visual world, cultural hook
@@ -306,7 +306,7 @@ Model routing:
 
 Artifacts:
 - profile `SOUL.md`
-- project-context pointer to Directors Cut
+- project-context pointer to Trailer Feed
 - focused creative/video/music/critique skills
 - wake phrase only after default profile switching is stable
 

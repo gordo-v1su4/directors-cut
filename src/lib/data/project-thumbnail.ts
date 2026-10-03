@@ -10,7 +10,7 @@ async function thumbnailRequest(runId: string, suffix: string, file?: File): Pro
     body: file,
   });
   if (response.status === 401) {
-    sessionStorage.removeItem('directors-cut-owner');
+    sessionStorage.removeItem('trailer-feed-owner');
     throw new SignInRequired('Your session expired. Sign in again to edit the thumbnail.');
   }
   const result = await response.json().catch(() => ({}));

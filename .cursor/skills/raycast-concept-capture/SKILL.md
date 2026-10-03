@@ -1,11 +1,11 @@
 ---
 name: raycast-concept-capture
-description: Capture a Directors Cut comparison run through Raycast using computer use. Opens Raycast AI chat for Sora 2 - ChatGPT and Sora 2 - Haiku, pastes the canonical brief, copies each answer, and persists via directors-cut-capture-answer.sh. Use when the user asks to capture a concept run, automate Raycast capture, or run computer use for Directors Cut.
+description: Capture a Trailer Feed comparison run through Raycast using computer use. Opens Raycast AI chat for Sora 2 - ChatGPT and Sora 2 - Haiku, pastes the canonical brief, copies each answer, and persists via trailer-feed-capture-answer.sh. Use when the user asks to capture a concept run, automate Raycast capture, or run computer use for Trailer Feed.
 ---
 
 # Raycast Concept Capture (Computer Use)
 
-Automate the Raycast half of the Directors Cut Create flow. The web app creates the run via bridge `create_comparison_run`; this skill drives Raycast with **computer use** and persists answers with the existing Script Command.
+Automate the Raycast half of the Trailer Feed Create flow. The web app creates the run via bridge `create_comparison_run`; this skill drives Raycast with **computer use** and persists answers with the existing Script Command.
 
 ## When to use
 
@@ -21,8 +21,8 @@ Automate the Raycast half of the Directors Cut Create flow. The web app creates 
 - App name is usually `Raycast` or `Raycast Beta` (script auto-detects)
 - **Accessibility** granted to Cursor (or Terminal) in System Settings → Privacy & Security → Accessibility — required for computer-use keystrokes
 - `raycast-pro-bridge` Script Commands installed
-- `DIRECTORS_CUT_PATH` points at the directors-cut checkout
-- Bridge running with `DIRECTORS_CUT_PATH` set
+- `TRAILER_FEED_PATH` points at the trailer-feed checkout
+- Bridge running with `TRAILER_FEED_PATH` set
 
 ## Inputs
 
@@ -36,10 +36,10 @@ Automate the Raycast half of the Directors Cut Create flow. The web app creates 
 Run the existing prompt packager (do not invent a new brief):
 
 ```bash
-cd "$DIRECTORS_CUT_PATH/../raycast-pro-bridge/script-commands"
-DIRECTORS_CUT_PATH="$DIRECTORS_CUT_PATH" \
-DIRECTORS_CUT_CLIPBOARD_FILE="/tmp/dc-prompt.txt" \
-./directors-cut-comparison-prompt.sh "<run-id>"
+cd "$TRAILER_FEED_PATH/../raycast-pro-bridge/script-commands"
+TRAILER_FEED_PATH="$TRAILER_FEED_PATH" \
+TRAILER_FEED_CLIPBOARD_FILE="/tmp/dc-prompt.txt" \
+./trailer-feed-comparison-prompt.sh "<run-id>"
 ```
 
 Read `/tmp/dc-prompt.txt` — that is the exact text to paste into each Raycast agent.
@@ -52,7 +52,7 @@ After Create calls `create_comparison_run`, the app chains:
 2. `run_concept_capture` — background AppleScript drives Raycast Beta / Raycast, captures both models, persists answers
 3. Poll `get_concept_capture_status` — answers appear in Create UI and Projects
 
-No manual Run ID typing. Do **not** use the legacy **Capture Directors Cut Answer** command for automated runs.
+No manual Run ID typing. Do **not** use the legacy **Capture Trailer Feed Answer** command for automated runs.
 
 ## Manual computer use loop (per model)
 
@@ -66,8 +66,8 @@ For each pending model in `capture-request.json` (`ChatGPT`, then `Claude`):
 6. **Persist via Script Command** (preferred over hand-editing JSONL):
 
 ```bash
-DIRECTORS_CUT_PATH="$DIRECTORS_CUT_PATH" \
-  ./directors-cut-capture-answer.sh "<ModelLabel>" "<run-id>" sora-2
+TRAILER_FEED_PATH="$TRAILER_FEED_PATH" \
+  ./trailer-feed-capture-answer.sh "<ModelLabel>" "<run-id>" sora-2
 ```
 
 Use exact labels: `ChatGPT` and `Claude`.
@@ -77,7 +77,7 @@ Use exact labels: `ChatGPT` and `Claude`.
 ## After both models
 
 ```bash
-cd "$DIRECTORS_CUT_PATH" && bun run build:comparisons
+cd "$TRAILER_FEED_PATH" && bun run build:comparisons
 ```
 
 Poll bridge status or open Projects:
@@ -102,5 +102,5 @@ Success: `captured_valid_count: 2`, `run_status: answers_collected`.
 
 If computer use fails, tell the user to switch Create to **Manual** and use:
 
-1. **Start Directors Cut Concept Run**
-2. **Capture Directors Cut Answer** × 2
+1. **Start Trailer Feed Concept Run**
+2. **Capture Trailer Feed Answer** × 2

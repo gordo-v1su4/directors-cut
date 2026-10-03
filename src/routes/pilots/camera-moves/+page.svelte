@@ -23,7 +23,7 @@
   async function copyPrompt() { await navigator.clipboard.writeText(activePrompt); copied = true; }
 </script>
 
-<svelte:head><title>Camera Techniques — Directors Cut</title></svelte:head>
+<svelte:head><title>Camera Techniques — Trailer Feed</title></svelte:head>
 
 {#if selected}
   <div class="move-dialog-backdrop" role="presentation" onclick={(event) => event.target === event.currentTarget && closeMove()}>

@@ -3,7 +3,7 @@ id: cross-model-netflix-teaser-comparison
 slug: cross-model-netflix-teaser-comparison
 title: Netflix Teaser — Seedance vs Sora Comparison
 summary: Side-by-side comparison question that asks the same creative brief of both Seedance and Sora, producing one adapted prompt per model.
-repo_scope: directors-cut
+repo_scope: trailer-feed
 card_type: comparison_result
 created: 2026-07-02
 updated: 2026-07-02
@@ -28,7 +28,7 @@ source_urls:
   - https://github.com/songguoxs/seedance-prompt-skill
   - https://github.com/zhangchenchen/awesome_sora2_prompt
 source_notes:
-  - "Comparison question is repo-native to Directors Cut. Pattern adapts the single-model templates from the source repos into a cross-model evaluation prompt."
+  - "Comparison question is repo-native to Trailer Feed. Pattern adapts the single-model templates from the source repos into a cross-model evaluation prompt."
   - "Seedance and Sora prompts differ structurally: Seedance prefers title-slam prose with explicit shot structure; Sora prefers continuous scene description with embedded title reveal."
 library_status: adapted_template
 tested_by_us: false
@@ -59,7 +59,7 @@ tags:
 # Netflix Teaser — Seedance vs Sora Comparison
 
 ## At a glance
-This card is a comparison question, not a single prompt. It is designed to be fed to the Directors Cut multi-agent comparison flow so that both Seedance and Sora produce a Netflix-style teaser for the same concept, and the results can be graded side-by-side.
+This card is a comparison question, not a single prompt. It is designed to be fed to the Trailer Feed multi-agent comparison flow so that both Seedance and Sora produce a Netflix-style teaser for the same concept, and the results can be graded side-by-side.
 
 ## Comparison question
 

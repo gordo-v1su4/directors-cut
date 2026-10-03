@@ -11,7 +11,7 @@ function video(): UploadVideo { return { key: 'clip', file: new File(['video'], 
 
 beforeEach(() => {
   calls = []; replies = [];
-  const values = new Map([['directors-cut-owner', 'test-session']]);
+  const values = new Map([['trailer-feed-owner', 'test-session']]);
   Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: {
     getItem: (key: string) => values.get(key) ?? null,
     removeItem: (key: string) => values.delete(key),
@@ -70,7 +70,7 @@ test('expired sessions keep upload identity so sign-in can resume polling', asyn
   replies = [json({ upload_id: 'one', status: 'queued' }), json({ error: 'Expired' }, 401)];
   await expect(saveUploadVideo('project', clip)).rejects.toBeInstanceOf(SignInRequired);
   expect(clip.uploadId).toBe('one');
-  expect(sessionStorage.getItem('directors-cut-owner')).toBeNull();
+  expect(sessionStorage.getItem('trailer-feed-owner')).toBeNull();
 });
 
 test('failed details save retries details without reuploading the video', async () => {

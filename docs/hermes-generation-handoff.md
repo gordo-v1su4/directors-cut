@@ -1,6 +1,6 @@
-# Hermes generation handoff — image grid → video → directors-cut
+# Hermes generation handoff — image grid → video → trailer-feed
 
-**Context:** The `directors-cut` UI now has a place for generation prompts (`GenerationPrompt`) and links each image/video artifact to the prompt that produced it. This doc tells Hermes how to produce the first real set of images and video and wire them into the comparison run.
+**Context:** The `trailer-feed` UI now has a place for generation prompts (`GenerationPrompt`) and links each image/video artifact to the prompt that produced it. This doc tells Hermes how to produce the first real set of images and video and wire them into the comparison run.
 
 ## What we need
 
@@ -19,13 +19,13 @@ The goal is to judge **which LLM wrote the best prompt**, not to judge the video
 All files go under:
 
 ```text
-directors-cut/content/comparisons/<run-id>/
+trailer-feed/content/comparisons/<run-id>/
 ```
 
 For the current run use:
 
 ```text
-directors-cut/content/comparisons/2026-07-netflix-teaser-title-slam-001/
+trailer-feed/content/comparisons/2026-07-netflix-teaser-title-slam-001/
 ```
 
 ### Files to create
@@ -74,7 +74,7 @@ Poll `get_research_status` and `read_research_artifact` for:
 Download the images from `results.json` and put them in:
 
 ```text
-directors-cut/content/comparisons/2026-07-netflix-teaser-title-slam-001/media/
+trailer-feed/content/comparisons/2026-07-netflix-teaser-title-slam-001/media/
 ```
 
 Name them clearly, e.g.:
@@ -114,7 +114,7 @@ One `ComparisonArtifact` per line. Link each artifact to its `prompt_id` and the
 
 ### 7. Rebuild the public data index
 
-From the `directors-cut` repo root:
+From the `trailer-feed` repo root:
 
 ```bash
 bun scripts/build-comparisons-index.ts

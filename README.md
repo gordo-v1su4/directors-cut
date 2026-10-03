@@ -1,4 +1,4 @@
-# Directors Cut
+# Trailer Feed
 
 Creative intelligence workspace for AI video: ideate concepts, compare ChatGPT and Claude answers via Raycast, approve winners, generate Sora video, and promote specs into a reusable library.
 
@@ -36,7 +36,7 @@ flowchart TB
     E["Script Commands OR computer-use agent"]
     F["Sora 2 - ChatGPT"]
     G["Sora 2 - Haiku / Claude"]
-    H["Capture Directors Cut Answer"]
+    H["Capture Trailer Feed Answer"]
     E --> F --> H
     E --> G --> H
   end
@@ -80,7 +80,7 @@ flowchart TB
 
 1. **Create** — Select **Manual**, enter title + idea.
 2. **Create** — **Prepare Raycast concept run** → **Copy for Raycast**.
-3. **Raycast** — **Start Directors Cut Concept Run** (title arg 1, blank arg 2).
+3. **Raycast** — **Start Trailer Feed Concept Run** (title arg 1, blank arg 2).
 4. Paste into ChatGPT → **Capture** → repeat for Claude.
 5. **Projects** — Review, approve, generate as above.
 
@@ -120,11 +120,11 @@ schemas/             JSON schemas for cards and runs
 
 ```bash
 # raycast-pro-bridge
-export DIRECTORS_CUT_PATH=~/Documents/Github/directors-cut
+export TRAILER_FEED_PATH=~/Documents/Github/trailer-feed
 export RAYCAST_BRIDGE_TOKEN=your-token
 bun src/server.ts
 
-# directors-cut — copy .env.example to .env.local and set the same token
+# trailer-feed — copy .env.example to .env.local and set the same token
 cp .env.example .env.local
 bun run dev
 ```

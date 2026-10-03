@@ -3,7 +3,7 @@ id: sora-netflix-teaser-cinematic-continuity
 slug: sora-netflix-teaser-cinematic-continuity
 title: Netflix Teaser Cinematic Continuity — Sora
 summary: Fluid, natural-language Sora prompt for a Netflix-style teaser built on continuous camera movement, environmental storytelling, and a final title reveal.
-repo_scope: directors-cut
+repo_scope: trailer-feed
 card_type: prompt_card
 created: 2026-07-02
 updated: 2026-07-02

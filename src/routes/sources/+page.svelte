@@ -61,7 +61,7 @@
   });
 </script>
 
-<svelte:head><title>Sources · Directors Cut</title></svelte:head>
+<svelte:head><title>Sources · Trailer Feed</title></svelte:head>
 
 {#snippet toggle(on: boolean, label: string, hint: string, flip: () => void)}
   <button type="button" class="pref raised" role="switch" aria-checked={on} onclick={flip}>

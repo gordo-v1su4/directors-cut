@@ -1,5 +1,5 @@
 [Unit]
-Description=Check Directors Cut backend releases
+Description=Check Trailer Feed backend releases
 [Timer]
 OnBootSec=2min
 OnUnitInactiveSec=2min

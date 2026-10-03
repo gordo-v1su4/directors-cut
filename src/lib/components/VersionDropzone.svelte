@@ -15,7 +15,7 @@
       const response = await fetch(`${mediaApi}/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'gordo',password})});
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Sign in failed');
-      sessionStorage.setItem('directors-cut-owner',result.token);
+      sessionStorage.setItem('trailer-feed-owner',result.token);
       password='';showLogin=false;failed=false;message='Signed in. Choose or drop your videos.';
     } catch(error) { failed=true;message=error instanceof Error ? error.message : 'Sign in failed'; }
   }
@@ -58,7 +58,7 @@
           message=`Uploading ${file.name}…`;
           const response=await fetch(`${mediaApi}/versions`,{method:'POST',headers:{Authorization:`Bearer ${ownerToken()}`,'Content-Type':'application/octet-stream','X-Run-Id':projectId,'X-Filename':encodeURIComponent(file.name)},body:file});
           const result=await response.json();
-          if(response.status===401) {sessionStorage.removeItem('directors-cut-owner');showLogin=true;}
+          if(response.status===401) {sessionStorage.removeItem('trailer-feed-owner');showLogin=true;}
           if(!response.ok) throw new Error(result.error || 'Upload failed');
           if(result.status==='failed') {retryId=result.upload_id;throw new Error(result.error || 'Previous upload failed');}
           if(result.upload_id && result.status!=='ready') {message=`Creating thumbnail for ${file.name}…`;await waitForUpload(result.upload_id);}

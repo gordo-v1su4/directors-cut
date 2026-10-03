@@ -92,7 +92,7 @@ async function sync() {
       const media = await upload(db,local,`${folder}/original`,isVideo ? 'video/mp4' : local.endsWith('.png') ? 'image/png':'image/jpeg');
       const poster = isVideo ? await upload(db,`${local}.jpg`,`${folder}/preview`,'image/jpeg') : media;
       if (a.media_url !== media.url || a.thumbnail_url !== poster.url) {
-        Object.assign(a,{media_url:media.url,thumbnail_url:poster.url,local_path:relative,storage_bucket:'directors-cut',object_key:media.objectKey,thumbnail_key:poster.objectKey,media_sha256:media.sha256}); dirty=true;
+        Object.assign(a,{media_url:media.url,thumbnail_url:poster.url,local_path:relative,storage_bucket:'trailer-feed',object_key:media.objectKey,thumbnail_key:poster.objectKey,media_sha256:media.sha256}); dirty=true;
       }
       db.query('INSERT OR REPLACE INTO assets VALUES (?,?,?)').run(a.artifact_id,runId,JSON.stringify(a));
       if (a.job_id) db.query("UPDATE jobs SET status='imported',error=NULL,updated_at=? WHERE job_id=?").run(new Date().toISOString(),a.job_id);

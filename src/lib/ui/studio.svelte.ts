@@ -136,11 +136,14 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
-const PREFS_KEY = 'directors-cut-screening-prefs';
+const PREFS_KEY = 'trailer-feed-screening-prefs';
 
 function readPrefs(): { heroAutoRotate: boolean; playOnHover: boolean } {
   try {
-    const stored = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    const current = localStorage.getItem(PREFS_KEY);
+    const legacy = current === null ? localStorage.getItem('directors-cut-screening-prefs') : null;
+    const stored = JSON.parse(current || legacy || '{}');
+    if (legacy) localStorage.setItem(PREFS_KEY, legacy);
     return { heroAutoRotate: !!stored.heroAutoRotate, playOnHover: !!stored.playOnHover };
   } catch {
     return { heroAutoRotate: false, playOnHover: false };

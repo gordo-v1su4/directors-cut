@@ -1,9 +1,9 @@
 ---
 name: higgsfield-agent-generate
-description: Generate Sora video or Nano Banana shot grids for an approved Directors Cut concept using the Higgsfield Cursor MCP plugin (preferred) or CLI fallback. Use when the user approved a concept on Projects and wants the agent to generate media, or when the web UI Higgsfield auth fails.
+description: Generate Sora video or Nano Banana shot grids for an approved Trailer Feed concept using the Higgsfield Cursor MCP plugin (preferred) or CLI fallback. Use when the user approved a concept on Projects and wants the agent to generate media, or when the web UI Higgsfield auth fails.
 ---
 
-# Higgsfield Agent Generation (Directors Cut)
+# Higgsfield Agent Generation (Trailer Feed)
 
 Use this when a concept is **approved** on `/comparisons` and the user wants video or shot grid — especially when the web UI quote button fails on CLI auth.
 
@@ -59,7 +59,7 @@ For shot grids use `"artifact_type":"shot_grid"` and `"provider":"nano_banana_pr
 ## Step 4 — Rebuild index
 
 ```bash
-cd "$DIRECTORS_CUT_PATH" && bun run build:comparisons
+cd "$TRAILER_FEED_PATH" && bun run build:comparisons
 ```
 
 Refresh Projects — video appears in the **Sora** column; grid in **Shot grid**.

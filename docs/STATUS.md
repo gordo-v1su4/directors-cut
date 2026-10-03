@@ -1,4 +1,4 @@
-# Directors Cut — Status & Project Map
+# Trailer Feed — Status & Project Map
 
 > **Last updated:** 2026-08-16  
 > **Purpose:** Single source of truth for what this repo is, where we are, and what comes next.
@@ -9,7 +9,7 @@
 
 **Turn strong creative ideas into reusable, testable Sora video specs — and browse them in a focused web app.**
 
-Directors Cut is not a production repo for individual shows or commercials. It is the **creative intelligence layer**:
+Trailer Feed is not a production repo for individual shows or commercials. It is the **creative intelligence layer**:
 
 1. **Ideate** — slate and package concepts (`hype-slate/`, teaser-series skill)
 2. **Compare** — capture real ChatGPT + Claude answers via Raycast (`/create` → Script Commands → `/comparisons`)
@@ -22,7 +22,7 @@ The generated video is the deliverable in the comparison slice. The **library sp
 
 ## What lives here vs elsewhere
 
-| In **directors-cut** | Elsewhere |
+| In **trailer-feed** | Elsewhere |
 |----------------------|-----------|
 | Svelte app (`src/`) | **super-seed2** — production projects (Blood Rush, TinyParka, etc.) |
 | Prompt & comparison data (`content/`) | **raycast-pro-bridge** — Raycast Script Commands + HTTP bridge |
@@ -185,7 +185,7 @@ These are **templates**. The goal is to grow this folder with **specs backed by 
 ## UI smoke test
 
 ```bash
-cd ~/Documents/Github/directors-cut
+cd ~/Documents/Github/trailer-feed
 bun run check
 bun run dev    # → http://localhost:5190
 ```
@@ -209,7 +209,7 @@ Full E2E requires Raycast + bridge env — see `HANDOFF.md`.
 | `HANDOFF.md` | Raycast → Sora vertical slice |
 | `docs/comparison-lab-requirements.md` | Projects UI spec |
 | `docs/ui-ux-handoff.md` | Visual browser wireframes |
-| `docs/directors-cut-deep-dive-plan.md` | Full roadmap (historical phases) |
+| `docs/trailer-feed-deep-dive-plan.md` | Full roadmap (historical phases) |
 | `docs/TODO.md` | Task backlog (needs refresh) |
 | `content/cards/` | Library source of truth |
 | `content/comparisons/` | Project run source of truth |
@@ -220,7 +220,7 @@ Full E2E requires Raycast + bridge env — see `HANDOFF.md`.
 
 ## Repos
 
-- `github.com/gordo-v1su4/directors-cut` — this repo
+- `github.com/gordo-v1su4/trailer-feed` — this repo
 - `github.com/gordo-v1su4/raycast-pro-bridge` — Raycast + bridge
 - `github.com/gordo-v1su4/super-seed2` — production generation projects
 

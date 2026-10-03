@@ -27,7 +27,7 @@ async function api(path: string, init: RequestInit = {}) {
   const response = await fetch(`${mediaApi}${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } });
   const result = await response.json().catch(() => ({}));
   if (response.status === 401) {
-    sessionStorage.removeItem('directors-cut-owner');
+    sessionStorage.removeItem('trailer-feed-owner');
     throw new SignInRequired('Your session expired. Sign in to continue; your selected files are still here.');
   }
   if (!response.ok) throw new Error(result.error || `Could not save (${response.status}). Please retry.`);

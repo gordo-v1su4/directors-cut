@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/gordo-v1su4/directors-cut/schemas/generation-prompt.schema.json",
-  "title": "Directors Cut Generation Prompt",
+  "$id": "https://github.com/gordo-v1su4/trailer-feed/schemas/generation-prompt.schema.json",
+  "title": "Trailer Feed Generation Prompt",
   "description": "A concrete prompt returned from a generation run (collage, video, etc.) and the artifacts it produced.",
   "type": "object",
   "additionalProperties": true,

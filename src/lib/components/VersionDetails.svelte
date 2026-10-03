@@ -45,7 +45,7 @@
         const response = await fetch(`${mediaApi}/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'gordo',password})});
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Sign in failed');
-        sessionStorage.setItem('directors-cut-owner',result.token); password=''; login=false;
+        sessionStorage.setItem('trailer-feed-owner',result.token); password=''; login=false;
       }
       const payload: Record<string, unknown> = {run_id:artifact.run_id, prompt, video_model:model, revision:artifact.context_revision ?? 0};
       if (gridChoice === 'remove') payload.grid = null;
@@ -57,7 +57,7 @@
       } else if (gridChoice !== 'keep') payload.grid = {artifact_id:gridChoice};
       const response = await fetch(`${mediaApi}/versions/${encodeURIComponent(artifact.artifact_id)}/details`, {method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${ownerToken()}`},body:JSON.stringify(payload)});
       const result = await response.json();
-      if (response.status === 401) { sessionStorage.removeItem('directors-cut-owner'); login=true; }
+      if (response.status === 401) { sessionStorage.removeItem('trailer-feed-owner'); login=true; }
       if (!response.ok) throw new Error(result.error || 'Save failed');
       await onSaved?.(); editing=false; message='Version details saved.';
     } catch(error) { message=error instanceof Error ? error.message : 'Save failed'; }
