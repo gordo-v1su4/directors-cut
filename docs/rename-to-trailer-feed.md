@@ -18,6 +18,8 @@ The old `directors-cut` RustFS bucket and Docker data volume remain intact. The 
 
 External bridge protocol fields and historical provenance labels remain compatible. Shared credentials and unrelated imported creative skill names are unchanged. Original data, runtime and configuration backups were retained outside tracked source. The old updater units were disabled and archived; the stopped old API container was removed without removing its data volume.
 
+The Windows workspace is available at `C:\Users\Gordo\Documents\Github\trailer-feed` through a directory junction. Windows refused the physical folder move because an active process holds the existing checkout. Both existing Codex project records were renamed in saved state without replacing project IDs or chat memberships. The physical folder move remains pending until that handle is released; both paths currently reach the same preserved checkout.
+
 The M3 was offline in Tailscale and unreachable over SSH. Its installed Raycast shortcuts and local checkout still need the published rename applied when it is available. Do not replace its private environment with a reconstructed file or overwrite unpublished work.
 
 ## Validation
